@@ -13,5 +13,5 @@ ihmc {
 }
 
 mainDependencies {
-   api("us.ihmc:simulation-construction-set:0.12.0")
+   api("us.ihmc:simulation-construction-set:0.13.0")
 }
