@@ -2,7 +2,7 @@ package us.ihmc.robotArmOne;
 
 import java.util.EnumMap;
 
-import us.ihmc.euclid.Axis;
+import us.ihmc.euclid.Axis3D;
 import us.ihmc.euclid.matrix.Matrix3D;
 import us.ihmc.euclid.tuple3D.Vector3D;
 import us.ihmc.euclid.tuple3D.interfaces.Vector3DReadOnly;
@@ -131,7 +131,7 @@ public class SevenDoFArmParameters
    public static final double armLinkRadius = 0.025;
    public static final Vector3D armLinkCoM = new Vector3D(0.0, 0.0, armLinkLength / 2.0);
    public static final Matrix3D armLinkInertia = RotationalInertiaCalculator.getRotationalInertiaMatrixOfSolidCylinder(armLinkMass, armLinkRadius,
-                                                                                                                       armLinkLength, Axis.Z);
+                                                                                                                       armLinkLength, Axis3D.Z);
    public static final Matrix3D smallInertia = diagional(1.0e-4, 1.0e-4, 1.0e-4);
 
    public static final double handMass = 1.2;
@@ -150,13 +150,13 @@ public class SevenDoFArmParameters
 
    static
    {
-      jointAxes.put(SevenDoFArmJointEnum.shoulderYaw, Axis.Z);
-      jointAxes.put(SevenDoFArmJointEnum.shoulderRoll, Axis.X);
-      jointAxes.put(SevenDoFArmJointEnum.shoulderPitch, Axis.Y);
-      jointAxes.put(SevenDoFArmJointEnum.elbowPitch, Axis.Y);
-      jointAxes.put(SevenDoFArmJointEnum.wristPitch, Axis.Y);
-      jointAxes.put(SevenDoFArmJointEnum.wristRoll, Axis.X);
-      jointAxes.put(SevenDoFArmJointEnum.wristYaw, Axis.Z);
+      jointAxes.put(SevenDoFArmJointEnum.shoulderYaw, Axis3D.Z);
+      jointAxes.put(SevenDoFArmJointEnum.shoulderRoll, Axis3D.X);
+      jointAxes.put(SevenDoFArmJointEnum.shoulderPitch, Axis3D.Y);
+      jointAxes.put(SevenDoFArmJointEnum.elbowPitch, Axis3D.Y);
+      jointAxes.put(SevenDoFArmJointEnum.wristPitch, Axis3D.Y);
+      jointAxes.put(SevenDoFArmJointEnum.wristRoll, Axis3D.X);
+      jointAxes.put(SevenDoFArmJointEnum.wristYaw, Axis3D.Z);
 
       jointOffsets.put(SevenDoFArmJointEnum.shoulderYaw, new Vector3D(0.0, 0.0, 0.0));
       jointOffsets.put(SevenDoFArmJointEnum.shoulderRoll, new Vector3D(0.0, 0.0, 0.0));
