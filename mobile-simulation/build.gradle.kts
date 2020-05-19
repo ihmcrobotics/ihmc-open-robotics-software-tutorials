@@ -1,5 +1,5 @@
 plugins {
-   id("us.ihmc.ihmc-build") version "0.20.1"
+   id("us.ihmc.ihmc-build") version "0.20.2"
 }
 
 ihmc {
@@ -13,5 +13,5 @@ ihmc {
 }
 
 mainDependencies {
-   api("us.ihmc:simulation-construction-set:0.13.0")
+   api("us.ihmc:simulation-construction-set:0.16.0")
 }
