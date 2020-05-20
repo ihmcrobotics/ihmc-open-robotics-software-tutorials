@@ -3,30 +3,12 @@ package us.ihmc.robotArmTwo;
 import us.ihmc.euclid.referenceFrame.ReferenceFrame;
 import us.ihmc.robotArmOne.RobotArmOne;
 import us.ihmc.robotArmOne.SevenDoFArmParameters.SevenDoFArmJointEnum;
-
-//import us.ihmc.robotics.referenceFrames.CenterOfMassReferenceFrame;
 import us.ihmc.mecano.frames.CenterOfMassReferenceFrame;
 import us.ihmc.mecano.multiBodySystem.OneDoFJoint;
-
-//import us.ihmc.robotics.screwTheory.InverseDynamicsJoint;
-//import us.ihmc.mecano.algorithms.InverseDynamicsCalculator; //nope
-//still fix
-
-//import us.ihmc.robotics.screwTheory.OneDoFJoint;
-//import us.ihmc.mecano.multiBodySystem.OneDoFJoint; //added
-
-//import us.ihmc.robotics.screwTheory.RigidBody;
-//import us.ihmc.mecano.multiBodySystem.RigidBody; //added
 import us.ihmc.mecano.multiBodySystem.interfaces.JointBasics;
 import us.ihmc.mecano.multiBodySystem.interfaces.OneDoFJointBasics;
-//import us.ihmc.robotics.screwTheory.Center;
-//still fix
-import us.ihmc.mecano.multiBodySystem.interfaces.RigidBodyBasics; //added
+import us.ihmc.mecano.multiBodySystem.interfaces.RigidBodyBasics;
 import us.ihmc.mecano.tools.MultiBodySystemTools;
-
-//import us.ihmc.mecano.multiBodySystem.OneDoFJoint;
-
-//import us.ihmc.robotics.screwTheory.ScrewTools; 
 import us.ihmc.sensorProcessing.simulatedSensors.InverseDynamicsJointsFromSCSRobotGenerator;
 import us.ihmc.sensorProcessing.simulatedSensors.SCSToInverseDynamicsJointMap;
 import us.ihmc.simulationconstructionset.PinJoint;
@@ -67,7 +49,7 @@ public class RobotArmTwo
    /**
     * The array containing in order from the base to the end-effector the joints our robot.
     */
-   private final OneDoFJoint[] controlledJoints; //was OneDoFJoint[]
+   private final OneDoFJoint[] controlledJoints;
 
    public RobotArmTwo()
    {
@@ -78,17 +60,10 @@ public class RobotArmTwo
       centerOfMassFrame = new CenterOfMassReferenceFrame("centerOfMassFrame", WORLD_FRAME, inverseDynamicsRobot.getElevator());
 
       // These are all the joints of the robot arm.
-      //inverseDynamicsJoint[] inverseDynamicsJoints = ScrewTools.computeSubtreeJoints(getElevator()); //successors vs. joints?
-      
       JointBasics[] jointsArray = MultiBodySystemTools.collectSubtreeJoints(getElevator());
-      controlledJoints = MultiBodySystemTools.filterJoints(jointsArray, OneDoFJoint.class);
       
       // The same joint but casted as we know they are all one degree-of-freedom joints.
-      //controlledJoints = ScrewTools.filterJoints(inverseDynamicsJoints, OneDoFJoint.class);
-      
-      //maybe change to JointBasics[]
-      //controlledJoints = (OneDoFJoint[]) ScrewTools.computeSubtreeSuccessors(getElevator());
-      
+      controlledJoints = MultiBodySystemTools.filterJoints(jointsArray, OneDoFJoint.class);
    }
 
    /**
@@ -132,14 +107,10 @@ public class RobotArmTwo
     * 
     * @return the elevator.
     */
-   //public RigidBody getElevator()
-   //{
-   //   return (RigidBody) inverseDynamicsRobot.getElevator(); //added cast back to rigid body - may need to change return type
-   //}
    
    public RigidBodyBasics getElevator()
    {
-      return inverseDynamicsRobot.getElevator(); //added cast back to rigid body - may need to change return type
+      return inverseDynamicsRobot.getElevator();
    }
 
    /**
@@ -149,7 +120,7 @@ public class RobotArmTwo
     */
    public RigidBodyBasics getEndEffector()
    {
-      return controlledJoints[controlledJoints.length - 1].getSuccessor(); //same thing here
+      return controlledJoints[controlledJoints.length - 1].getSuccessor();
    }
 
    /**
@@ -184,9 +155,9 @@ public class RobotArmTwo
     * @param jointEnum the corresponding joint enum.
     * @return the inverse dynamics joint.
     */
-   public OneDoFJointBasics getJoint(SevenDoFArmJointEnum jointEnum) //and here
+   public OneDoFJointBasics getJoint(SevenDoFArmJointEnum jointEnum) 
    {
-      return jointMap.getInverseDynamicsOneDoFJoint(simulatedRobotArm.getJoint(jointEnum)); //same here
+      return jointMap.getInverseDynamicsOneDoFJoint(simulatedRobotArm.getJoint(jointEnum));
    }
 
    /**
