@@ -1,6 +1,6 @@
 package us.ihmc.robotWalkerFour;
 
-import us.ihmc.euclid.Axis;
+import us.ihmc.euclid.Axis3D;
 import us.ihmc.euclid.tuple3D.Vector3D;
 import us.ihmc.euclid.tuple3D.interfaces.Vector3DReadOnly;
 import us.ihmc.graphicsDescription.Graphics3DObject;
@@ -79,28 +79,28 @@ public class M2Robot extends Robot
 
       // RIGHT LEG.
 
-      Joint rightHipUni = new UniversalJoint("right_hip_yaw", "right_hip_roll", new Vector3D(0.0, -HIP_OFFSET_Y, 0.0), this, Axis.Z, Axis.X);
+      Joint rightHipUni = new UniversalJoint("right_hip_yaw", "right_hip_roll", new Vector3D(0.0, -HIP_OFFSET_Y, 0.0), this, Axis3D.Z, Axis3D.X);
       Link rightWaistLink = waist();
       rightHipUni.setLink(rightWaistLink);
       bodyJoint.addJoint(rightHipUni);
 
-      Joint rightHipPitch = new PinJoint("right_hip_pitch", new Vector3D(0.0, 0.0, -HIP_JOINT_OFF), this, Axis.Y);
+      Joint rightHipPitch = new PinJoint("right_hip_pitch", new Vector3D(0.0, 0.0, -HIP_JOINT_OFF), this, Axis3D.Y);
       Link rightThighLink = rightThigh();
       rightHipPitch.setLink(rightThighLink);
       rightHipUni.addJoint(rightHipPitch);
 
-      PinJoint rightKnee = new PinJoint("right_knee", new Vector3D(0.0, -HIP_TO_THIGH_OFF, -THIGH_LENGTH), this, Axis.Y);
+      PinJoint rightKnee = new PinJoint("right_knee", new Vector3D(0.0, -HIP_TO_THIGH_OFF, -THIGH_LENGTH), this, Axis3D.Y);
       Link rightShinLink = shin();
       rightKnee.setLink(rightShinLink);
       rightKnee.setLimitStops(0.0, Math.PI, 5000.0, 400.0);
       rightHipPitch.addJoint(rightKnee);
 
-      Joint rightAnkleRoll = new PinJoint("right_ankle_roll", new Vector3D(0.0, 0.0, -SHIN_LENGTH), this, Axis.X);
+      Joint rightAnkleRoll = new PinJoint("right_ankle_roll", new Vector3D(0.0, 0.0, -SHIN_LENGTH), this, Axis3D.X);
       Link rightRetinaculumLink = retinaculum();
       rightAnkleRoll.setLink(rightRetinaculumLink);
       rightKnee.addJoint(rightAnkleRoll);
 
-      Joint rightAnklePitch = new PinJoint("right_ankle_pitch", new Vector3D(0.0, 0.0, -ANKLE_JOINT_OFF), this, Axis.Y);
+      Joint rightAnklePitch = new PinJoint("right_ankle_pitch", new Vector3D(0.0, 0.0, -ANKLE_JOINT_OFF), this, Axis3D.Y);
       Link rightFootLink = foot(RobotSide.RIGHT);
       rightAnklePitch.setLink(rightFootLink);
       rightAnkleRoll.addJoint(rightAnklePitch);
@@ -122,28 +122,28 @@ public class M2Robot extends Robot
 
       // LEFT LEG.
 
-      Joint leftHipUni = new UniversalJoint("left_hip_yaw", "left_hip_roll", new Vector3D(0.0, HIP_OFFSET_Y, 0.0), this, Axis.Z, Axis.X);
+      Joint leftHipUni = new UniversalJoint("left_hip_yaw", "left_hip_roll", new Vector3D(0.0, HIP_OFFSET_Y, 0.0), this, Axis3D.Z, Axis3D.X);
       Link leftWaistLink = waist();
       leftHipUni.setLink(leftWaistLink);
       bodyJoint.addJoint(leftHipUni);
 
-      Joint leftHipPitch = new PinJoint("left_hip_pitch", new Vector3D(0.0, 0.0, -HIP_JOINT_OFF), this, Axis.Y);
+      Joint leftHipPitch = new PinJoint("left_hip_pitch", new Vector3D(0.0, 0.0, -HIP_JOINT_OFF), this, Axis3D.Y);
       Link leftThighLink = leftThigh();
       leftHipPitch.setLink(leftThighLink);
       leftHipUni.addJoint(leftHipPitch);
 
-      PinJoint leftKnee = new PinJoint("left_knee", new Vector3D(0.0, HIP_TO_THIGH_OFF, -THIGH_LENGTH), this, Axis.Y);
+      PinJoint leftKnee = new PinJoint("left_knee", new Vector3D(0.0, HIP_TO_THIGH_OFF, -THIGH_LENGTH), this, Axis3D.Y);
       Link leftShinLink = shin();
       leftKnee.setLink(leftShinLink);
       leftKnee.setLimitStops(0.0, Math.PI, 5000.0, 400.0);
       leftHipPitch.addJoint(leftKnee);
 
-      Joint leftAnkleRoll = new PinJoint("left_ankle_roll", new Vector3D(0.0, 0.0, -SHIN_LENGTH), this, Axis.X);
+      Joint leftAnkleRoll = new PinJoint("left_ankle_roll", new Vector3D(0.0, 0.0, -SHIN_LENGTH), this, Axis3D.X);
       Link leftRetinaculumLink = retinaculum();
       leftAnkleRoll.setLink(leftRetinaculumLink);
       leftKnee.addJoint(leftAnkleRoll);
 
-      Joint leftAnklePitch = new PinJoint("left_ankle_pitch", new Vector3D(0.0, 0.0, -ANKLE_JOINT_OFF), this, Axis.Y);
+      Joint leftAnklePitch = new PinJoint("left_ankle_pitch", new Vector3D(0.0, 0.0, -ANKLE_JOINT_OFF), this, Axis3D.Y);
       Link leftFootLink = foot(RobotSide.LEFT);
       leftAnklePitch.setLink(leftFootLink);
       leftAnkleRoll.addJoint(leftAnklePitch);

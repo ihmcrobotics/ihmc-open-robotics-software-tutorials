@@ -3,11 +3,30 @@ package us.ihmc.robotArmTwo;
 import us.ihmc.euclid.referenceFrame.ReferenceFrame;
 import us.ihmc.robotArmOne.RobotArmOne;
 import us.ihmc.robotArmOne.SevenDoFArmParameters.SevenDoFArmJointEnum;
-import us.ihmc.robotics.referenceFrames.CenterOfMassReferenceFrame;
-import us.ihmc.robotics.screwTheory.InverseDynamicsJoint;
-import us.ihmc.robotics.screwTheory.OneDoFJoint;
-import us.ihmc.robotics.screwTheory.RigidBody;
-import us.ihmc.robotics.screwTheory.ScrewTools;
+
+//import us.ihmc.robotics.referenceFrames.CenterOfMassReferenceFrame;
+import us.ihmc.mecano.frames.CenterOfMassReferenceFrame;
+import us.ihmc.mecano.multiBodySystem.OneDoFJoint;
+
+//import us.ihmc.robotics.screwTheory.InverseDynamicsJoint;
+//import us.ihmc.mecano.algorithms.InverseDynamicsCalculator; //nope
+//still fix
+
+//import us.ihmc.robotics.screwTheory.OneDoFJoint;
+//import us.ihmc.mecano.multiBodySystem.OneDoFJoint; //added
+
+//import us.ihmc.robotics.screwTheory.RigidBody;
+//import us.ihmc.mecano.multiBodySystem.RigidBody; //added
+import us.ihmc.mecano.multiBodySystem.interfaces.JointBasics;
+import us.ihmc.mecano.multiBodySystem.interfaces.OneDoFJointBasics;
+//import us.ihmc.robotics.screwTheory.Center;
+//still fix
+import us.ihmc.mecano.multiBodySystem.interfaces.RigidBodyBasics; //added
+import us.ihmc.mecano.tools.MultiBodySystemTools;
+
+//import us.ihmc.mecano.multiBodySystem.OneDoFJoint;
+
+//import us.ihmc.robotics.screwTheory.ScrewTools; 
 import us.ihmc.sensorProcessing.simulatedSensors.InverseDynamicsJointsFromSCSRobotGenerator;
 import us.ihmc.sensorProcessing.simulatedSensors.SCSToInverseDynamicsJointMap;
 import us.ihmc.simulationconstructionset.PinJoint;
@@ -48,20 +67,28 @@ public class RobotArmTwo
    /**
     * The array containing in order from the base to the end-effector the joints our robot.
     */
-   private final OneDoFJoint[] controlledJoints;
+   private final OneDoFJoint[] controlledJoints; //was OneDoFJoint[]
 
    public RobotArmTwo()
    {
       simulatedRobotArm = new RobotArmOne();
 
-      inverseDynamicsRobot = new InverseDynamicsJointsFromSCSRobotGenerator(simulatedRobotArm);
+      inverseDynamicsRobot = new InverseDynamicsJointsFromSCSRobotGenerator(simulatedRobotArm); //elevator is rigid body
       jointMap = inverseDynamicsRobot.getSCSToInverseDynamicsJointMap();
       centerOfMassFrame = new CenterOfMassReferenceFrame("centerOfMassFrame", WORLD_FRAME, inverseDynamicsRobot.getElevator());
 
       // These are all the joints of the robot arm.
-      InverseDynamicsJoint[] inverseDynamicsJoints = ScrewTools.computeSubtreeJoints(getElevator());
+      //inverseDynamicsJoint[] inverseDynamicsJoints = ScrewTools.computeSubtreeJoints(getElevator()); //successors vs. joints?
+      
+      JointBasics[] jointsArray = MultiBodySystemTools.collectSubtreeJoints(getElevator());
+      controlledJoints = MultiBodySystemTools.filterJoints(jointsArray, OneDoFJoint.class);
+      
       // The same joint but casted as we know they are all one degree-of-freedom joints.
-      controlledJoints = ScrewTools.filterJoints(inverseDynamicsJoints, OneDoFJoint.class);
+      //controlledJoints = ScrewTools.filterJoints(inverseDynamicsJoints, OneDoFJoint.class);
+      
+      //maybe change to JointBasics[]
+      //controlledJoints = (OneDoFJoint[]) ScrewTools.computeSubtreeSuccessors(getElevator());
+      
    }
 
    /**
@@ -105,9 +132,14 @@ public class RobotArmTwo
     * 
     * @return the elevator.
     */
-   public RigidBody getElevator()
+   //public RigidBody getElevator()
+   //{
+   //   return (RigidBody) inverseDynamicsRobot.getElevator(); //added cast back to rigid body - may need to change return type
+   //}
+   
+   public RigidBodyBasics getElevator()
    {
-      return inverseDynamicsRobot.getElevator();
+      return inverseDynamicsRobot.getElevator(); //added cast back to rigid body - may need to change return type
    }
 
    /**
@@ -115,9 +147,9 @@ public class RobotArmTwo
     * 
     * @return the end-effector.
     */
-   public RigidBody getEndEffector()
+   public RigidBodyBasics getEndEffector()
    {
-      return controlledJoints[controlledJoints.length - 1].getSuccessor();
+      return controlledJoints[controlledJoints.length - 1].getSuccessor(); //same thing here
    }
 
    /**
@@ -125,7 +157,7 @@ public class RobotArmTwo
     * 
     * @return the controlled joints.
     */
-   public OneDoFJoint[] getControlledJoints()
+   public OneDoFJointBasics[] getControlledJoints() //also changed here
    {
       return controlledJoints;
    }
@@ -152,9 +184,9 @@ public class RobotArmTwo
     * @param jointEnum the corresponding joint enum.
     * @return the inverse dynamics joint.
     */
-   public OneDoFJoint getJoint(SevenDoFArmJointEnum jointEnum)
+   public OneDoFJointBasics getJoint(SevenDoFArmJointEnum jointEnum) //and here
    {
-      return jointMap.getInverseDynamicsOneDoFJoint(simulatedRobotArm.getJoint(jointEnum));
+      return jointMap.getInverseDynamicsOneDoFJoint(simulatedRobotArm.getJoint(jointEnum)); //same here
    }
 
    /**

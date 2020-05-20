@@ -34,7 +34,9 @@ public class RobotArmTwoSimulation
     * velocities to output both desired joint velocities and positions.
     * </ul>
     */
+   //private final WholeBodyControllerCoreMode controlMode = WholeBodyControllerCoreMode.INVERSE_DYNAMICS;
    private final WholeBodyControllerCoreMode controlMode = WholeBodyControllerCoreMode.INVERSE_DYNAMICS;
+   
 
    public RobotArmTwoSimulation()
    {
