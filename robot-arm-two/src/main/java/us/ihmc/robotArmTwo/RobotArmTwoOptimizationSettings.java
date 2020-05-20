@@ -10,13 +10,6 @@ public class RobotArmTwoOptimizationSettings implements ControllerCoreOptimizati
 {
    /** {@inheritDoc} */
    @Override
-   public double getJointVelocityWeight()
-   {
-      return ControllerCoreOptimizationSettings.super.getJointVelocityWeight();
-   }
-
-   /** {@inheritDoc} */
-   @Override
    public double getJointAccelerationWeight()
    {
       return 0.005;
@@ -26,7 +19,7 @@ public class RobotArmTwoOptimizationSettings implements ControllerCoreOptimizati
    @Override
    public double getJointJerkWeight()
    {
-      return 0.1;
+      return 0.0;
    }
 
    @Override
