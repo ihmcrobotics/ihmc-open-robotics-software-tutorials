@@ -19,6 +19,12 @@ import us.ihmc.graphicsDescription.appearance.YoAppearance;
 import us.ihmc.graphicsDescription.yoGraphics.BagOfBalls;
 import us.ihmc.graphicsDescription.yoGraphics.YoGraphicCoordinateSystem;
 import us.ihmc.graphicsDescription.yoGraphics.YoGraphicsListRegistry;
+import us.ihmc.mecano.multiBodySystem.OneDoFJoint;
+import us.ihmc.mecano.multiBodySystem.interfaces.FloatingJointBasics;
+import us.ihmc.mecano.multiBodySystem.interfaces.JointBasics;
+import us.ihmc.mecano.multiBodySystem.interfaces.OneDoFJointBasics;
+import us.ihmc.mecano.multiBodySystem.interfaces.RigidBodyBasics;
+import us.ihmc.mecano.tools.MultiBodySystemTools;
 import us.ihmc.robotArmOne.SevenDoFArmParameters.SevenDoFArmJointEnum;
 import us.ihmc.robotArmTwo.RobotArmTwo;
 import us.ihmc.robotArmTwo.RobotArmTwoOptimizationSettings;
@@ -26,11 +32,6 @@ import us.ihmc.robotics.controllers.pidGains.GainCoupling;
 import us.ihmc.robotics.controllers.pidGains.implementations.DefaultYoPIDSE3Gains;
 import us.ihmc.robotics.controllers.pidGains.implementations.PIDSE3Configuration;
 import us.ihmc.robotics.geometry.RotationTools;
-import us.ihmc.robotics.screwTheory.FloatingInverseDynamicsJoint;
-import us.ihmc.robotics.screwTheory.InverseDynamicsJoint;
-import us.ihmc.robotics.screwTheory.OneDoFJoint;
-import us.ihmc.robotics.screwTheory.RigidBody;
-import us.ihmc.robotics.screwTheory.ScrewTools;
 import us.ihmc.robotics.screwTheory.SelectionMatrix6D;
 import us.ihmc.sensorProcessing.outputData.JointDesiredOutputListReadOnly;
 import us.ihmc.sensorProcessing.outputData.JointDesiredOutputReadOnly;
@@ -78,6 +79,9 @@ public class RobotArmThreeController implements RobotController
     */
    private final YoFrameVector3D desiredEndEffectorAngularVelocity = new YoFrameVector3D("desiredEndEffectorAngularVelocity", WORLD_FRAME, registry);
 
+   //inserted
+   private final YoFrameVector3D feedForwardLinearAcceleration = new YoFrameVector3D("feedForwardLinearAcceleration", WORLD_FRAME, registry);
+   
    /**
     * This time we define "SE3" which allows us to specify gains for each degree of freedom (DoF).
     * <p>
@@ -155,13 +159,21 @@ public class RobotArmThreeController implements RobotController
    private WholeBodyControllerCore createControllerCore(double controlDT, double gravityZ, YoGraphicsListRegistry yoGraphicsListRegistry)
    {
       // The following steps are the same as in RobotArmTwoController. 
-      FloatingInverseDynamicsJoint rootJoint = null;
-      RigidBody elevator = robotArm.getElevator();
-      InverseDynamicsJoint[] inverseDynamicsJoints = ScrewTools.computeSubtreeJoints(elevator);
+      FloatingJointBasics rootJoint = null;
+      RigidBodyBasics elevator = robotArm.getElevator();
+      //InverseDynamicsJoint[] inverseDynamicsJoints = ScrewTools.computeSubtreeJoints(elevator);
+      JointBasics[] jointsArray = MultiBodySystemTools.collectSubtreeJoints(elevator);
+      OneDoFJoint[] controlledJoints = MultiBodySystemTools.filterJoints(jointsArray, OneDoFJoint.class);
+      
       ControllerCoreOptimizationSettings controllerCoreOptimizationSettings = new RobotArmTwoOptimizationSettings();
-      WholeBodyControlCoreToolbox toolbox = new WholeBodyControlCoreToolbox(controlDT, gravityZ, rootJoint, inverseDynamicsJoints,
+      //WholeBodyControlCoreToolbox toolbox = new WholeBodyControlCoreToolbox(controlDT, gravityZ, rootJoint, inverseDynamicsJoints,
+      //                                                                      robotArm.getCenterOfMassFrame(), controllerCoreOptimizationSettings,
+      //                                                                      yoGraphicsListRegistry, registry);
+      
+      WholeBodyControlCoreToolbox toolbox = new WholeBodyControlCoreToolbox(controlDT, gravityZ, rootJoint, controlledJoints,
                                                                             robotArm.getCenterOfMassFrame(), controllerCoreOptimizationSettings,
                                                                             yoGraphicsListRegistry, registry);
+      
       toolbox.setupForInverseKinematicsSolver();
       toolbox.setupForInverseDynamicsSolver(Collections.emptyList());
       toolbox.setupForVirtualModelControlSolver(elevator, Collections.emptyList());
@@ -170,7 +182,7 @@ public class RobotArmThreeController implements RobotController
        * This time, we will control the robot in taskspace by directly commanding the end-effector
        * pose in space. We will be using a SpatialFeedbackControlCommand for this purpose.
        */
-      RigidBody endEffector = robotArm.getEndEffector();
+      RigidBodyBasics endEffector = robotArm.getEndEffector();
       FeedbackControlCommandList allPossibleCommands = new FeedbackControlCommandList();
       SpatialFeedbackControlCommand command = new SpatialFeedbackControlCommand();
       command.set(elevator, endEffector); // No need to add any additional information for now.
@@ -231,12 +243,12 @@ public class RobotArmThreeController implements RobotController
        * We indicate that to achieve this command the controller core is to use the set of joints
        * located between the elevator and the end-effector.
        */
-      RigidBody elevator = robotArm.getElevator();
-      RigidBody endEffector = robotArm.getEndEffector();
+      RigidBodyBasics elevator = robotArm.getElevator();
+      RigidBodyBasics endEffector = robotArm.getEndEffector();
       command.set(elevator, endEffector);
       // Then we provide the current desireds for the end-effector.
-      command.set(desiredEndEffectorPosition, desiredEndEffectorLinearVelocity);
-      command.set(desiredEndEffectorOrientation, desiredEndEffectorAngularVelocity);
+      command.setInverseDynamics(desiredEndEffectorPosition, desiredEndEffectorLinearVelocity, feedForwardLinearAcceleration);
+      command.setInverseDynamics(desiredEndEffectorOrientation, desiredEndEffectorAngularVelocity, feedForwardLinearAcceleration);
       // Update the gains
       command.setGains(gains);
       /*
@@ -286,7 +298,7 @@ public class RobotArmThreeController implements RobotController
       // Write the controller output to the simulated joints.
       for (SevenDoFArmJointEnum jointEnum : SevenDoFArmJointEnum.values())
       {
-         OneDoFJoint joint = robotArm.getJoint(jointEnum);
+         OneDoFJointBasics joint = robotArm.getJoint(jointEnum);
          JointDesiredOutputReadOnly jointDesiredOutput = outputForLowLevelController.getJointDesiredOutput(joint);
 
          if (controllerCoreMode != WholeBodyControllerCoreMode.INVERSE_KINEMATICS)
@@ -327,6 +339,8 @@ public class RobotArmThreeController implements RobotController
 
             desiredEndEffectorPosition.setElement(axisIndex, x);
             desiredEndEffectorLinearVelocity.setElement(axisIndex, xDot);
+            feedForwardLinearAcceleration.setElement(axisIndex, 0.0); //set acceleration to 0 in every axis
+            
          }
       }
 
@@ -351,7 +365,8 @@ public class RobotArmThreeController implements RobotController
             yawPitchRollRates[rotationIndex] = omega * amplitude * Math.cos(omega * time.getValue() + phase);
          }
 
-         desiredEndEffectorOrientation.setYawPitchRoll(yawPitchRoll);
+         //desiredEndEffectorOrientation.setYawPitchRoll(yawPitchRoll);
+         desiredEndEffectorOrientation.setYawPitchRoll(yawPitchRoll[0], yawPitchRoll[1], yawPitchRoll[2]);
          // We use the following tool to compute the 3D angular velocity vector corresponding to the rates of the yaw, pitch, and roll angles.
          RotationTools.computeAngularVelocityInWorldFrameFromYawPitchRollAnglesRate(yawPitchRoll, yawPitchRollRates, desiredEndEffectorAngularVelocity);
       }
