@@ -166,9 +166,6 @@ public class RobotArmThreeController implements RobotController
       OneDoFJoint[] controlledJoints = MultiBodySystemTools.filterJoints(jointsArray, OneDoFJoint.class);
       
       ControllerCoreOptimizationSettings controllerCoreOptimizationSettings = new RobotArmTwoOptimizationSettings();
-      //WholeBodyControlCoreToolbox toolbox = new WholeBodyControlCoreToolbox(controlDT, gravityZ, rootJoint, inverseDynamicsJoints,
-      //                                                                      robotArm.getCenterOfMassFrame(), controllerCoreOptimizationSettings,
-      //                                                                      yoGraphicsListRegistry, registry);
       
       WholeBodyControlCoreToolbox toolbox = new WholeBodyControlCoreToolbox(controlDT, gravityZ, rootJoint, controlledJoints,
                                                                             robotArm.getCenterOfMassFrame(), controllerCoreOptimizationSettings,
