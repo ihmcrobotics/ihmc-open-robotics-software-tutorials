@@ -9,11 +9,11 @@ import us.ihmc.euclid.tuple2D.Vector2D;
 public class RobotWalkerFourOptimizationSettings implements ControllerCoreOptimizationSettings
 {
    /** {@inheritDoc} */
-   @Override
-   public double getJointVelocityWeight()
-   {
-      return ControllerCoreOptimizationSettings.super.getJointVelocityWeight();
-   }
+   //@Override
+   //public double getJointVelocityWeight()
+   //
+   // return ControllerCoreOptimizationSettings.super.getJointVelocityWeight();
+   //
 
    /** {@inheritDoc} */
    @Override
@@ -26,7 +26,7 @@ public class RobotWalkerFourOptimizationSettings implements ControllerCoreOptimi
    @Override
    public double getJointJerkWeight()
    {
-      return 0.1;
+      return 0.0;
    }
 
    @Override
