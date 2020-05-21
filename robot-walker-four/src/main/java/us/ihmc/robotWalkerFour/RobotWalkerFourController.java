@@ -20,17 +20,17 @@ import us.ihmc.euclid.referenceFrame.FramePose3D;
 import us.ihmc.euclid.referenceFrame.FrameVector3D;
 import us.ihmc.euclid.referenceFrame.ReferenceFrame;
 import us.ihmc.graphicsDescription.yoGraphics.YoGraphicsListRegistry;
-import us.ihmc.humanoidRobotics.bipedSupportPolygons.ContactablePlaneBody;
+import us.ihmc.robotics.contactable.ContactablePlaneBody;
+import us.ihmc.mecano.multiBodySystem.interfaces.FloatingJointBasics;
+import us.ihmc.mecano.multiBodySystem.interfaces.JointBasics;
+import us.ihmc.mecano.multiBodySystem.interfaces.OneDoFJointBasics;
+import us.ihmc.mecano.multiBodySystem.interfaces.RigidBodyBasics;
+import us.ihmc.mecano.tools.MultiBodySystemTools;
 import us.ihmc.robotics.controllers.pidGains.GainCoupling;
 import us.ihmc.robotics.controllers.pidGains.implementations.DefaultYoPIDSE3Gains;
 import us.ihmc.robotics.math.trajectories.ParabolicPositionTrajectoryGenerator;
 import us.ihmc.robotics.math.trajectories.QuinticPolynomialTrajectoryGenerator;
 import us.ihmc.robotics.robotSide.RobotSide;
-import us.ihmc.robotics.screwTheory.FloatingInverseDynamicsJoint;
-import us.ihmc.robotics.screwTheory.InverseDynamicsJoint;
-import us.ihmc.robotics.screwTheory.OneDoFJoint;
-import us.ihmc.robotics.screwTheory.RigidBody;
-import us.ihmc.robotics.screwTheory.ScrewTools;
 import us.ihmc.robotics.stateMachine.core.State;
 import us.ihmc.robotics.stateMachine.core.StateMachine;
 import us.ihmc.robotics.stateMachine.factories.StateMachineFactory;
@@ -142,7 +142,7 @@ public class RobotWalkerFourController implements RobotController
     * the robot by making it accelerate like an elevator when it starts moving. However, this
     * elevator is always fixed in world with no velocity.
     */
-   private final RigidBody elevator;
+   private final RigidBodyBasics elevator;
    /**
     * We will use a single instance of the controller core command for convenience. Note that in
     * this example, only the Inverse Dynamics control mode will be demonstrated.
@@ -171,13 +171,15 @@ public class RobotWalkerFourController implements RobotController
    private WholeBodyControllerCore createControllerCore(double controlDT, double gravityZ, YoGraphicsListRegistry yoGraphicsListRegistry)
    {
       // This time the robot has a floating joint.
-      FloatingInverseDynamicsJoint rootJoint = robotWalkerFour.getRootJoint();
+      FloatingJointBasics rootJoint = robotWalkerFour.getRootJoint();
+      
       // These are all the joints of the robot arm.
-      InverseDynamicsJoint[] inverseDynamicsJoints = ScrewTools.computeSubtreeJoints(elevator);
+      JointBasics[] jointsArray = MultiBodySystemTools.collectSubtreeJoints(elevator);
+      
       // This class contains basic optimization settings required for QP formulation.
       ControllerCoreOptimizationSettings controllerCoreOptimizationSettings = new RobotWalkerFourOptimizationSettings();
       // This is the toolbox for the controller core with everything it needs to run properly.
-      WholeBodyControlCoreToolbox toolbox = new WholeBodyControlCoreToolbox(controlDT, gravityZ, rootJoint, inverseDynamicsJoints,
+      WholeBodyControlCoreToolbox toolbox = new WholeBodyControlCoreToolbox(controlDT, gravityZ, rootJoint, jointsArray,
                                                                             robotWalkerFour.getCenterOfMassFrame(), controllerCoreOptimizationSettings,
                                                                             yoGraphicsListRegistry, registry);
       // The controller core needs all the possibly contacting bodies of the robot to create all the modules needed for later.
@@ -193,16 +195,19 @@ public class RobotWalkerFourController implements RobotController
       for (RobotSide robotSide : RobotSide.values)
       {
          SpatialFeedbackControlCommand footCommand = new SpatialFeedbackControlCommand();
-         RigidBody foot = robotWalkerFour.getFoot(robotSide);
+         footCommand.setControlMode(WholeBodyControllerCoreMode.INVERSE_DYNAMICS); //sets control mode to inverse dynamics
+         RigidBodyBasics foot = robotWalkerFour.getFoot(robotSide);
          footCommand.set(elevator, foot);
          allPossibleCommands.addCommand(footCommand);
       }
 
       OrientationFeedbackControlCommand pelvisOrientationCommand = new OrientationFeedbackControlCommand();
+      pelvisOrientationCommand.setControlMode(WholeBodyControllerCoreMode.INVERSE_DYNAMICS); //sets control mode to inverse dynamics
       pelvisOrientationCommand.set(elevator, robotWalkerFour.getPelvis());
       allPossibleCommands.addCommand(pelvisOrientationCommand);
 
       CenterOfMassFeedbackControlCommand centerOfMassCommand = new CenterOfMassFeedbackControlCommand();
+      centerOfMassCommand.setControlMode(WholeBodyControllerCoreMode.INVERSE_DYNAMICS); //sets control mode to inverse dynamics
       allPossibleCommands.addCommand(centerOfMassCommand);
 
       // Finally we can create the controller core.
@@ -271,6 +276,7 @@ public class RobotWalkerFourController implements RobotController
        * simply setup the command here.
        */
       OrientationFeedbackControlCommand pelvisOrientationCommand = new OrientationFeedbackControlCommand();
+      pelvisOrientationCommand.setControlMode(WholeBodyControllerCoreMode.INVERSE_DYNAMICS); //sets control mode to inverse dynamics
       pelvisOrientationCommand.set(elevator, robotWalkerFour.getPelvis());
       pelvisOrientationCommand.setGains(gains.getOrientationGains());
       pelvisOrientationCommand.setWeightForSolver(1.0);
@@ -285,7 +291,7 @@ public class RobotWalkerFourController implements RobotController
 
       for (int i = 0; i < outputForLowLevelController.getNumberOfJointsWithDesiredOutput(); i++)
       {
-         OneDoFJoint oneDoFJoint = outputForLowLevelController.getOneDoFJoint(i);
+         OneDoFJointBasics oneDoFJoint = outputForLowLevelController.getOneDoFJoint(i);
          JointDesiredOutputReadOnly jointDesiredOutput = outputForLowLevelController.getJointDesiredOutput(i);
          robotWalkerFour.setDesiredEffort(oneDoFJoint, jointDesiredOutput.getDesiredTorque());
       }
@@ -319,7 +325,10 @@ public class RobotWalkerFourController implements RobotController
 
          // So now, we just have pack the command for the controller core.
          CenterOfMassFeedbackControlCommand centerOfMassCommand = new CenterOfMassFeedbackControlCommand();
-         centerOfMassCommand.set(centerOfMassPosition);
+         centerOfMassCommand.setControlMode(WholeBodyControllerCoreMode.INVERSE_DYNAMICS); //sets control mode to inverse dynamics
+         FrameVector3D feedForwardLinearVelocity = new FrameVector3D(WORLD_FRAME, 0.0, 0.0, 0.0);
+         FrameVector3D feedForwardLinearAcceleration = new FrameVector3D(WORLD_FRAME, 0.0, 0.0, 0.0);
+         centerOfMassCommand.setInverseDynamics(centerOfMassPosition, feedForwardLinearVelocity, feedForwardLinearAcceleration);
          centerOfMassCommand.setGains(gains.getPositionGains());
          centerOfMassCommand.setWeightForSolver(1.0);
          controllerCoreCommand.addFeedbackControlCommand(centerOfMassCommand);
@@ -409,7 +418,10 @@ public class RobotWalkerFourController implements RobotController
 
          // And now we pack the command for the controller core.
          CenterOfMassFeedbackControlCommand centerOfMassCommand = new CenterOfMassFeedbackControlCommand();
-         centerOfMassCommand.set(centerOfMassPosition);
+         centerOfMassCommand.setControlMode(WholeBodyControllerCoreMode.INVERSE_DYNAMICS); //sets control mode to inverse dynamics
+         FrameVector3D feedForwardLinearVelocity = new FrameVector3D(WORLD_FRAME, 0.0, 0.0, 0.0);
+         FrameVector3D feedForwardLinearAcceleration = new FrameVector3D(WORLD_FRAME, 0.0, 0.0, 0.0);
+         centerOfMassCommand.setInverseDynamics(centerOfMassPosition, feedForwardLinearVelocity, feedForwardLinearAcceleration);
          centerOfMassCommand.setGains(gains.getPositionGains());
          centerOfMassCommand.setWeightForSolver(1.0);
          controllerCoreCommand.addFeedbackControlCommand(centerOfMassCommand);
@@ -490,7 +502,10 @@ public class RobotWalkerFourController implements RobotController
 
          // We pack the center of mass command for the controller core.
          CenterOfMassFeedbackControlCommand centerOfMassCommand = new CenterOfMassFeedbackControlCommand();
-         centerOfMassCommand.set(centerOfMassPosition);
+         centerOfMassCommand.setControlMode(WholeBodyControllerCoreMode.INVERSE_DYNAMICS); //sets control mode to inverse dynamics
+         FrameVector3D feedForwardLinearVelocity = new FrameVector3D(WORLD_FRAME, 0.0, 0.0, 0.0);
+         FrameVector3D feedForwardLinearAcceleration = new FrameVector3D(WORLD_FRAME, 0.0, 0.0, 0.0);
+         centerOfMassCommand.setInverseDynamics(centerOfMassPosition, feedForwardLinearVelocity, feedForwardLinearAcceleration);
          centerOfMassCommand.setGains(gains.getPositionGains());
          centerOfMassCommand.setWeightForSolver(1.0);
          controllerCoreCommand.addFeedbackControlCommand(centerOfMassCommand);
@@ -515,10 +530,10 @@ public class RobotWalkerFourController implements RobotController
 
          // Finally, we pack the swing foot command for the controller core.
          SpatialFeedbackControlCommand swingFootCommand = new SpatialFeedbackControlCommand();
+         swingFootCommand.setControlMode(WholeBodyControllerCoreMode.INVERSE_DYNAMICS); //sets control mode to inverse dynamics
          swingFootCommand.set(elevator, robotWalkerFour.getFoot(swingSide));
-         swingFootCommand.set(position, velocity);
+         swingFootCommand.setInverseDynamics(position, velocity, acceleration);
          swingFootCommand.setControlFrameFixedInEndEffector(swingControlFramePose);
-         swingFootCommand.setFeedForwardLinearAction(acceleration);
          swingFootCommand.setGains(gains);
          swingFootCommand.setWeightForSolver(1.0);
          controllerCoreCommand.addFeedbackControlCommand(swingFootCommand);

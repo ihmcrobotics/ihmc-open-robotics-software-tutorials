@@ -7,17 +7,18 @@ import us.ihmc.commonWalkingControlModules.bipedSupportPolygons.ListOfPointsCont
 import us.ihmc.euclid.referenceFrame.ReferenceFrame;
 import us.ihmc.euclid.transform.RigidBodyTransform;
 import us.ihmc.euclid.tuple2D.Point2D;
-import us.ihmc.humanoidRobotics.bipedSupportPolygons.ContactablePlaneBody;
-import us.ihmc.robotics.referenceFrames.CenterOfMassReferenceFrame;
+import us.ihmc.mecano.frames.CenterOfMassReferenceFrame; //added
+import us.ihmc.mecano.multiBodySystem.interfaces.FloatingJointBasics;
+import us.ihmc.mecano.multiBodySystem.interfaces.OneDoFJointBasics;
+import us.ihmc.mecano.multiBodySystem.interfaces.RigidBodyBasics; //added
 import us.ihmc.robotics.robotSide.RobotSide;
 import us.ihmc.robotics.robotSide.SideDependentList;
-import us.ihmc.robotics.screwTheory.FloatingInverseDynamicsJoint;
-import us.ihmc.robotics.screwTheory.OneDoFJoint;
-import us.ihmc.robotics.screwTheory.RigidBody;
 import us.ihmc.sensorProcessing.simulatedSensors.InverseDynamicsJointsFromSCSRobotGenerator;
 import us.ihmc.sensorProcessing.simulatedSensors.SCSToInverseDynamicsJointMap;
 import us.ihmc.simulationconstructionset.Robot;
 import us.ihmc.yoVariables.variable.YoDouble;
+import us.ihmc.robotics.contactable.ContactablePlaneBody;
+import us.ihmc.euclid.referenceFrame.tools.*;
 
 /**
  * In this class, we use a copy of the M2 robot model. M2 was a bipedal robot developed at the MIT
@@ -69,7 +70,7 @@ public class RobotWalkerFour
          double footLength = M2Robot.FOOT_LENGTH;
          double footBack = M2Robot.FOOT_BACK;
 
-         RigidBody foot = getFoot(robotSide);
+         RigidBodyBasics foot = getFoot(robotSide);
 
          /*
           * Let's first create a reference frame located at the bottom of the foot.
@@ -77,9 +78,9 @@ public class RobotWalkerFour
          ReferenceFrame frameAfterAnkleJoint = foot.getParentJoint().getFrameAfterJoint();
          String soleFrameName = robotSide.getCamelCaseName() + "SoleFrame";
          RigidBodyTransform transformToAnkle = new RigidBodyTransform();
-         transformToAnkle.setTranslationZ(-M2Robot.FOOT_HEIGHT); // Offset to be at the bottom of the foot.
-         transformToAnkle.setTranslationX(-footBack + 0.5 * footLength); // Offset to center the frame in the middle of the sole.
-         ReferenceFrame soleFrame = ReferenceFrame.constructFrameWithUnchangingTransformToParent(soleFrameName, frameAfterAnkleJoint, transformToAnkle);
+         transformToAnkle.getTranslation().setZ(-M2Robot.FOOT_HEIGHT); // Offset to be at the bottom of the foot.
+         transformToAnkle.getTranslation().setX(-footBack + 0.5 * footLength); // Offset to center the frame in the middle of the sole.
+         ReferenceFrame soleFrame = ReferenceFrameTools.constructFrameWithUnchangingTransformToParent(soleFrameName, frameAfterAnkleJoint, transformToAnkle);
          soleFrames.put(robotSide, soleFrame);
 
          /*
@@ -137,7 +138,7 @@ public class RobotWalkerFour
     * 
     * @return the elevator.
     */
-   public RigidBody getElevator()
+   public RigidBodyBasics getElevator()
    {
       return inverseDynamicsRobot.getElevator();
    }
@@ -164,7 +165,7 @@ public class RobotWalkerFour
     * 
     * @return the robot floating joint.
     */
-   public FloatingInverseDynamicsJoint getRootJoint()
+   public FloatingJointBasics getRootJoint()
    {
       return jointMap.getInverseDynamicsSixDoFJoint(simulatedM2Robot.getFloatingJoint());
    }
@@ -174,7 +175,7 @@ public class RobotWalkerFour
     * 
     * @return the pelvis.
     */
-   public RigidBody getPelvis()
+   public RigidBodyBasics getPelvis()
    {
       return getRootJoint().getSuccessor();
    }
@@ -185,7 +186,7 @@ public class RobotWalkerFour
     * @param robotSide whether this method should return the left or right foot.
     * @return the foot.
     */
-   public RigidBody getFoot(RobotSide robotSide)
+   public RigidBodyBasics getFoot(RobotSide robotSide)
    {
       return jointMap.getRigidBody(simulatedM2Robot.getFootParentJoint(robotSide));
    }
@@ -219,7 +220,7 @@ public class RobotWalkerFour
     * @param inverseDynamicsJoint the joint of interest.
     * @param desiredEffort the new effort value.
     */
-   public void setDesiredEffort(OneDoFJoint inverseDynamicsJoint, double desiredEffort)
+   public void setDesiredEffort(OneDoFJointBasics inverseDynamicsJoint, double desiredEffort)
    {
       jointMap.getSimulatedOneDegreeOfFreedomJoint(inverseDynamicsJoint).setTau(desiredEffort);
    }
