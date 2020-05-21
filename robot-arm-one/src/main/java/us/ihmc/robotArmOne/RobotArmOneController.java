@@ -19,8 +19,8 @@ public class RobotArmOneController implements RobotController
     */
    private final YoVariableRegistry registry = new YoVariableRegistry("Controller");
    /**
-    * Proportional gain for each joint. {@code YoDouble}s are used instead of simple {@code double}
-    * so they can be viewed and modified via the Simulation Construction Set.
+    * Proportional gain for each joint. {@code YoDouble}s are used instead of simple {@code double} so
+    * they can be viewed and modified via the Simulation Construction Set.
     */
    private final EnumMap<SevenDoFArmJointEnum, YoDouble> kps = new EnumMap<>(SevenDoFArmJointEnum.class);
    /**
@@ -29,13 +29,13 @@ public class RobotArmOneController implements RobotController
     */
    private final EnumMap<SevenDoFArmJointEnum, YoDouble> kds = new EnumMap<>(SevenDoFArmJointEnum.class);
    /**
-    * Desired position for each joint. {@code YoDouble}s are used instead of simple {@code double}
-    * so they can be monitored via the Simulation Construction Set.
+    * Desired position for each joint. {@code YoDouble}s are used instead of simple {@code double} so
+    * they can be monitored via the Simulation Construction Set.
     */
    private final EnumMap<SevenDoFArmJointEnum, YoDouble> desiredPositions = new EnumMap<>(SevenDoFArmJointEnum.class);
    /**
-    * Desired velocity for each joint. {@code YoDouble}s are used instead of simple {@code double}
-    * so they can be monitored via the Simulation Construction Set.
+    * Desired velocity for each joint. {@code YoDouble}s are used instead of simple {@code double} so
+    * they can be monitored via the Simulation Construction Set.
     */
    private final EnumMap<SevenDoFArmJointEnum, YoDouble> desiredVelocities = new EnumMap<>(SevenDoFArmJointEnum.class);
    /**
@@ -61,8 +61,8 @@ public class RobotArmOneController implements RobotController
       time = robot.getYoTime();
 
       /*
-       * YoDoubles need to be created first with a given name that is to represent the variable in
-       * the Simulation Construction Set, and the registry so the simulation can find them.
+       * YoDoubles need to be created first with a given name that is to represent the variable in the
+       * Simulation Construction Set, and the registry so the simulation can find them.
        */
       for (SevenDoFArmJointEnum jointEnum : SevenDoFArmJointEnum.values())
       {
@@ -78,9 +78,9 @@ public class RobotArmOneController implements RobotController
    }
 
    /**
-    * This method allows to manage the initialization part needed to get the controller ready to go.
-    * It is NOT called by default by the simulation, it has to be called at the desired location in
-    * the configuration of the robot and control environment.
+    * This method allows to manage the initialization part needed to get the controller ready to go. It
+    * is NOT called by default by the simulation, it has to be called at the desired location in the
+    * configuration of the robot and control environment.
     */
    @Override
    public void initialize()
@@ -104,8 +104,8 @@ public class RobotArmOneController implements RobotController
    }
 
    /**
-    * This method is called by the simulation every simulation tick. This is where the control part
-    * is to be implemented.
+    * This method is called by the simulation every simulation tick. This is where the control part is
+    * to be implemented.
     */
    @Override
    public void doControl()

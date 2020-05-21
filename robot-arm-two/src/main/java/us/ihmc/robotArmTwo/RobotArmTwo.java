@@ -31,9 +31,9 @@ public class RobotArmTwo
    // The following is needed to create the IHMC whole-body controller core.
 
    /**
-    * A generator tool that can convert a simulated robot into what we often call an "inverse
-    * dynamics robot". This inverse dynamics represents the same robot but offers a different set of
-    * features. This type of robot is used by the controller core.
+    * A generator tool that can convert a simulated robot into what we often call an "inverse dynamics
+    * robot". This inverse dynamics represents the same robot but offers a different set of features.
+    * This type of robot is used by the controller core.
     */
    private final InverseDynamicsJointsFromSCSRobotGenerator inverseDynamicsRobot;
    /**
@@ -42,8 +42,8 @@ public class RobotArmTwo
     */
    private final SCSToInverseDynamicsJointMap jointMap;
    /**
-    * A reference frame which origin is at the center of mass of the robot. It is not used besides
-    * for creating the controller core in this example.
+    * A reference frame which origin is at the center of mass of the robot. It is not used besides for
+    * creating the controller core in this example.
     */
    private final ReferenceFrame centerOfMassFrame;
    /**
@@ -61,14 +61,13 @@ public class RobotArmTwo
 
       // These are all the joints of the robot arm.
       JointBasics[] jointsArray = MultiBodySystemTools.collectSubtreeJoints(getElevator());
-      
+
       // The same joint but casted as we know they are all one degree-of-freedom joints.
       controlledJoints = MultiBodySystemTools.filterJoints(jointsArray, OneDoFJoint.class);
    }
 
    /**
-    * Updates the state of the inverse dynamics robot model based on the state of the simulated
-    * robot.
+    * Updates the state of the inverse dynamics robot model based on the state of the simulated robot.
     */
    public void updateInverseDynamicsRobotState()
    {
@@ -101,13 +100,13 @@ public class RobotArmTwo
     * <p>
     * The elevator is a massless, sizeless rigid-body fixed in world to which the first joint of the
     * robot is attached. The name comes from the use of this rigid-body to add the gravity effect to
-    * the robot by making it accelerate like an elevator when it starts moving. However, this
-    * elevator is always fixed in world with no velocity.
+    * the robot by making it accelerate like an elevator when it starts moving. However, this elevator
+    * is always fixed in world with no velocity.
     * </p>
     * 
     * @return the elevator.
     */
-   
+
    public RigidBodyBasics getElevator()
    {
       return inverseDynamicsRobot.getElevator();
@@ -155,7 +154,7 @@ public class RobotArmTwo
     * @param jointEnum the corresponding joint enum.
     * @return the inverse dynamics joint.
     */
-   public OneDoFJointBasics getJoint(SevenDoFArmJointEnum jointEnum) 
+   public OneDoFJointBasics getJoint(SevenDoFArmJointEnum jointEnum)
    {
       return jointMap.getInverseDynamicsOneDoFJoint(simulatedRobotArm.getJoint(jointEnum));
    }
@@ -167,7 +166,7 @@ public class RobotArmTwo
     * the joint.
     * </p>
     * 
-    * @param jointEnum the enum of the joint we want to apply the desired effort on.
+    * @param jointEnum     the enum of the joint we want to apply the desired effort on.
     * @param desiredEffort the desired effort value.
     */
    public void setDesiredEffort(SevenDoFArmJointEnum jointEnum, double desiredEffort)
@@ -183,8 +182,8 @@ public class RobotArmTwo
     * </p>
     * 
     * @param jointEnum the enum of the joint we want to set the configuration of.
-    * @param position the joint new position.
-    * @param velocity the joint new velocity.
+    * @param position  the joint new position.
+    * @param velocity  the joint new velocity.
     */
    public void setSimulatedJointConfiguration(SevenDoFArmJointEnum jointEnum, double position, double velocity)
    {

@@ -68,8 +68,8 @@ public class MobileRobot extends Robot
          else // i == 3
             yOffset = -L1;
 
-         nextGimbal = new GimbalJoint("gimbal1_" + i + "_x", "gimbal1_" + i + "_y", "gimbal1_" + i + "_z", new Vector3D(xOffset, yOffset, -L1 / 2.0), this,
-               Axis3D.X, Axis3D.Y, Axis3D.Z);
+         nextGimbal = new GimbalJoint("gimbal1_" + i
+               + "_x", "gimbal1_" + i + "_y", "gimbal1_" + i + "_z", new Vector3D(xOffset, yOffset, -L1 / 2.0), this, Axis3D.X, Axis3D.Y, Axis3D.Z);
          nextLink = createCrossBarLink(M2, L2, R2, Ixx2, Iyy2, Izz2);
          nextGimbal.setLink(nextLink);
          nextGimbal.setDamping(DAMP2);
@@ -91,8 +91,14 @@ public class MobileRobot extends Robot
             else // j == 3
                yOffset = -L2;
 
-            finalGimbal = new GimbalJoint("gimbal2_" + i + "_" + j + "_x", "gimbal2_" + i + "_" + j + "_y", "gimbal2_" + i + "_" + j + "_z",
-                  new Vector3D(xOffset, yOffset, -L2 / 2.0), this, Axis3D.X, Axis3D.Y, Axis3D.Z);
+            finalGimbal = new GimbalJoint("gimbal2_" + i + "_" + j + "_x",
+                                          "gimbal2_" + i + "_" + j + "_y",
+                                          "gimbal2_" + i + "_" + j + "_z",
+                                          new Vector3D(xOffset, yOffset, -L2 / 2.0),
+                                          this,
+                                          Axis3D.X,
+                                          Axis3D.Y,
+                                          Axis3D.Z);
 
             // generate a random toy link and attach it to gimbal
             nextLink = createRandomShapeLink();
@@ -163,8 +169,8 @@ public class MobileRobot extends Robot
    }
 
    /**
-    * Generates a random link shape with a thin cylinder attached to represent a string.
-    * The toys are generated from one of 9 colors and 7 shapes.
+    * Generates a random link shape with a thin cylinder attached to represent a string. The toys are
+    * generated from one of 9 colors and 7 shapes.
     */
    private Link createRandomShapeLink()
    {
@@ -185,72 +191,72 @@ public class MobileRobot extends Robot
       int appSelection = (int) (Math.random() * 9.0);
       switch (appSelection)
       {
-      case 0:
-         app = YoAppearance.Black();
-         break;
+         case 0:
+            app = YoAppearance.Black();
+            break;
 
-      case 1:
-         app = YoAppearance.Red();
-         break;
+         case 1:
+            app = YoAppearance.Red();
+            break;
 
-      case 2:
-         app = YoAppearance.DarkRed();
-         break;
+         case 2:
+            app = YoAppearance.DarkRed();
+            break;
 
-      case 3:
-         app = YoAppearance.Green();
-         break;
+         case 3:
+            app = YoAppearance.Green();
+            break;
 
-      case 4:
-         app = YoAppearance.DarkGreen();
-         break;
+         case 4:
+            app = YoAppearance.DarkGreen();
+            break;
 
-      case 5:
-         app = YoAppearance.Blue();
-         break;
+         case 5:
+            app = YoAppearance.Blue();
+            break;
 
-      case 6:
-         app = YoAppearance.DarkBlue();
-         break;
+         case 6:
+            app = YoAppearance.DarkBlue();
+            break;
 
-      case 7:
-         app = YoAppearance.AluminumMaterial();
-         break;
+         case 7:
+            app = YoAppearance.AluminumMaterial();
+            break;
 
-      case 8:
-         app = YoAppearance.BlackMetalMaterial();
-         break;
+         case 8:
+            app = YoAppearance.BlackMetalMaterial();
+            break;
       }
 
       int toySelection = (int) (Math.random() * 7.0);
       switch (toySelection)
       {
-      case 0:
-         linkGraphics.addSphere(TOY_R, app);
-         break;
+         case 0:
+            linkGraphics.addSphere(TOY_R, app);
+            break;
 
-      case 1:
-         linkGraphics.addCylinder(TOY_H, TOY_R, app);
-         break;
+         case 1:
+            linkGraphics.addCylinder(TOY_H, TOY_R, app);
+            break;
 
-      case 2:
-         linkGraphics.addCube(TOY_L, TOY_W, TOY_H, app);
-         break;
+         case 2:
+            linkGraphics.addCube(TOY_L, TOY_W, TOY_H, app);
+            break;
 
-      case 3:
-         linkGraphics.addCone(TOY_H, TOY_R, app);
-         break;
+         case 3:
+            linkGraphics.addCone(TOY_H, TOY_R, app);
+            break;
 
-      case 4:
-         linkGraphics.addEllipsoid(TOY_L, TOY_W, TOY_H, app);
-         break;
+         case 4:
+            linkGraphics.addEllipsoid(TOY_L, TOY_W, TOY_H, app);
+            break;
 
-      case 5:
-         linkGraphics.addHemiEllipsoid(TOY_L, TOY_W, TOY_H, app);
-         break;
+         case 5:
+            linkGraphics.addHemiEllipsoid(TOY_L, TOY_W, TOY_H, app);
+            break;
 
-      case 6:
-         linkGraphics.addGenTruncatedCone(TOY_H, TOY_L, TOY_W, TOY_W, TOY_L, app);
+         case 6:
+            linkGraphics.addGenTruncatedCone(TOY_H, TOY_L, TOY_W, TOY_W, TOY_L, app);
       }
 
       ret.setLinkGraphics(linkGraphics);

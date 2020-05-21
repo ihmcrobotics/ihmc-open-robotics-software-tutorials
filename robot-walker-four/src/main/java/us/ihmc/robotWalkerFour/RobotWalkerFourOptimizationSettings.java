@@ -39,9 +39,8 @@ public class RobotWalkerFourOptimizationSettings implements ControllerCoreOptimi
    public double getRhoMin()
    {
       /*
-       * rho min is used to define the unilaterality of the contact forces. Ideally it should be
-       * equal to zero, but making slightly greater helps to prevent the feet from rotating when in
-       * support.
+       * rho min is used to define the unilaterality of the contact forces. Ideally it should be equal to
+       * zero, but making slightly greater helps to prevent the feet from rotating when in support.
        */
       return 0.5;
    }
@@ -64,10 +63,10 @@ public class RobotWalkerFourOptimizationSettings implements ControllerCoreOptimi
    public int getNumberOfBasisVectorsPerContactPoint()
    {
       /*
-       * The basis vectors are used to approximate the friction cone for each contact point. so the
-       * more the better, however increasing this number also drastically increases the optimization
-       * size. Three basis vectors is the minimum and four represents a good tradeoff between
-       * computation and accuracy.
+       * The basis vectors are used to approximate the friction cone for each contact point. so the more
+       * the better, however increasing this number also drastically increases the optimization size.
+       * Three basis vectors is the minimum and four represents a good tradeoff between computation and
+       * accuracy.
        */
       return 4;
    }

@@ -140,7 +140,7 @@ public class RobotArmOne extends Robot
     * the joint.
     * </p>
     * 
-    * @param jointEnum the enum of the joint we want to apply the desired effort on.
+    * @param jointEnum     the enum of the joint we want to apply the desired effort on.
     * @param desiredEffort the desired effort value.
     */
    public void setDesiredJointEffort(SevenDoFArmJointEnum jointEnum, double desiredEffort)

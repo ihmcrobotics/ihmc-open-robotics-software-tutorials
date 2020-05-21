@@ -36,7 +36,6 @@ public class RobotArmTwoSimulation
     */
    //private final WholeBodyControllerCoreMode controlMode = WholeBodyControllerCoreMode.INVERSE_DYNAMICS;
    private final WholeBodyControllerCoreMode controlMode = WholeBodyControllerCoreMode.INVERSE_DYNAMICS;
-   
 
    public RobotArmTwoSimulation()
    {

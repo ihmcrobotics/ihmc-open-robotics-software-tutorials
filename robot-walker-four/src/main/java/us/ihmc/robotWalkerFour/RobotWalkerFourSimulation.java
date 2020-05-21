@@ -28,16 +28,19 @@ public class RobotWalkerFourSimulation
       Robot simulatedRobot = robotWalker.getSimulatedRobot();
 
       /*
-       * This time, we need to setup a ground contact model that will make the ground interact with
-       * the ground contact points of the robot. Without it, the robot would simply fall through the
-       * ground.
+       * This time, we need to setup a ground contact model that will make the ground interact with the
+       * ground contact points of the robot. Without it, the robot would simply fall through the ground.
        */
       double groundKxy = 40000.0;
       double groundBxy = 100.0;
       double groundKz = 500.0;
       double groundBz = 250.0;
 
-      GroundContactModel linearGroundModel = new LinearGroundContactModel(simulatedRobot, groundKxy, groundBxy, groundKz, groundBz,
+      GroundContactModel linearGroundModel = new LinearGroundContactModel(simulatedRobot,
+                                                                          groundKxy,
+                                                                          groundBxy,
+                                                                          groundKz,
+                                                                          groundBz,
                                                                           simulatedRobot.getRobotsYoVariableRegistry());
       simulatedRobot.setGroundContactModel(linearGroundModel);
 

@@ -42,8 +42,8 @@ public class RobotWalkerFour
     */
    private final SCSToInverseDynamicsJointMap jointMap;
    /**
-    * In this example, the center of mass reference frame will become handy as it allows to control
-    * the robot's center of mass position.
+    * In this example, the center of mass reference frame will become handy as it allows to control the
+    * robot's center of mass position.
     */
    private final ReferenceFrame centerOfMassFrame;
    /**
@@ -53,8 +53,8 @@ public class RobotWalkerFour
     */
    private final SideDependentList<ReferenceFrame> soleFrames = new SideDependentList<>();
    /**
-    * A {@code ContactablePlaneBody} allows to attach to a rigid-body a list of points that can be
-    * used to distribute the ground reaction forces on the foot when it is in support.
+    * A {@code ContactablePlaneBody} allows to attach to a rigid-body a list of points that can be used
+    * to distribute the ground reaction forces on the foot when it is in support.
     */
    private final SideDependentList<ContactablePlaneBody> footContactableBodies = new SideDependentList<>();
 
@@ -84,8 +84,7 @@ public class RobotWalkerFour
          soleFrames.put(robotSide, soleFrame);
 
          /*
-          * Now we define the corner points of the foot. They can be used to apply forces on the
-          * ground.
+          * Now we define the corner points of the foot. They can be used to apply forces on the ground.
           */
          List<Point2D> contactPoints = new ArrayList<>();
          contactPoints.add(new Point2D(0.5 * footLength, -0.5 * footWidth));
@@ -98,8 +97,7 @@ public class RobotWalkerFour
    }
 
    /**
-    * Updates the state of the inverse dynamics robot model based on the state of the simulated
-    * robot.
+    * Updates the state of the inverse dynamics robot model based on the state of the simulated robot.
     */
    public void updateInverseDynamicsRobotState()
    {
@@ -132,8 +130,8 @@ public class RobotWalkerFour
     * <p>
     * The elevator is a massless, sizeless rigid-body fixed in world to which the first joint of the
     * robot is attached. The name comes from the use of this rigid-body to add the gravity effect to
-    * the robot by making it accelerate like an elevator when it starts moving. However, this
-    * elevator is always fixed in world with no velocity.
+    * the robot by making it accelerate like an elevator when it starts moving. However, this elevator
+    * is always fixed in world with no velocity.
     * </p>
     * 
     * @return the elevator.
@@ -218,7 +216,7 @@ public class RobotWalkerFour
     * desired torque.
     * 
     * @param inverseDynamicsJoint the joint of interest.
-    * @param desiredEffort the new effort value.
+    * @param desiredEffort        the new effort value.
     */
    public void setDesiredEffort(OneDoFJointBasics inverseDynamicsJoint, double desiredEffort)
    {

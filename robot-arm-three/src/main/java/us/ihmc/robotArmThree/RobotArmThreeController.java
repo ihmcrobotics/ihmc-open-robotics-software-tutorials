@@ -64,8 +64,8 @@ public class RobotArmThreeController implements RobotController
     */
    private final YoFramePoint3D desiredEndEffectorPosition = new YoFramePoint3D("desiredEndEffector", WORLD_FRAME, registry);
    /**
-    * The desired orientation for the end-effector that can be monitored in the Simulation
-    * Construction Set.
+    * The desired orientation for the end-effector that can be monitored in the Simulation Construction
+    * Set.
     */
    private final YoFrameQuaternion desiredEndEffectorOrientation = new YoFrameQuaternion("desiredEndEffector", WORLD_FRAME, registry);
    /**
@@ -81,19 +81,19 @@ public class RobotArmThreeController implements RobotController
 
    //inserted
    private final YoFrameVector3D feedForwardLinearAcceleration = new YoFrameVector3D("feedForwardLinearAcceleration", WORLD_FRAME, registry);
-   
+
    /**
     * This time we define "SE3" which allows us to specify gains for each degree of freedom (DoF).
     * <p>
-    * In this example, we use {@code GainCoupling.XYZ} which specify that we are going to use the
-    * same gains for the 3 position DoFs, and the 3 orientation DoFs.
+    * In this example, we use {@code GainCoupling.XYZ} which specify that we are going to use the same
+    * gains for the 3 position DoFs, and the 3 orientation DoFs.
     * </p>
     */
    private final DefaultYoPIDSE3Gains gains = new DefaultYoPIDSE3Gains("jointsGains", new PIDSE3Configuration(GainCoupling.XYZ, false), registry);
 
    /**
-    * This is the IHMC whole-body controller core which is used at the core of the walking
-    * controller on Atlas and Valkyrie.
+    * This is the IHMC whole-body controller core which is used at the core of the walking controller
+    * on Atlas and Valkyrie.
     */
    private final WholeBodyControllerCore wholeBodyControllerCore;
    /**
@@ -110,9 +110,9 @@ public class RobotArmThreeController implements RobotController
    private final WholeBodyControllerCoreMode controllerCoreMode;
    private final RobotArmTwo robotArm;
    /**
-    * In this controller, we add some visualization to see the end-effector desired trajectory in
-    * the Simulation Construction Set. In addition to have an interesting name, a {@code BagOfBalls}
-    * allows to easily dynamically display 3D spheres given a position.
+    * In this controller, we add some visualization to see the end-effector desired trajectory in the
+    * Simulation Construction Set. In addition to have an interesting name, a {@code BagOfBalls} allows
+    * to easily dynamically display 3D spheres given a position.
     */
    private final BagOfBalls trajectoryPositionVisualization;
    /**
@@ -122,14 +122,14 @@ public class RobotArmThreeController implements RobotController
    private final YoFramePoseUsingYawPitchRoll controlFramePoseForVisualization = new YoFramePoseUsingYawPitchRoll("controlFrame", WORLD_FRAME, registry);
 
    /**
-    * @param robotArm this is our simulated robot.
-    * @param controlDT the duration of a controller tick. In this example, it should be equal to the
-    *           simulation DT.
-    * @param gravityZ the magnitude of the gravitational acceleration. It should be the same as the
-    *           one used for the simulation.
-    * @param controllerCoreMode indicates the mode for this simulation.
+    * @param robotArm               this is our simulated robot.
+    * @param controlDT              the duration of a controller tick. In this example, it should be
+    *                               equal to the simulation DT.
+    * @param gravityZ               the magnitude of the gravitational acceleration. It should be the
+    *                               same as the one used for the simulation.
+    * @param controllerCoreMode     indicates the mode for this simulation.
     * @param yoGraphicsListRegistry in this example, we use this registry to enable the
-    *           {@link #trajectoryPositionVisualization}.
+    *                               {@link #trajectoryPositionVisualization}.
     */
    public RobotArmThreeController(RobotArmTwo robotArm, double controlDT, double gravityZ, WholeBodyControllerCoreMode controllerCoreMode,
                                   YoGraphicsListRegistry yoGraphicsListRegistry)
@@ -148,10 +148,12 @@ public class RobotArmThreeController implements RobotController
       numberOfControlTicksPerVizUpdate.set(300);
 
       /*
-       * We create here a graphical coordinate system so we can visualize where the control frame is
-       * in the simulation.
+       * We create here a graphical coordinate system so we can visualize where the control frame is in
+       * the simulation.
        */
-      YoGraphicCoordinateSystem controlFrameGraphic = new YoGraphicCoordinateSystem("controlFrameFrame", controlFramePoseForVisualization, 0.2,
+      YoGraphicCoordinateSystem controlFrameGraphic = new YoGraphicCoordinateSystem("controlFrameFrame",
+                                                                                    controlFramePoseForVisualization,
+                                                                                    0.2,
                                                                                     YoAppearance.Red());
       yoGraphicsListRegistry.registerYoGraphic("control", controlFrameGraphic);
    }
@@ -164,20 +166,25 @@ public class RobotArmThreeController implements RobotController
       //InverseDynamicsJoint[] inverseDynamicsJoints = ScrewTools.computeSubtreeJoints(elevator);
       JointBasics[] jointsArray = MultiBodySystemTools.collectSubtreeJoints(elevator);
       OneDoFJoint[] controlledJoints = MultiBodySystemTools.filterJoints(jointsArray, OneDoFJoint.class);
-      
+
       ControllerCoreOptimizationSettings controllerCoreOptimizationSettings = new RobotArmTwoOptimizationSettings();
-      
-      WholeBodyControlCoreToolbox toolbox = new WholeBodyControlCoreToolbox(controlDT, gravityZ, rootJoint, controlledJoints,
-                                                                            robotArm.getCenterOfMassFrame(), controllerCoreOptimizationSettings,
-                                                                            yoGraphicsListRegistry, registry);
-      
+
+      WholeBodyControlCoreToolbox toolbox = new WholeBodyControlCoreToolbox(controlDT,
+                                                                            gravityZ,
+                                                                            rootJoint,
+                                                                            controlledJoints,
+                                                                            robotArm.getCenterOfMassFrame(),
+                                                                            controllerCoreOptimizationSettings,
+                                                                            yoGraphicsListRegistry,
+                                                                            registry);
+
       toolbox.setupForInverseKinematicsSolver();
       toolbox.setupForInverseDynamicsSolver(Collections.emptyList());
       toolbox.setupForVirtualModelControlSolver(elevator, Collections.emptyList());
 
       /*
-       * This time, we will control the robot in taskspace by directly commanding the end-effector
-       * pose in space. We will be using a SpatialFeedbackControlCommand for this purpose.
+       * This time, we will control the robot in taskspace by directly commanding the end-effector pose in
+       * space. We will be using a SpatialFeedbackControlCommand for this purpose.
        */
       RigidBodyBasics endEffector = robotArm.getEndEffector();
       FeedbackControlCommandList allPossibleCommands = new FeedbackControlCommandList();
@@ -186,11 +193,11 @@ public class RobotArmThreeController implements RobotController
       allPossibleCommands.addCommand(command);
 
       /*
-       * In addition to switching to taskspace control, we will also use a feature of the controller
-       * core called the privileged configuration. When enabled, the controller core will attempt to
-       * keep the robot as close as possible to preferred configuration without disturbing the other
-       * objectives. This is useful for instance to use the robot redundancy to keep its joints in
-       * the middle of their range of motion.
+       * In addition to switching to taskspace control, we will also use a feature of the controller core
+       * called the privileged configuration. When enabled, the controller core will attempt to keep the
+       * robot as close as possible to preferred configuration without disturbing the other objectives.
+       * This is useful for instance to use the robot redundancy to keep its joints in the middle of their
+       * range of motion.
        */
       toolbox.setJointPrivilegedConfigurationParameters(new JointPrivilegedConfigurationParameters());
 
@@ -219,8 +226,8 @@ public class RobotArmThreeController implements RobotController
    }
 
    /**
-    * This method is called by the simulation every simulation tick. This is where the control part
-    * is to be implemented.
+    * This method is called by the simulation every simulation tick. This is where the control part is
+    * to be implemented.
     * <p>
     * In this example, we will make the robot's end-effector follow a 3D trajectory composed of sine
     * wave trajectories, see {@link #updateDesireds()}.
@@ -237,8 +244,8 @@ public class RobotArmThreeController implements RobotController
       // We store the objective for each joint in this command that will be processed by the controller core.
       SpatialFeedbackControlCommand command = new SpatialFeedbackControlCommand();
       /*
-       * We indicate that to achieve this command the controller core is to use the set of joints
-       * located between the elevator and the end-effector.
+       * We indicate that to achieve this command the controller core is to use the set of joints located
+       * between the elevator and the end-effector.
        */
       RigidBodyBasics elevator = robotArm.getElevator();
       RigidBodyBasics endEffector = robotArm.getEndEffector();
@@ -249,13 +256,13 @@ public class RobotArmThreeController implements RobotController
       // Update the gains
       command.setGains(gains);
       /*
-       * This weight is used to prioritize this command in the optimization problem. As this command
-       * is the only one in this example, the weight value is not very important.
+       * This weight is used to prioritize this command in the optimization problem. As this command is
+       * the only one in this example, the weight value is not very important.
        */
       command.setWeightForSolver(1.0);
       /*
-       * This time, we also have the option indicate which degrees of freedom are to be controlled.
-       * In this example, we control all the degrees of freedom.
+       * This time, we also have the option indicate which degrees of freedom are to be controlled. In
+       * this example, we control all the degrees of freedom.
        */
       SelectionMatrix6D selectionMatrix6D = new SelectionMatrix6D();
       selectionMatrix6D.setLinearAxisSelection(true, true, true);
@@ -263,9 +270,9 @@ public class RobotArmThreeController implements RobotController
       command.setSelectionMatrix(selectionMatrix6D);
 
       /*
-       * Here we define exactly what part of the end-effector is meant to track our trajectory. this
-       * is done by defining the pose of what is called: the control frame. It is defined as an
-       * offset from the end-effector's body-fixed frame located at its center of mass.
+       * Here we define exactly what part of the end-effector is meant to track our trajectory. this is
+       * done by defining the pose of what is called: the control frame. It is defined as an offset from
+       * the end-effector's body-fixed frame located at its center of mass.
        */
       FramePose3D controlFramePose = new FramePose3D(endEffector.getBodyFixedFrame());
       controlFramePose.setZ(0.1); // Let's offset the control frame to be located at the tip of the end-effector.
@@ -277,9 +284,9 @@ public class RobotArmThreeController implements RobotController
       controllerCoreCommand.addFeedbackControlCommand(command);
 
       /*
-       * We create a PrivilegedConfigurationCommand to indicate that this feature is desired and
-       * that we want to use it to bring the joints towards the middle of their range of motion
-       * using the robot redundancy.
+       * We create a PrivilegedConfigurationCommand to indicate that this feature is desired and that we
+       * want to use it to bring the joints towards the middle of their range of motion using the robot
+       * redundancy.
        */
       PrivilegedConfigurationCommand privilegedCommand = new PrivilegedConfigurationCommand();
       privilegedCommand.setPrivilegedConfigurationOption(PrivilegedConfigurationOption.AT_MID_RANGE);
@@ -337,7 +344,7 @@ public class RobotArmThreeController implements RobotController
             desiredEndEffectorPosition.setElement(axisIndex, x);
             desiredEndEffectorLinearVelocity.setElement(axisIndex, xDot);
             feedForwardLinearAcceleration.setElement(axisIndex, 0.0); //set acceleration to 0 in every axis
-            
+
          }
       }
 

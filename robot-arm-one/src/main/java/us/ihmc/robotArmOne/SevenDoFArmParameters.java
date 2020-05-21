@@ -26,8 +26,8 @@ public class SevenDoFArmParameters
       shoulderYaw, shoulderRoll, shoulderPitch, elbowPitch, wristPitch, wristRoll, wristYaw;
 
       /**
-       * @return human-readable name to use when creating the joint corresponding to the current
-       *         enum value.
+       * @return human-readable name to use when creating the joint corresponding to the current enum
+       *         value.
        */
       public String getJointName()
       {
@@ -130,8 +130,10 @@ public class SevenDoFArmParameters
    public static final double armLinkMass = 2.2;
    public static final double armLinkRadius = 0.025;
    public static final Vector3D armLinkCoM = new Vector3D(0.0, 0.0, armLinkLength / 2.0);
-   public static final Matrix3D armLinkInertia = RotationalInertiaCalculator.getRotationalInertiaMatrixOfSolidCylinder(armLinkMass, armLinkRadius,
-                                                                                                                       armLinkLength, Axis3D.Z);
+   public static final Matrix3D armLinkInertia = RotationalInertiaCalculator.getRotationalInertiaMatrixOfSolidCylinder(armLinkMass,
+                                                                                                                       armLinkRadius,
+                                                                                                                       armLinkLength,
+                                                                                                                       Axis3D.Z);
    public static final Matrix3D smallInertia = diagional(1.0e-4, 1.0e-4, 1.0e-4);
 
    public static final double handMass = 1.2;

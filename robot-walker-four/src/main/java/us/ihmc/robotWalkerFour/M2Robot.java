@@ -107,8 +107,8 @@ public class M2Robot extends Robot
       footParentJoints.put(RobotSide.RIGHT, rightAnklePitch);
 
       /*
-       * Here are defined the contact points that the simulation can use to make the ground interact
-       * with the robot. Without them the robot would fall through the ground.
+       * Here are defined the contact points that the simulation can use to make the ground interact with
+       * the robot. Without them the robot would fall through the ground.
        */
       GroundContactPoint right_toe_in = new GroundContactPoint("gc_right_toe_in", new Vector3D(FOOT_FORWARD, FOOT_WIDTH / 2.0, -FOOT_HEIGHT), this);
       GroundContactPoint right_toe_out = new GroundContactPoint("gc_right_toe_out", new Vector3D(FOOT_FORWARD, -FOOT_WIDTH / 2.0, -FOOT_HEIGHT), this);
@@ -150,8 +150,8 @@ public class M2Robot extends Robot
       footParentJoints.put(RobotSide.LEFT, leftAnklePitch);
 
       /*
-       * Here are defined the contact points that the simulation can use to make the ground interact
-       * with the robot. Without them the robot would fall through the ground.
+       * Here are defined the contact points that the simulation can use to make the ground interact with
+       * the robot. Without them the robot would fall through the ground.
        */
       GroundContactPoint left_toe_in = new GroundContactPoint("gc_left_toe_in", new Vector3D(FOOT_FORWARD, -FOOT_WIDTH / 2.0, -FOOT_HEIGHT), this);
       GroundContactPoint left_toe_out = new GroundContactPoint("gc_left_toe_out", new Vector3D(FOOT_FORWARD, FOOT_WIDTH / 2.0, -FOOT_HEIGHT), this);

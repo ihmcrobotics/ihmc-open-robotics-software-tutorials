@@ -3,8 +3,8 @@ package us.ihmc.mobile;
 import us.ihmc.simulationconstructionset.SimulationConstructionSet;
 
 /**
- * A simulation of a child's mobile toy that uses a tree structure of 21 gimbal
- * joints (63 degrees of freedom total).
+ * A simulation of a child's mobile toy that uses a tree structure of 21 gimbal joints (63 degrees
+ * of freedom total).
  */
 public class MobileSimulation
 {
