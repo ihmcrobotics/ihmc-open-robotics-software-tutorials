@@ -19,6 +19,7 @@ import us.ihmc.euclid.referenceFrame.FramePoint3D;
 import us.ihmc.euclid.referenceFrame.FramePose3D;
 import us.ihmc.euclid.referenceFrame.FrameVector3D;
 import us.ihmc.euclid.referenceFrame.ReferenceFrame;
+import us.ihmc.euclid.referenceFrame.interfaces.FramePoint3DReadOnly;
 import us.ihmc.graphicsDescription.yoGraphics.YoGraphicsListRegistry;
 import us.ihmc.robotics.contactable.ContactablePlaneBody;
 import us.ihmc.mecano.multiBodySystem.interfaces.FloatingJointBasics;
@@ -308,7 +309,7 @@ public class RobotWalkerFourController implements RobotController
     * @param centerOfMassPosition refers to newly calculated position of the center of mass of the
     *                             robot.
     */
-   public void sendCenterOfMassCommand(FramePoint3D centerOfMassPosition)
+   public void sendCenterOfMassCommand(FramePoint3DReadOnly centerOfMassPosition)
    {
       CenterOfMassFeedbackControlCommand centerOfMassCommand = new CenterOfMassFeedbackControlCommand();
       centerOfMassCommand.setControlMode(WholeBodyControllerCoreMode.INVERSE_DYNAMICS); //sets control mode to inverse dynamics
