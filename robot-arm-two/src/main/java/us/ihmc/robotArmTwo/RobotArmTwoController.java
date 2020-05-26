@@ -200,7 +200,6 @@ public class RobotArmTwoController implements RobotController
 
       // We store the objective for each joint in this command that will be processed by the controller core.
       JointspaceFeedbackControlCommand jointCommands = new JointspaceFeedbackControlCommand();
-      //OneDoFJointFeedbackControlCommand jointCommand = new OneDoFJointFeedbackControlCommand();
 
       for (SevenDoFArmJointEnum jointEnum : SevenDoFArmJointEnum.values())
       {
