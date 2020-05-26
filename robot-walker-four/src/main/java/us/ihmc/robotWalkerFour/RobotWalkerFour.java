@@ -64,6 +64,9 @@ public class RobotWalkerFour
       jointMap = inverseDynamicsRobot.getSCSToInverseDynamicsJointMap();
       centerOfMassFrame = new CenterOfMassReferenceFrame("centerOfMassFrame", WORLD_FRAME, inverseDynamicsRobot.getElevator());
 
+      /*
+       * Left and right feet
+       */
       for (RobotSide robotSide : RobotSide.values)
       {
          double footWidth = M2Robot.FOOT_WIDTH;
