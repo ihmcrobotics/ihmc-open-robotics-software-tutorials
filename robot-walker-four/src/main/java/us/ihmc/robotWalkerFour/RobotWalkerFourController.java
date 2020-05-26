@@ -300,14 +300,16 @@ public class RobotWalkerFourController implements RobotController
          robotWalkerFour.setDesiredEffort(oneDoFJoint, jointDesiredOutput.getDesiredTorque());
       }
    }
-   
+
    /**
-    * A {@code CenterOfMassCommand} is created using the new calculated {@code centerOfMassPosition} 
+    * A {@code CenterOfMassCommand} is created using the new calculated {@code centerOfMassPosition}
     * and adds the command to the controller core.
     * 
-    * @param centerOfMassPosition refers to newly calculated position of the center of mass of the robot.
+    * @param centerOfMassPosition refers to newly calculated position of the center of mass of the
+    *                             robot.
     */
-   public void sendCenterOfMassCommand(FramePoint3D centerOfMassPosition) {
+   public void sendCenterOfMassCommand(FramePoint3D centerOfMassPosition)
+   {
       CenterOfMassFeedbackControlCommand centerOfMassCommand = new CenterOfMassFeedbackControlCommand();
       centerOfMassCommand.setControlMode(WholeBodyControllerCoreMode.INVERSE_DYNAMICS); //sets control mode to inverse dynamics
       FrameVector3D feedForwardLinearVelocity = new FrameVector3D(WORLD_FRAME, 0.0, 0.0, 0.0);
