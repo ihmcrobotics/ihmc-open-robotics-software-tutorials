@@ -1,5 +1,5 @@
 # Top level directories to ignore
-/Configurations
+#/Configurations
 /build
 /classes
 /bin
