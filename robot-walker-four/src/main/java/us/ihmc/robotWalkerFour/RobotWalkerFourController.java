@@ -300,6 +300,23 @@ public class RobotWalkerFourController implements RobotController
          robotWalkerFour.setDesiredEffort(oneDoFJoint, jointDesiredOutput.getDesiredTorque());
       }
    }
+   
+   /**
+    * A {@code CenterOfMassCommand} is created using the new calculated {@code centerOfMassPosition} 
+    * and adds the command to the controller core.
+    * 
+    * @param centerOfMassPosition refers to newly calculated position of the center of mass of the robot.
+    */
+   public void sendCenterOfMassCommand(FramePoint3D centerOfMassPosition) {
+      CenterOfMassFeedbackControlCommand centerOfMassCommand = new CenterOfMassFeedbackControlCommand();
+      centerOfMassCommand.setControlMode(WholeBodyControllerCoreMode.INVERSE_DYNAMICS); //sets control mode to inverse dynamics
+      FrameVector3D feedForwardLinearVelocity = new FrameVector3D(WORLD_FRAME, 0.0, 0.0, 0.0);
+      FrameVector3D feedForwardLinearAcceleration = new FrameVector3D(WORLD_FRAME, 0.0, 0.0, 0.0);
+      centerOfMassCommand.setInverseDynamics(centerOfMassPosition, feedForwardLinearVelocity, feedForwardLinearAcceleration);
+      centerOfMassCommand.setGains(gains.getPositionGains());
+      centerOfMassCommand.setWeightForSolver(1.0);
+      controllerCoreCommand.addFeedbackControlCommand(centerOfMassCommand);
+   }
 
    /**
     * During the standing state, the center of mass is kept at a constant position right between the
@@ -328,14 +345,7 @@ public class RobotWalkerFourController implements RobotController
          centerOfMassPosition.setZ(CENTER_OF_MASS_HEIGHT);
 
          // So now, we just have pack the command for the controller core.
-         CenterOfMassFeedbackControlCommand centerOfMassCommand = new CenterOfMassFeedbackControlCommand();
-         centerOfMassCommand.setControlMode(WholeBodyControllerCoreMode.INVERSE_DYNAMICS); //sets control mode to inverse dynamics
-         FrameVector3D feedForwardLinearVelocity = new FrameVector3D(WORLD_FRAME, 0.0, 0.0, 0.0);
-         FrameVector3D feedForwardLinearAcceleration = new FrameVector3D(WORLD_FRAME, 0.0, 0.0, 0.0);
-         centerOfMassCommand.setInverseDynamics(centerOfMassPosition, feedForwardLinearVelocity, feedForwardLinearAcceleration);
-         centerOfMassCommand.setGains(gains.getPositionGains());
-         centerOfMassCommand.setWeightForSolver(1.0);
-         controllerCoreCommand.addFeedbackControlCommand(centerOfMassCommand);
+         sendCenterOfMassCommand(centerOfMassPosition);
 
          // Now it is the turn of the feet.
          for (RobotSide robotSide : RobotSide.values)
@@ -425,14 +435,7 @@ public class RobotWalkerFourController implements RobotController
          centerOfMassPosition.setZ(CENTER_OF_MASS_HEIGHT);
 
          // And now we pack the command for the controller core.
-         CenterOfMassFeedbackControlCommand centerOfMassCommand = new CenterOfMassFeedbackControlCommand();
-         centerOfMassCommand.setControlMode(WholeBodyControllerCoreMode.INVERSE_DYNAMICS); //sets control mode to inverse dynamics
-         FrameVector3D feedForwardLinearVelocity = new FrameVector3D(WORLD_FRAME, 0.0, 0.0, 0.0);
-         FrameVector3D feedForwardLinearAcceleration = new FrameVector3D(WORLD_FRAME, 0.0, 0.0, 0.0);
-         centerOfMassCommand.setInverseDynamics(centerOfMassPosition, feedForwardLinearVelocity, feedForwardLinearAcceleration);
-         centerOfMassCommand.setGains(gains.getPositionGains());
-         centerOfMassCommand.setWeightForSolver(1.0);
-         controllerCoreCommand.addFeedbackControlCommand(centerOfMassCommand);
+         sendCenterOfMassCommand(centerOfMassPosition);
 
          // as for the standing state, we request both feet to be in support.
          for (RobotSide robotSide : RobotSide.values)
@@ -509,14 +512,7 @@ public class RobotWalkerFourController implements RobotController
          centerOfMassPosition.setZ(CENTER_OF_MASS_HEIGHT);
 
          // We pack the center of mass command for the controller core.
-         CenterOfMassFeedbackControlCommand centerOfMassCommand = new CenterOfMassFeedbackControlCommand();
-         centerOfMassCommand.setControlMode(WholeBodyControllerCoreMode.INVERSE_DYNAMICS); //sets control mode to inverse dynamics
-         FrameVector3D feedForwardLinearVelocity = new FrameVector3D(WORLD_FRAME, 0.0, 0.0, 0.0);
-         FrameVector3D feedForwardLinearAcceleration = new FrameVector3D(WORLD_FRAME, 0.0, 0.0, 0.0);
-         centerOfMassCommand.setInverseDynamics(centerOfMassPosition, feedForwardLinearVelocity, feedForwardLinearAcceleration);
-         centerOfMassCommand.setGains(gains.getPositionGains());
-         centerOfMassCommand.setWeightForSolver(1.0);
-         controllerCoreCommand.addFeedbackControlCommand(centerOfMassCommand);
+         sendCenterOfMassCommand(centerOfMassPosition);
 
          // As in the standing state, the support is specified with the contact state command and zero acceleration command.
          SpatialAccelerationCommand footZeroAcceleration = createFootZeroAccelerationCommand(supportSide);
