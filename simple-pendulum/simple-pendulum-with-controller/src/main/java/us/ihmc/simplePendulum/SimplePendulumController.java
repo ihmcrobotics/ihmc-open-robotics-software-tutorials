@@ -7,83 +7,84 @@ import us.ihmc.yoVariables.variable.YoDouble;
 /**
  * Created by amoucheboeuf on 2/11/16.
  */
-public class SimplePendulumController implements RobotController
-{
-   // A name for this controller
-   private final String name = "pendulumController";
+public class SimplePendulumController implements RobotController {
+	// A name for this controller
+	private final String name = "pendulumController";
 
-   // This line instantiates a registry that will contain relevant controller variables that will be accessible from the simulation panel.
-   private final YoVariableRegistry registry = new YoVariableRegistry("PendulumController");
+	// This line instantiates a registry that will contain relevant controller
+	// variables that will be accessible from the simulation panel.
+	private final YoVariableRegistry registry = new YoVariableRegistry("PendulumController");
 
-   // This is a reference to the SimplePendulumRobot that enables the controller to access this robot's variables.
-   private SimplePendulumRobot robot;
+	// This is a reference to the SimplePendulumRobot that enables the controller to
+	// access this robot's variables.
+	private SimplePendulumRobot robot;
 
-   /* Control variables: */
+	/* Control variables: */
 
-   // Target angle
-   private YoDouble desiredPositionRadians;
+	// Target angle
+	private YoDouble desiredPositionRadians;
 
-   // Controller parameter variables
-   private YoDouble p_gain, d_gain, i_gain;
+	// Controller parameter variables
+	private YoDouble p_gain, d_gain, i_gain;
 
-   // This is the desired torque that we will apply to the fulcrum joint (PinJoint)
-   private double torque;
+	// This is the desired torque that we will apply to the fulcrum joint (PinJoint)
+	private double torque;
 
-   /* Constructor:
-      Where we instantiate and initialize control variables
-   */
-   public SimplePendulumController(SimplePendulumRobot robot)
-   {
-      this.robot = robot;
-      desiredPositionRadians = new YoDouble("DesiredPosRad", registry);
-      desiredPositionRadians.set(-1.5); // set initial position of the pendulum
+	/*
+	 * Constructor: Where we instantiate and initialize control variables
+	 */
+	public SimplePendulumController(SimplePendulumRobot robot) {
+		this.robot = robot;
+		desiredPositionRadians = new YoDouble("DesiredPosRad", registry);
+		desiredPositionRadians.set(-1.5); // set initial position of the pendulum
 
-      // set the proportional, integral, and derivative gains
-      p_gain = new YoDouble("ProportionalGain", registry);
-      p_gain.set(250.0);
-      d_gain = new YoDouble("DerivativeGain", registry);
-      d_gain.set(100.0);
-      i_gain = new YoDouble("IntegralGain", registry);
-      i_gain.set(10.0);
-   }
+		// set the proportional, integral, and derivative gains
+		p_gain = new YoDouble("ProportionalGain", registry);
+		p_gain.set(250.0);
+		d_gain = new YoDouble("DerivativeGain", registry);
+		d_gain.set(100.0);
+		i_gain = new YoDouble("IntegralGain", registry);
+		i_gain.set(10.0);
+	}
 
-   @Override public void initialize()
-   {
+	@Override
+	public void initialize() {
 
-   }
+	}
 
-   private double positionError = 0;
-   private double integralError = 0;
+	private double positionError = 0;
+	private double integralError = 0;
 
-   @Override public void doControl()
-   {
+	@Override
+	public void doControl() {
 
-      // ERROR term: Compute the difference between the desired position the pendulum and its current position
-      positionError = desiredPositionRadians.getDoubleValue() - robot.getFulcrumAngularPosition();
+		// ERROR term: Compute the difference between the desired position the pendulum
+		// and its current position
+		positionError = desiredPositionRadians.getDoubleValue() - robot.getFulcrumAngularPosition();
 
-      // INTEGRAL term: Compute a simple numerical integration of the position error 
-      integralError += positionError * SimplePendulumSimulation.DT;   
-      
-      // P.I.D control law
-      torque = p_gain.getDoubleValue() * positionError + i_gain.getDoubleValue() * integralError + 
-    		   d_gain.getDoubleValue() * (0 - robot.getFulcrumAngularVelocity());
-      
-      robot.setFulcrumTorque(torque);
+		// INTEGRAL term: Compute a simple numerical integration of the position error
+		integralError += positionError * SimplePendulumSimulation.DT;
 
-   }
+		// P.I.D control law
+		torque = p_gain.getDoubleValue() * positionError + i_gain.getDoubleValue() * integralError
+				+ d_gain.getDoubleValue() * (0 - robot.getFulcrumAngularVelocity());
 
-   @Override public YoVariableRegistry getYoVariableRegistry()
-   {
-      return registry;
-   }
+		robot.setFulcrumTorque(torque);
 
-   @Override public String getName()
-   {
-      return name;
-   }
+	}
 
-   @Override public String getDescription()
-   {
-      return name;
-   }
+	@Override
+	public YoVariableRegistry getYoVariableRegistry() {
+		return registry;
+	}
+
+	@Override
+	public String getName() {
+		return name;
+	}
+
+	@Override
+	public String getDescription() {
+		return name;
+	}
 }
