@@ -1,3 +1,3 @@
 # IHMC Robotics: IHMC Open Robotics Software Tutorials
 
-This repository contains tutorials for using IHMC Open Robotics Software.
+This repository contains tutorials to help one get more familiar with IHMC's Simulation Construction Set. For instructions on this tutorial set, visit our wiki page at https://github.com/ihmcrobotics/ihmc-open-robotics-software-tutorials/wiki/Getting-Started-with-Simulation-Construction-Set.
