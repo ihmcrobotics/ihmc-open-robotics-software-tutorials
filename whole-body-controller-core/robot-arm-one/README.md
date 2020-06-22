@@ -1,1 +1,3 @@
-This project is part of the following tutorial: https://github.com/ihmcrobotics/dynamic-walking-tutorial-2018/wiki/Step-3-A-robot-arm-simulation-controlled-with-regular-PD-controller.
+# IHMC Robotics: Robot Arm One
+
+This project is part of the following tutorial set: https://github.com/ihmcrobotics/ihmc-open-robotics-software-tutorials/wiki/Example-2:-Robot-Arm-Simulation-with-Regular-PD-Controller.
