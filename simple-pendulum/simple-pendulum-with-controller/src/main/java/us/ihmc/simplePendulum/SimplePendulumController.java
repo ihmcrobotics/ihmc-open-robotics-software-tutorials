@@ -4,9 +4,6 @@ import us.ihmc.simulationconstructionset.util.RobotController;
 import us.ihmc.yoVariables.registry.YoVariableRegistry;
 import us.ihmc.yoVariables.variable.YoDouble;
 
-/**
- * Created by amoucheboeuf on 2/11/16.
- */
 public class SimplePendulumController implements RobotController {
 	// A name for this controller
 	private final String name = "pendulumController";
@@ -30,9 +27,7 @@ public class SimplePendulumController implements RobotController {
 	// This is the desired torque that we will apply to the fulcrum joint (PinJoint)
 	private double torque;
 
-	/*
-	 * Constructor: Where we instantiate and initialize control variables
-	 */
+	// Constructor: Where we instantiate and initialize control variables
 	public SimplePendulumController(SimplePendulumRobot robot) {
 		this.robot = robot;
 		desiredPositionRadians = new YoDouble("DesiredPosRad", registry);
