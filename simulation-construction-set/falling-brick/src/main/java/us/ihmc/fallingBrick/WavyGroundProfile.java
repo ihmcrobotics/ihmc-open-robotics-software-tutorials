@@ -2,6 +2,7 @@ package us.ihmc.fallingBrick;
 
 import us.ihmc.euclid.geometry.BoundingBox3D;
 import us.ihmc.euclid.tuple3D.Point3D;
+import us.ihmc.euclid.tuple3D.Vector3D;
 import us.ihmc.euclid.tuple3D.interfaces.Point3DBasics;
 import us.ihmc.euclid.tuple3D.interfaces.Vector3DBasics;
 import us.ihmc.jMonkeyEngineToolkit.GroundProfile3D;
@@ -18,7 +19,7 @@ public class WavyGroundProfile implements GroundProfile3D, HeightMapWithNormals
    }
 
    @Override
-   public double heightAndNormalAt(double x, double y, double z, Vector3DBasics normalToPack)
+   public double heightAndNormalAt(double x, double y, double z, Vector3D normalToPack)
    {
       double heightAt = heightAt(x, y, z);
       surfaceNormalAt(x, y, heightAt, normalToPack);
@@ -55,7 +56,7 @@ public class WavyGroundProfile implements GroundProfile3D, HeightMapWithNormals
    }
 
    @Override
-   public boolean checkIfInside(double x, double y, double z, Point3DBasics intersectionToPack, Vector3DBasics normalToPack)
+   public boolean checkIfInside(double x, double y, double z, Point3D intersectionToPack, Vector3D normalToPack)
    {
       closestIntersectionTo(x, y, z, intersectionToPack);
       surfaceNormalAt(x, y, z, normalToPack);
@@ -80,5 +81,4 @@ public class WavyGroundProfile implements GroundProfile3D, HeightMapWithNormals
    {
       return this;
    }
-
 }

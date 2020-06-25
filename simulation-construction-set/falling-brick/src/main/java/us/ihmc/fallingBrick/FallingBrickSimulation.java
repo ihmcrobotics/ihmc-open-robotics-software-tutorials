@@ -19,7 +19,7 @@ public class FallingBrickSimulation
       GROUND_APPEARANCE appearance = GROUND_APPEARANCE.EARTH;
       FallingBrickRobot FallingBrick = new FallingBrickRobot();
       //      sim = new SimulationConstructionSet(FallingBrick, new JMEGraphics3dAdapter(), 16342);
-      
+
       SimulationConstructionSetParameters parameters = new SimulationConstructionSetParameters();
       parameters.setDataBufferSize(16342);
       sim = new SimulationConstructionSet(FallingBrick, parameters);
@@ -45,17 +45,17 @@ public class FallingBrickSimulation
 
       switch (appearance)
       {
-      case EARTH:
-         sim.setGroundAppearance(YoAppearance.EarthTexture());
-         break;
+         case EARTH:
+            sim.setGroundAppearance(YoAppearance.EarthTexture());
+            break;
 
-      case STONE:
-         sim.setGroundAppearance(YoAppearance.StoneTexture());
-         break;
+         case STONE:
+            sim.setGroundAppearance(YoAppearance.StoneTexture());
+            break;
 
-      case ALUMINUM:
-         sim.setGroundAppearance(YoAppearance.AluminumMaterial());
-         break;
+         case ALUMINUM:
+            sim.setGroundAppearance(YoAppearance.AluminumMaterial());
+            break;
       }
       Thread myThread = new Thread(sim);
       myThread.start();

@@ -15,7 +15,7 @@ public class SimplePendulumSimulation
    {
 
       SimplePendulumRobot robot = new SimplePendulumRobot();
-      robot.setController(new SimplePendulumController(robot));
+      // robot.setController(new SimplePendulumController(robot));
 
       /* Creates simulation parameters */
       SimulationConstructionSetParameters parameters = new SimulationConstructionSetParameters();
