@@ -33,15 +33,18 @@ public class MobileRobot extends Robot {
 		topLinkGraphics.addCylinder(L1 / 60.0, L1 / 3.0, YoAppearance.DarkBlue());
 		topLink.setLinkGraphics(topLinkGraphics);
 
+		// adds the flattened cylinder to the robot
 		this.addStaticLink(topLink);
 
-		// create first gimbal joint at the top of the mobile
+		// create first gimbal joint at the top of the mobile; the offset places the mobile in the air
 		GimbalJoint firstGimbal = new GimbalJoint("gimbal_x", "gimbal_y", "gimbal_z", new Vector3D(0.0, 0.0, 1.0), this,
 				Axis3D.X, Axis3D.Y, Axis3D.Z);
 
 		// attach a crossbar to the top gimbal joint
 		Link bar1 = createCrossBarLink(M1, L1, R1, Ixx1, Iyy1, Izz1);
 		firstGimbal.setLink(bar1);
+		// sets viscous damping. It will be added on top of any torques due to joint limits or a control system.
+		// for this simulation, the mobile is completely passive and damping is the only source of joint torque.
 		firstGimbal.setDamping(DAMP1);
 		initializeGimbalJoint(firstGimbal);
 
@@ -67,6 +70,7 @@ public class MobileRobot extends Robot {
 			else // i == 3
 				yOffset = -L1;
 
+			// from the second level of 4 gimbal joints to each of their parent joints, which is the first gimbal
 			nextGimbal = new GimbalJoint("gimbal1_" + i + "_x", "gimbal1_" + i + "_y", "gimbal1_" + i + "_z",
 					new Vector3D(xOffset, yOffset, -L1 / 2.0), this, Axis3D.X, Axis3D.Y, Axis3D.Z);
 			nextLink = createCrossBarLink(M2, L2, R2, Ixx2, Iyy2, Izz2);
@@ -90,6 +94,7 @@ public class MobileRobot extends Robot {
 				else // j == 3
 					yOffset = -L2;
 
+				// final level of 16 gimbals from their parents above them
 				finalGimbal = new GimbalJoint("gimbal2_" + i + "_" + j + "_x", "gimbal2_" + i + "_" + j + "_y",
 						"gimbal2_" + i + "_" + j + "_z", new Vector3D(xOffset, yOffset, -L2 / 2.0), this, Axis3D.X,
 						Axis3D.Y, Axis3D.Z);
@@ -123,6 +128,7 @@ public class MobileRobot extends Robot {
 		double init_qd2 = (2.0 * Math.random() - 1.0) * 0.5;
 		double init_qd3 = (2.0 * Math.random() - 1.0) * 2.0;
 
+		// sets the state
 		joint.setInitialState(init_q1, init_qd1, init_q2, init_qd2, init_q3, init_qd3);
 	}
 
@@ -136,20 +142,37 @@ public class MobileRobot extends Robot {
 		ret.setMomentOfInertia(Ixx, Iyy, Izz);
 
 		Graphics3DObject linkGraphics = new Graphics3DObject();
+		
+		// create the upper sphere-capped cylinder which projects downward
 		linkGraphics.addSphere(R1, YoAppearance.Red());
+		// since the origin of a cylinder is the center of its base, we must first translate
+		// down the length of the upper cylinder before adding it. 
 		linkGraphics.translate(0.0, 0.0, -length / 2.0);
 		linkGraphics.addCylinder(length / 2.0, radius);
 
+		// brings us back to the gimbal joint
 		linkGraphics.identity();
+		// translated down by the third parameter and in the x direction by the first parameter
 		linkGraphics.translate(length, 0.0, -length / 2.0);
+		// rotate by the first parameter about the Y axis. This will now make the Z axis point in 
+		// the direction in which we wish to place our cylinder (along the original X axis).
 		linkGraphics.rotate(-Math.PI / 2.0, Axis3D.Y);
+		// add the cylinder
 		linkGraphics.addCylinder(2.0 * length, radius);
+		// add a sphere to cap this end of the cylinder
 		linkGraphics.addSphere(radius, YoAppearance.Red());
+		// translate along the Z axis to the other end of the cylinder
 		linkGraphics.translate(0.0, 0.0, 2.0 * length);
+		// cap the other end of the cylinder
 		linkGraphics.addSphere(radius, YoAppearance.Red());
 
+		// second cylinder identical to that above 
 		linkGraphics.identity();
+		// translate up by the third parameter (down since negative value) and in the Y direction 
+		// by the second parameter
 		linkGraphics.translate(0.0, length, -length / 2.0);
+		// rotate by the first parameter about the X axis. This will now make the Z axis point in
+		// the direction in which we wish to place our cylinder (along the original Y axis).
 		linkGraphics.rotate(Math.PI / 2.0, Axis3D.X);
 		linkGraphics.addCylinder(2.0 * length, radius);
 		linkGraphics.addSphere(radius, YoAppearance.Red());
