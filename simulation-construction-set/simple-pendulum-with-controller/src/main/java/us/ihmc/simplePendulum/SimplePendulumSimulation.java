@@ -30,7 +30,7 @@ public class SimplePendulumSimulation
        */
       sim.setDT(DT, 20);
 
-      // Sets the ground to be visbile in the 3D view
+      // Sets the ground to be visible in the 3D view
       sim.setGroundVisible(true);
 
       // Sets location and orientation of the camera
