@@ -30,8 +30,7 @@ public class FallingBrickRobot extends Robot implements RobotController
    YoDouble q_x, q_y, q_z, qd_x, qd_y, qd_z, qdd_x, qdd_y, qdd_z;
    YoDouble q_qs, q_qx, q_qy, q_qz, qd_wx, qd_wy, qd_wz, qdd_wx, qdd_wy, qdd_wz;
 
-   YoDouble energy, q_qlength, theta_x;
-   YoDouble qdd2_wx, qdd2_wy, qdd2_wz;
+   YoDouble q_qlength, theta_x;
 
    Joint floatingJoint;
 
@@ -94,7 +93,6 @@ public class FallingBrickRobot extends Robot implements RobotController
       setGroundContactModel(groundModel);
 
       initRobot();
-      initControl();
    }
 
    /**
@@ -121,10 +119,6 @@ public class FallingBrickRobot extends Robot implements RobotController
 
       // add the pyramid cube 
       linkGraphics.addPyramidCube(BASE_L, BASE_W, BASE_H, BASE_H, appearance);
-
-      // Other shape options provided
-      // linkGraphics.addCube((float)BASE_L, (float)BASE_W, (float)BASE_H, appearance);
-      // linkGraphics.addCone((float)BASE_L,(float)BASE_W, appearance);
 
       // Attach the Graphics3DObject to its link
       /*
@@ -185,30 +179,9 @@ public class FallingBrickRobot extends Robot implements RobotController
 
    }
 
-   /**
-    * This method initializes the robot's controller.
-    */
-   public void initControl()
-   {
-      qdd2_wx = new YoDouble("qdd2_wx", registry);
-      qdd2_wy = new YoDouble("qdd2_wy", registry);
-      qdd2_wz = new YoDouble("qdd2_wz", registry);
-
-      energy = new YoDouble("energy", registry);
-   }
-
    @Override
    public void doControl()
    {
-      energy.set(M1 * G * q_z.getDoubleValue() + 0.5 * M1 * qd_x.getDoubleValue() * qd_x.getDoubleValue()
-            + 0.5 * M1 * qd_y.getDoubleValue() * qd_y.getDoubleValue() + 0.5 * M1 * qd_z.getDoubleValue() * qd_z.getDoubleValue()
-            + 0.5 * Ixx1 * qd_wx.getDoubleValue() * qd_wx.getDoubleValue() + 0.5 * Iyy1 * qd_wy.getDoubleValue() * qd_wy.getDoubleValue()
-            + 0.5 * Izz1 * qd_wz.getDoubleValue() * qd_wz.getDoubleValue());
-
-      qdd2_wx.set((Iyy1 - Izz1) / Ixx1 * qd_wy.getDoubleValue() * qd_wz.getDoubleValue());
-      qdd2_wy.set((Izz1 - Ixx1) / Iyy1 * qd_wz.getDoubleValue() * qd_wx.getDoubleValue());
-      qdd2_wz.set((Ixx1 - Iyy1) / Izz1 * qd_wx.getDoubleValue() * qd_wy.getDoubleValue());
-
    }
 
    @Override
