@@ -13,7 +13,6 @@ import us.ihmc.simulationconstructionset.Link;
 import us.ihmc.simulationconstructionset.Robot;
 import us.ihmc.simulationconstructionset.util.LinearGroundContactModel;
 import us.ihmc.simulationconstructionset.util.RobotController;
-import us.ihmc.simulationconstructionset.util.ground.WavyGroundProfile;
 import us.ihmc.yoVariables.registry.YoVariableRegistry;
 import us.ihmc.yoVariables.variable.YoDouble;
 
@@ -38,14 +37,28 @@ public class FallingBrickRobot extends Robot implements RobotController
 
    public FallingBrickRobot()
    {
-      super("FallingBrick");
+      // Call parent class "Robot" constructor. The string "FallingBrick" will be the name of the robot.
+      super("FallingBrick"); // creates an instance of the class Robot named "FallingBrick" in the SCS system.
 
       this.setGravity(0.0, 0.0, -G);
 
-      // create the brick as a floating joint
+      // create the brick as a floating joint and adds it to the robot
+      /*
+       * The first parameter "base" is the name of the joint and will be used in all the variables
+       * associated with the joint. The second parameter "new Vector3d(0.0, 0.0, 0.0)" defines the offset
+       * of this joint from the previous joint. The third parameter "this" refers to the robot itself.
+       */
       floatingJoint = new FloatingJoint("base", new Vector3D(0.0, 0.0, 0.0), this);
-      Link link1 = base("base", YoAppearance.Red());
+      Link link1 = base("base", YoAppearance.Purple());
+      // Sets the link created previously as the link for this joint
       floatingJoint.setLink(link1);
+
+      // Add a RootJoint to the robot
+      /*
+       * This line adds floatingJoint as a rootJoint of the robot. In order to be part of a robot, a joint
+       * must either be added as a root joint, or be attached to a parent joint. This ensures the tree
+       * structure (forest structure if there are multiple root joints) of the robot.
+       */
       addRootJoint(floatingJoint);
 
       // add ground contact points to the brick
@@ -76,8 +89,6 @@ public class FallingBrickRobot extends Robot implements RobotController
 
       // instantiate ground contact model
       GroundContactModel groundModel = new LinearGroundContactModel(this, 1422, 150.6, 50.0, 1000.0, getRobotsYoVariableRegistry());
-      // GroundContactModel groundModel = new CollisionGroundContactModel(this, 0.5, 0.7);
-
       GroundProfile3D profile = new WavyGroundProfile();
       groundModel.setGroundProfile3D(profile);
       setGroundContactModel(groundModel);
@@ -91,18 +102,35 @@ public class FallingBrickRobot extends Robot implements RobotController
     */
    private Link base(String name, AppearanceDefinition appearance)
    {
+      // creates a new link with the name specified in the parameter
       Link ret = new Link(name);
+      // sets the mass of the link
       ret.setMass(M1);
+      // sets the moment of inertia
       ret.setMomentOfInertia(Ixx1, Iyy1, Izz1);
+      // sets the center of mass offset
       ret.setComOffset(0.0, 0.0, 0.0);
-
+      // Use to visually represent links in the SCS 3D view
       Graphics3DObject linkGraphics = new Graphics3DObject();
+      /*
+       * Translates from the current position by the specified distances. Graphic components added after
+       * translation will appear in the new location. The coordinate system for these translations is
+       * based on those that preceded it.
+       */
       linkGraphics.translate(0.0, 0.0, -B1);
 
-      // linkGraphics.addCube((float)BASE_L, (float)BASE_W, (float)BASE_H, appearance);
-      // linkGraphics.addCone((float)BASE_L,(float)BASE_W);
+      // add the pyramid cube 
       linkGraphics.addPyramidCube(BASE_L, BASE_W, BASE_H, BASE_H, appearance);
 
+      // Other shape options provided
+      // linkGraphics.addCube((float)BASE_L, (float)BASE_W, (float)BASE_H, appearance);
+      // linkGraphics.addCone((float)BASE_L,(float)BASE_W, appearance);
+
+      // Attach the Graphics3DObject to its link
+      /*
+       * Associates our linkGraphics object with the ret object and in doing so, translates and rotates
+       * the graphic components to be in the same frame of reference as the ret.
+       */
       ret.setLinkGraphics(linkGraphics);
 
       return ret;
@@ -116,8 +144,10 @@ public class FallingBrickRobot extends Robot implements RobotController
       q_qlength = new YoDouble("q_qlength", registry);
       theta_x = new YoDouble("theta_x", registry);
 
+      // sets the time
       t.set(0.0);
 
+      // gets the position, velocity, and acceleration variables from the YoVariable registry
       q_x = (YoDouble) this.getVariable("q_x");
       q_y = (YoDouble) this.getVariable("q_y");
       q_z = (YoDouble) this.getVariable("q_z");
@@ -139,13 +169,10 @@ public class FallingBrickRobot extends Robot implements RobotController
       qdd_wy = (YoDouble) this.getVariable("qdd_wy");
       qdd_wz = (YoDouble) this.getVariable("qdd_wz");
 
+      // sets the initial positions, velocities, and accelerations of the falling brick
       q_x.set(0.0);
       q_y.set(0.0);
       q_z.set(0.6);
-
-      qd_x.set(0.0);
-      qd_y.set(0.0);
-      qd_z.set(0.0);
 
       q_qs.set(0.707);
       q_qx.set(0.3);
@@ -158,6 +185,9 @@ public class FallingBrickRobot extends Robot implements RobotController
 
    }
 
+   /**
+    * This method initializes the robot's controller.
+    */
    public void initControl()
    {
       qdd2_wx = new YoDouble("qdd2_wx", registry);

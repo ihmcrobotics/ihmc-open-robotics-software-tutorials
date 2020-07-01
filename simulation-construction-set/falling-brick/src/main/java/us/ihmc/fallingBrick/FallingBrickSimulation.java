@@ -1,40 +1,48 @@
 package us.ihmc.fallingBrick;
 
-import us.ihmc.graphicsDescription.appearance.YoAppearance;
 import us.ihmc.simulationconstructionset.SimulationConstructionSet;
 import us.ihmc.simulationconstructionset.SimulationConstructionSetParameters;
-import us.ihmc.simulationconstructionset.examples.FallingBrickRobot;
 
 public class FallingBrickSimulation
 {
-   private enum GROUND_APPEARANCE
-   {
-      EARTH, STONE, ALUMINUM
-   };
-
    SimulationConstructionSet sim;
 
    public FallingBrickSimulation()
    {
-      GROUND_APPEARANCE appearance = GROUND_APPEARANCE.EARTH;
       FallingBrickRobot FallingBrick = new FallingBrickRobot();
-      //      sim = new SimulationConstructionSet(FallingBrick, new JMEGraphics3dAdapter(), 16342);
 
+      /* Creates simulation parameters */
       SimulationConstructionSetParameters parameters = new SimulationConstructionSetParameters();
+      // Sets data buffer to allow for this number of values for each variable to be saved.
       parameters.setDataBufferSize(16342);
+      // Creates a new simulation
       sim = new SimulationConstructionSet(FallingBrick, parameters);
 
+      /*
+       * Sets the simulation to collect data every 20 simulation steps This is used to prune data so a
+       * smaller buffer is sufficient.
+       */
       sim.setDT(0.001, 20);
 
-      sim.setCameraPosition(-1.5, -2.5, 0.5);
+      // Sets location and orientation of the camera
+      sim.setCameraPosition(-0.5, 8.25, 3.5);
       sim.setCameraFix(0.0, 0.0, 0.4);
 
+      /*
+       * Modifies the camera tracking state for the selected viewport. A camera set to track will not
+       * move. Instead, it will rotate to keep the target in view.
+       */
       sim.setCameraTracking(false, true, true, false);
+      /*
+       * Modifies the camera dolly state for the selected viewport. A camera with dolly enabled will move
+       * to keep its target in view from the same orientation.
+       */
       sim.setCameraDolly(false, true, true, false);
 
-      // Set up some graphs:
+      // Set up a graph of the Z position.
       sim.setupGraph("q_z");
 
+      // Adds an entry box for the specified variable.  
       sim.setupEntryBox("qd_x");
       sim.setupEntryBox("qd_y");
       sim.setupEntryBox("qd_z");
@@ -43,22 +51,11 @@ public class FallingBrickSimulation
       sim.setupEntryBox("qd_wy");
       sim.setupEntryBox("qd_wz");
 
-      switch (appearance)
-      {
-         case EARTH:
-            sim.setGroundAppearance(YoAppearance.EarthTexture());
-            break;
+      // Simulating in real-time
+      sim.setSimulateNoFasterThanRealTime(true);
 
-         case STONE:
-            sim.setGroundAppearance(YoAppearance.StoneTexture());
-            break;
-
-         case ALUMINUM:
-            sim.setGroundAppearance(YoAppearance.AluminumMaterial());
-            break;
-      }
-      Thread myThread = new Thread(sim);
-      myThread.start();
+      // Launch the simulator.
+      sim.startOnAThread();
    }
 
    public static void main(String[] args)

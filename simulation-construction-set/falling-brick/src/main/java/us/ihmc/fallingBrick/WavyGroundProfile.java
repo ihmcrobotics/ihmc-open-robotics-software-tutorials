@@ -29,6 +29,8 @@ public class WavyGroundProfile implements GroundProfile3D, HeightMapWithNormals
    @Override
    public double heightAt(double x, double y, double z)
    {
+      // if in bounds, this is the point where the height of the ground is defined
+      // One can change the profile of the terrain by changing this function
       if ((x > xMin) && (x < xMax) && (y > yMin) && (y < yMax))
          return 1.0 * Math.exp(-Math.abs(2.0 * x)) * Math.exp(-Math.abs(2.0 * y)) * Math.sin(2.0 * Math.PI * 0.7 * x);
       else
