@@ -96,7 +96,7 @@ public class FallingBrickRobot extends Robot
       groundModel.setGroundProfile3D(profile);
       setGroundContactModel(groundModel);
 
-      initRobot();
+      initializeRobot();
    }
 
    /**
@@ -137,7 +137,7 @@ public class FallingBrickRobot extends Robot
    /**
     * This method sets the initial positions, velocities, and accelerations of the brick
     */
-   public void initRobot()
+   public void initializeRobot()
    {
       // sets the initial position of the falling brick
       floatingJoint.setPosition(0.0, 0.0, 0.6);
