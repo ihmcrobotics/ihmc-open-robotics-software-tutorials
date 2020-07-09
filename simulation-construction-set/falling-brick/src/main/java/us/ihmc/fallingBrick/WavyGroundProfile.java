@@ -39,6 +39,9 @@ public class WavyGroundProfile implements GroundProfile3D, HeightMapWithNormals
 
    public void surfaceNormalAt(double x, double y, double z, Vector3DBasics normal)
    {
+      // This should normally be the gradient function defined in heightAt(). By not doing so, the ground contact model will not 
+      // apply the right set of stiffness and damping along the right axis, but overall the behavior would not change that much 
+      // if properly expressed. In this example, it doesn't matter too much so we have set it as such.
       normal.setX(0.0);
       normal.setY(0.0);
       normal.setZ(1.0);

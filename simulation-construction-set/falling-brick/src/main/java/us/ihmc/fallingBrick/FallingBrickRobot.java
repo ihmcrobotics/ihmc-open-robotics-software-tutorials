@@ -12,27 +12,24 @@ import us.ihmc.simulationconstructionset.Joint;
 import us.ihmc.simulationconstructionset.Link;
 import us.ihmc.simulationconstructionset.Robot;
 import us.ihmc.simulationconstructionset.util.LinearGroundContactModel;
-import us.ihmc.simulationconstructionset.util.RobotController;
+import us.ihmc.yoVariables.dataBuffer.YoVariableHolder;
 import us.ihmc.yoVariables.registry.YoVariableRegistry;
 import us.ihmc.yoVariables.variable.YoDouble;
 
-public class FallingBrickRobot extends Robot implements RobotController
+public class FallingBrickRobot extends Robot
 {
    private static final double BASE_H = 0.1, BASE_W = 0.2, BASE_L = 0.3;
    private static final double B1 = BASE_H / 2.0;
    private static final double M1 = 1.7;
    private static final double Ixx1 = 0.1, Iyy1 = 0.5, Izz1 = 0.9;
    private static final double G = 9.81;
-
-   private final YoVariableRegistry registry = new YoVariableRegistry("FallingBrickController");
-
-   // position, velocity, and acceleration variables
-   YoDouble q_x, q_y, q_z, qd_x, qd_y, qd_z, qdd_x, qdd_y, qdd_z;
-   YoDouble q_qs, q_qx, q_qy, q_qz, qd_wx, qd_wy, qd_wz, qdd_wx, qdd_wy, qdd_wz;
-
-   YoDouble q_qlength, theta_x;
-
-   Joint floatingJoint;
+   
+   /*
+    * The first parameter "base" is the name of the joint and will be used in all the variables
+    * associated with the joint. The second parameter "new Vector3d(0.0, 0.0, 0.0)" defines the offset
+    * of this joint from with respect to world's origin. The third parameter "this" refers to the robot itself.
+    */
+   FloatingJoint floatingJoint = new FloatingJoint("base", new Vector3D(0.0, 0.0, 0.0), this);;
 
    public FallingBrickRobot()
    {
@@ -42,12 +39,6 @@ public class FallingBrickRobot extends Robot implements RobotController
       this.setGravity(0.0, 0.0, -G);
 
       // create the brick as a floating joint and adds it to the robot
-      /*
-       * The first parameter "base" is the name of the joint and will be used in all the variables
-       * associated with the joint. The second parameter "new Vector3d(0.0, 0.0, 0.0)" defines the offset
-       * of this joint from the previous joint. The third parameter "this" refers to the robot itself.
-       */
-      floatingJoint = new FloatingJoint("base", new Vector3D(0.0, 0.0, 0.0), this);
       Link link1 = base("base", YoAppearance.Purple());
       // Sets the link created previously as the link for this joint
       floatingJoint.setLink(link1);
@@ -61,6 +52,10 @@ public class FallingBrickRobot extends Robot implements RobotController
       addRootJoint(floatingJoint);
 
       // add ground contact points to the brick
+      /* 
+       * The first parameter is the name of the ground contact point. The second parameter is the offset vector with respect to 
+       * the joint the contact point will be attached to. The third parameter refers to the robot.
+       */
       GroundContactPoint gc1 = new GroundContactPoint("gc1", new Vector3D(BASE_L / 2.0, BASE_W / 2.0, BASE_H / 2.0), this);
       floatingJoint.addGroundContactPoint(gc1);
       GroundContactPoint gc2 = new GroundContactPoint("gc2", new Vector3D(BASE_L / 2.0, -BASE_W / 2.0, BASE_H / 2.0), this);
@@ -84,10 +79,19 @@ public class FallingBrickRobot extends Robot implements RobotController
       GroundContactPoint gc10 = new GroundContactPoint("gc10", new Vector3D(0.0, 0.0, -BASE_H / 2.0 - BASE_H), this);
       floatingJoint.addGroundContactPoint(gc10);
 
-      this.setController(this); // tells the simulator to call the local doControl() method
-
       // instantiate ground contact model
+      /*
+       * This model is like a controller that is called every simulation tick and whose job is to detect contact point colliding 
+       * with the ground. When a contact point collides with the ground, the  model then computes the force to be applied on the 
+       * robot at the contact point to resolve collision. The LinearGroundContactModel uses a spring-damper based strategy to 
+       * compute the force to be applied, with the stiffness and damping parameters being axis dependent. One set of stiffness 
+       * and damping values is used to compute the force along the contact normal while the other set of stiffness and damping 
+       * values are used to compute the force tangent to the contact, or the friction force. It is also worth nothing that 
+       * internally, the ground contact model uses a default coefficient of friction that is used to ensure that the ground
+       * reaction force remains within a friction cone.
+       */
       GroundContactModel groundModel = new LinearGroundContactModel(this, 1422, 150.6, 50.0, 1000.0, getRobotsYoVariableRegistry());
+      // A GroundProfile3D is a height map that is used to define the ground
       GroundProfile3D profile = new WavyGroundProfile();
       groundModel.setGroundProfile3D(profile);
       setGroundContactModel(groundModel);
@@ -106,7 +110,7 @@ public class FallingBrickRobot extends Robot implements RobotController
       ret.setMass(M1);
       // sets the moment of inertia
       ret.setMomentOfInertia(Ixx1, Iyy1, Izz1);
-      // sets the center of mass offset
+      // sets the center of mass offset with respect to the parent joint
       ret.setComOffset(0.0, 0.0, 0.0);
       // Use to visually represent links in the SCS 3D view
       Graphics3DObject linkGraphics = new Graphics3DObject();
@@ -135,70 +139,21 @@ public class FallingBrickRobot extends Robot implements RobotController
     */
    public void initRobot()
    {
-      q_qlength = new YoDouble("q_qlength", registry);
-      theta_x = new YoDouble("theta_x", registry);
+      // sets the initial position of the falling brick
+      floatingJoint.setPosition(0.0, 0.0, 0.6);
 
-      // sets the time
-      t.set(0.0);
-
-      // gets the position, velocity, and acceleration variables from the YoVariable registry
-      q_x = (YoDouble) this.getVariable("q_x");
-      q_y = (YoDouble) this.getVariable("q_y");
-      q_z = (YoDouble) this.getVariable("q_z");
-      qd_x = (YoDouble) this.getVariable("qd_x");
-      qd_y = (YoDouble) this.getVariable("qd_y");
-      qd_z = (YoDouble) this.getVariable("qd_z");
-      qdd_x = (YoDouble) this.getVariable("qdd_x");
-      qdd_y = (YoDouble) this.getVariable("qdd_y");
-      qdd_z = (YoDouble) this.getVariable("qdd_z");
-
-      q_qs = (YoDouble) this.getVariable("q_qs");
-      q_qx = (YoDouble) this.getVariable("q_qx");
-      q_qy = (YoDouble) this.getVariable("q_qy");
-      q_qz = (YoDouble) this.getVariable("q_qz");
-      qd_wx = (YoDouble) this.getVariable("qd_wx");
-      qd_wy = (YoDouble) this.getVariable("qd_wy");
-      qd_wz = (YoDouble) this.getVariable("qd_wz");
-      qdd_wx = (YoDouble) this.getVariable("qdd_wx");
-      qdd_wy = (YoDouble) this.getVariable("qdd_wy");
-      qdd_wz = (YoDouble) this.getVariable("qdd_wz");
+      // sets quaternion 
+      floatingJoint.q_qs.set(0.707);
+      floatingJoint.q_qx.set(0.3);
+      floatingJoint.q_qy.set(0.4);
+      floatingJoint.q_qz.set(0.5);
+      
+      // sets the angular velocity of the falling back
+      floatingJoint.qd_wx.set(0.0001);
+      floatingJoint.qd_wy.set(1.0);
+      floatingJoint.qd_wz.set(0.5001);
 
       // sets the initial positions, velocities, and accelerations of the falling brick
-      q_x.set(0.0);
-      q_y.set(0.0);
-      q_z.set(0.6);
-
-      q_qs.set(0.707);
-      q_qx.set(0.3);
-      q_qy.set(0.4);
-      q_qz.set(0.5);
-
-      qd_wx.set(0.0001);
-      qd_wy.set(1.0);
-      qd_wz.set(0.5001);
 
    }
-
-   @Override
-   public void doControl()
-   {
-   }
-
-   @Override
-   public YoVariableRegistry getYoVariableRegistry()
-   {
-      return registry;
-   }
-
-   @Override
-   public void initialize()
-   {
-   }
-
-   @Override
-   public String getDescription()
-   {
-      return getName();
-   }
-
 }
