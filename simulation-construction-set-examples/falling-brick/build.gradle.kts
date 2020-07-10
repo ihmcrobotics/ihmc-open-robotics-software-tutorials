@@ -13,4 +13,5 @@ ihmc {
 }
 
 mainDependencies {
+   api("us.ihmc:simulation-construction-set:0.16.0")
 }

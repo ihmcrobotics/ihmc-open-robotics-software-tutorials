@@ -10,7 +10,6 @@ public class FallingBrickSimulation
    public FallingBrickSimulation()
    {
       FallingBrickRobot FallingBrick = new FallingBrickRobot();
-
       /* Creates simulation parameters */
       SimulationConstructionSetParameters parameters = new SimulationConstructionSetParameters();
       // Sets data buffer to allow for this number of values for each variable to be saved.
