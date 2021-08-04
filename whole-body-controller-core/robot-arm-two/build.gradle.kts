@@ -13,10 +13,10 @@ ihmc {
 }
 
 mainDependencies {
-   api("us.ihmc:simulation-construction-set:0.16.0")
-   api("us.ihmc:euclid:0.14.1")
-   api("us.ihmc:simulation-construction-set-tools:0.13.0-200518")
-   api("us.ihmc:ihmc-simulation-toolkit:0.13.0-200518")
+   api("us.ihmc:simulation-construction-set:0.21.9")
+   api("us.ihmc:euclid:0.16.2")
+   api("us.ihmc:simulation-construction-set-tools:0.13.0-210804-2")
+   api("us.ihmc:ihmc-simulation-toolkit:0.13.0-210804-2")
    api("us.ihmc:robot-arm-one:source")
 }
 

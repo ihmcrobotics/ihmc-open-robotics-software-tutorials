@@ -45,7 +45,7 @@ public class RobotWalkerFourSimulation
                                                                           groundBxy,
                                                                           groundKz,
                                                                           groundBz,
-                                                                          simulatedRobot.getRobotsYoVariableRegistry());
+                                                                          simulatedRobot.getRobotsYoRegistry());
       simulatedRobot.setGroundContactModel(linearGroundModel);
 
       // Make sure the simulation and the controller are using the same value for the
@@ -64,7 +64,7 @@ public class RobotWalkerFourSimulation
       scs.setDT(simulateDT, 10);
       // Defining the buffer size to ensure a minimum simulation duration before
       // filling the graphs in the simulator.
-      scs.setMaxBufferSize(65536);
+      scs.changeBufferSize(65536);
       // Launch the simulator.
       scs.startOnAThread();
    }

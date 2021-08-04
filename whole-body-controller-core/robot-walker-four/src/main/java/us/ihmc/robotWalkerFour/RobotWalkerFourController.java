@@ -3,6 +3,7 @@ package us.ihmc.robotWalkerFour;
 import java.util.Arrays;
 import java.util.List;
 
+import us.ihmc.commonWalkingControlModules.controllerCore.FeedbackControllerTemplate;
 import us.ihmc.commonWalkingControlModules.controllerCore.WholeBodyControlCoreToolbox;
 import us.ihmc.commonWalkingControlModules.controllerCore.WholeBodyControllerCore;
 import us.ihmc.commonWalkingControlModules.controllerCore.WholeBodyControllerCoreMode;
@@ -14,6 +15,8 @@ import us.ihmc.commonWalkingControlModules.controllerCore.command.feedbackContro
 import us.ihmc.commonWalkingControlModules.controllerCore.command.inverseDynamics.PlaneContactStateCommand;
 import us.ihmc.commonWalkingControlModules.controllerCore.command.inverseDynamics.SpatialAccelerationCommand;
 import us.ihmc.commonWalkingControlModules.momentumBasedController.optimization.ControllerCoreOptimizationSettings;
+import us.ihmc.commonWalkingControlModules.trajectories.TwoWaypointSwingGenerator;
+import us.ihmc.commons.MathTools;
 import us.ihmc.euclid.referenceFrame.FramePoint2D;
 import us.ihmc.euclid.referenceFrame.FramePoint3D;
 import us.ihmc.euclid.referenceFrame.FramePose3D;
@@ -21,29 +24,28 @@ import us.ihmc.euclid.referenceFrame.FrameVector3D;
 import us.ihmc.euclid.referenceFrame.ReferenceFrame;
 import us.ihmc.euclid.referenceFrame.interfaces.FramePoint3DReadOnly;
 import us.ihmc.graphicsDescription.yoGraphics.YoGraphicsListRegistry;
-import us.ihmc.robotics.contactable.ContactablePlaneBody;
 import us.ihmc.mecano.multiBodySystem.interfaces.FloatingJointBasics;
 import us.ihmc.mecano.multiBodySystem.interfaces.JointBasics;
-import us.ihmc.mecano.multiBodySystem.interfaces.OneDoFJointBasics;
+import us.ihmc.mecano.multiBodySystem.interfaces.OneDoFJointReadOnly;
 import us.ihmc.mecano.multiBodySystem.interfaces.RigidBodyBasics;
 import us.ihmc.mecano.tools.MultiBodySystemTools;
+import us.ihmc.robotics.contactable.ContactablePlaneBody;
 import us.ihmc.robotics.controllers.pidGains.GainCoupling;
 import us.ihmc.robotics.controllers.pidGains.implementations.DefaultYoPIDSE3Gains;
-import us.ihmc.robotics.math.trajectories.ParabolicPositionTrajectoryGenerator;
-import us.ihmc.robotics.math.trajectories.QuinticPolynomialTrajectoryGenerator;
+import us.ihmc.robotics.math.trajectories.yoVariables.YoPolynomial;
 import us.ihmc.robotics.robotSide.RobotSide;
 import us.ihmc.robotics.stateMachine.core.State;
 import us.ihmc.robotics.stateMachine.core.StateMachine;
 import us.ihmc.robotics.stateMachine.factories.StateMachineFactory;
-import us.ihmc.robotics.trajectories.providers.PositionProvider;
+import us.ihmc.robotics.trajectories.TrajectoryType;
 import us.ihmc.sensorProcessing.outputData.JointDesiredOutputListReadOnly;
 import us.ihmc.sensorProcessing.outputData.JointDesiredOutputReadOnly;
 import us.ihmc.simulationconstructionset.util.RobotController;
-import us.ihmc.yoVariables.providers.DoubleProvider;
-import us.ihmc.yoVariables.registry.YoVariableRegistry;
+import us.ihmc.yoVariables.euclid.referenceFrame.YoFramePoint3D;
+import us.ihmc.yoVariables.euclid.referenceFrame.YoFrameVector3D;
+import us.ihmc.yoVariables.registry.YoRegistry;
 import us.ihmc.yoVariables.variable.YoBoolean;
 import us.ihmc.yoVariables.variable.YoDouble;
-import us.ihmc.yoVariables.variable.YoFramePoint3D;
 
 /**
  * The objective here is to implement small controller that uses the IHMC whole-body controller to
@@ -68,7 +70,7 @@ public class RobotWalkerFourController implements RobotController
     * We use this registry to keep track of the controller variables which can then be viewed in
     * Simulation Construction Set.
     */
-   private final YoVariableRegistry registry = new YoVariableRegistry("Controller");
+   private final YoRegistry registry = new YoRegistry("Controller");
    /**
     * This variable triggers the controller to initiate walking.
     */
@@ -222,7 +224,7 @@ public class RobotWalkerFourController implements RobotController
       allPossibleCommands.addCommand(centerOfMassCommand);
 
       // Finally we can create the controller core.
-      return new WholeBodyControllerCore(toolbox, allPossibleCommands, registry);
+      return new WholeBodyControllerCore(toolbox, new FeedbackControllerTemplate(allPossibleCommands), registry);
    }
 
    private StateMachine<WalkingStateEnum, State> createStateMachine()
@@ -308,7 +310,7 @@ public class RobotWalkerFourController implements RobotController
 
       for (int i = 0; i < outputForLowLevelController.getNumberOfJointsWithDesiredOutput(); i++)
       {
-         OneDoFJointBasics oneDoFJoint = outputForLowLevelController.getOneDoFJoint(i);
+         OneDoFJointReadOnly oneDoFJoint = outputForLowLevelController.getOneDoFJoint(i);
          JointDesiredOutputReadOnly jointDesiredOutput = outputForLowLevelController.getJointDesiredOutput(i);
          robotWalkerFour.setDesiredEffort(oneDoFJoint, jointDesiredOutput.getDesiredTorque());
       }
@@ -406,24 +408,12 @@ public class RobotWalkerFourController implements RobotController
        * We use a 5th order polynomial to smooth out the velocity of the center of mass at the start and
        * end of this state. This allows the robot to walk slightly faster without falling.
        */
-      private final QuinticPolynomialTrajectoryGenerator centerOfMassTrajectory;
+      private final YoPolynomial centerOfMassTrajectory;
 
       public TransferState(RobotSide transferToSide)
       {
          this.transferToSide = transferToSide;
-         // The trajectory is setup such that it will always from 0.0 to 1.0 within the
-         // given transferDuration.
-         DoubleProvider initialPositionProvider = () -> 0.0;
-         DoubleProvider initialVelocityProvider = () -> 0.0;
-         DoubleProvider finalPositionProvider = () -> 1.0;
-         DoubleProvider finalVelocityProvider = () -> 0.0;
-         centerOfMassTrajectory = new QuinticPolynomialTrajectoryGenerator(transferToSide.getCamelCaseName() + "CenterOfMassTrajectory",
-                                                                           initialPositionProvider,
-                                                                           initialVelocityProvider,
-                                                                           finalPositionProvider,
-                                                                           finalVelocityProvider,
-                                                                           transferDuration,
-                                                                           registry);
+         centerOfMassTrajectory = new YoPolynomial(transferToSide.getCamelCaseName() + "CenterOfMassTrajectory", 6, registry);
       }
 
       @Override
@@ -438,7 +428,8 @@ public class RobotWalkerFourController implements RobotController
          initialCenterOfMassPosition.changeFrame(WORLD_FRAME);
          finalCenterOfMassPosition.setToZero(robotWalkerFour.getSoleFrame(transferToSide));
          finalCenterOfMassPosition.changeFrame(WORLD_FRAME);
-         centerOfMassTrajectory.initialize();
+         // The trajectory is setup such that it will always from 0.0 to 1.0 within the given transferDuration.
+         centerOfMassTrajectory.setQuintic(0, transferDuration.getValue(), 0.0, 0.0, 0.0, 1.0, 0.0, 0.0);
       }
 
       @Override
@@ -446,7 +437,7 @@ public class RobotWalkerFourController implements RobotController
       {
          // The trajectory generator is updated to get the current progression percentage
          // alpha which is in [0, 1].
-         centerOfMassTrajectory.compute(timeInState);
+         centerOfMassTrajectory.compute(MathTools.clamp(timeInState, 0.0, transferDuration.getValue()));
          double alpha = centerOfMassTrajectory.getValue();
 
          // The alpha parameter is now used to interpolate between the initial and final
@@ -492,26 +483,27 @@ public class RobotWalkerFourController implements RobotController
       private final RobotSide supportSide;
       private final RobotSide swingSide;
       /** We will use a trajectory generator for the swing. */
-      private final ParabolicPositionTrajectoryGenerator swingPositionTrajectory;
+      private final TwoWaypointSwingGenerator swingPositionTrajectory;
+      private final YoFramePoint3D initialPosition;
       /**
        * YoVariable for the next footstep position so we can monitor it during the simulation.
        */
       private final YoFramePoint3D footstepPosition;
+      private final YoFrameVector3D touchdownVelocity;
       private final FramePose3D swingControlFramePose = new FramePose3D();
 
       public SingleSupportState(RobotSide supportSide)
       {
          this.supportSide = supportSide;
          swingSide = supportSide.getOppositeSide();
+         initialPosition = new YoFramePoint3D(swingSide.getCamelCaseName() + "SwingStart", WORLD_FRAME, registry);
          footstepPosition = new YoFramePoint3D(swingSide.getCamelCaseName() + "Footstep", WORLD_FRAME, registry);
+         touchdownVelocity = new YoFrameVector3D(swingSide.getCamelCaseName() + "TouchdownVelocity", WORLD_FRAME, registry);
+         touchdownVelocity.set(0.0, 0.0, -0.1);
 
          double groundClearance = 0.10;
-         // The trajectory generator such that the swing starts from the current foot
-         // position and ends at the given footstepPosition.
-         PositionProvider initialPositionProvider = initialPosition -> initialPosition.setToZero(robotWalkerFour.getSoleFrame(swingSide));
-         PositionProvider finalPositionProvider = finalPosition -> finalPosition.setIncludingFrame(footstepPosition);
-         swingPositionTrajectory = new ParabolicPositionTrajectoryGenerator(swingSide
-               + "Swing", WORLD_FRAME, swingDuration, initialPositionProvider, finalPositionProvider, groundClearance, registry);
+         // The trajectory generator such that the swing starts from the current foot position and ends at the given footstepPosition.
+         swingPositionTrajectory = new TwoWaypointSwingGenerator(swingSide.getCamelCaseName() + "Swing", 0.05, 0.15, groundClearance, 0.0, registry, null);
          // Here we define the control frame pose that is needed to specify the point on
          // the foot we want to control to the controller core.
          swingControlFramePose.setToZero(robotWalkerFour.getSoleFrame(swingSide));
@@ -524,9 +516,16 @@ public class RobotWalkerFourController implements RobotController
          // Here we compute the position for the next footstep.
          FramePoint3D supportFootPosition = new FramePoint3D(robotWalkerFour.getSoleFrame(supportSide));
          supportFootPosition.changeFrame(WORLD_FRAME);
+         initialPosition.setFromReferenceFrame(robotWalkerFour.getSoleFrame(swingSide));
          footstepPosition.setFromReferenceFrame(robotWalkerFour.getSoleFrame(swingSide));
          footstepPosition.setX(supportFootPosition.getX() + stepLength.getValue());
+         swingPositionTrajectory.setInitialConditions(initialPosition, new FrameVector3D());
+         swingPositionTrajectory.setFinalConditions(footstepPosition, touchdownVelocity);
+         swingPositionTrajectory.setTrajectoryType(TrajectoryType.DEFAULT);
+         swingPositionTrajectory.setStepTime(swingDuration.getValue());
          swingPositionTrajectory.initialize();
+         while (swingPositionTrajectory.doOptimizationUpdate())
+            ;
       }
 
       @Override
@@ -635,7 +634,7 @@ public class RobotWalkerFourController implements RobotController
    }
 
    @Override
-   public YoVariableRegistry getYoVariableRegistry()
+   public YoRegistry getYoRegistry()
    {
       return registry;
    }

@@ -3,6 +3,7 @@ package us.ihmc.robotArmThree;
 import java.util.Collections;
 
 import us.ihmc.commonWalkingControlModules.configurations.JointPrivilegedConfigurationParameters;
+import us.ihmc.commonWalkingControlModules.controllerCore.FeedbackControllerTemplate;
 import us.ihmc.commonWalkingControlModules.controllerCore.WholeBodyControlCoreToolbox;
 import us.ihmc.commonWalkingControlModules.controllerCore.WholeBodyControllerCore;
 import us.ihmc.commonWalkingControlModules.controllerCore.WholeBodyControllerCoreMode;
@@ -36,12 +37,12 @@ import us.ihmc.robotics.screwTheory.SelectionMatrix6D;
 import us.ihmc.sensorProcessing.outputData.JointDesiredOutputListReadOnly;
 import us.ihmc.sensorProcessing.outputData.JointDesiredOutputReadOnly;
 import us.ihmc.simulationconstructionset.util.RobotController;
-import us.ihmc.yoVariables.registry.YoVariableRegistry;
+import us.ihmc.yoVariables.euclid.referenceFrame.YoFramePoint3D;
+import us.ihmc.yoVariables.euclid.referenceFrame.YoFramePoseUsingYawPitchRoll;
+import us.ihmc.yoVariables.euclid.referenceFrame.YoFrameQuaternion;
+import us.ihmc.yoVariables.euclid.referenceFrame.YoFrameVector3D;
+import us.ihmc.yoVariables.registry.YoRegistry;
 import us.ihmc.yoVariables.variable.YoDouble;
-import us.ihmc.yoVariables.variable.YoFramePoint3D;
-import us.ihmc.yoVariables.variable.YoFramePoseUsingYawPitchRoll;
-import us.ihmc.yoVariables.variable.YoFrameQuaternion;
-import us.ihmc.yoVariables.variable.YoFrameVector3D;
 import us.ihmc.yoVariables.variable.YoInteger;
 
 public class RobotArmThreeController implements RobotController
@@ -52,7 +53,7 @@ public class RobotArmThreeController implements RobotController
     * We use this registry to keep track of the controller variables which can then be viewed in
     * Simulation Construction Set.
     */
-   private final YoVariableRegistry registry = new YoVariableRegistry("Controller");
+   private final YoRegistry registry = new YoRegistry("Controller");
    /**
     * This variable stores the current simulation time and is updated by the simulation.
     */
@@ -203,7 +204,7 @@ public class RobotArmThreeController implements RobotController
       toolbox.setJointPrivilegedConfigurationParameters(new JointPrivilegedConfigurationParameters());
 
       // Finally we can create the controller core.
-      return new WholeBodyControllerCore(toolbox, allPossibleCommands, registry);
+      return new WholeBodyControllerCore(toolbox, new FeedbackControllerTemplate(allPossibleCommands), registry);
    }
 
    @Override
@@ -402,7 +403,7 @@ public class RobotArmThreeController implements RobotController
    }
 
    @Override
-   public YoVariableRegistry getYoVariableRegistry()
+   public YoRegistry getYoRegistry()
    {
       return registry;
    }

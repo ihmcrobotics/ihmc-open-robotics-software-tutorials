@@ -78,7 +78,7 @@ public class RobotArmThreeSimulation
       scs.setDT(simulateDT, 10);
       // Defining the buffer size to ensure a minimum simulation duration before
       // filling the graphs in the simulator.
-      scs.setMaxBufferSize(65536);
+      scs.changeBufferSize(65536);
       // Launch the simulator.
       scs.startOnAThread();
    }

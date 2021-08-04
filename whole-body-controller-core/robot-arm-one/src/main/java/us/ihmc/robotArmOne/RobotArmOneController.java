@@ -6,7 +6,7 @@ import org.apache.commons.lang3.StringUtils;
 
 import us.ihmc.robotArmOne.SevenDoFArmParameters.SevenDoFArmJointEnum;
 import us.ihmc.simulationconstructionset.util.RobotController;
-import us.ihmc.yoVariables.registry.YoVariableRegistry;
+import us.ihmc.yoVariables.registry.YoRegistry;
 import us.ihmc.yoVariables.variable.YoDouble;
 
 public class RobotArmOneController implements RobotController
@@ -17,7 +17,7 @@ public class RobotArmOneController implements RobotController
     * We use this registry to keep track of the controller variables which can then be viewed in
     * Simulation Construction Set.
     */
-   private final YoVariableRegistry registry = new YoVariableRegistry("Controller");
+   private final YoRegistry registry = new YoRegistry("Controller");
    /**
     * Proportional gain for each joint. {@code YoDouble}s are used instead of simple {@code double} so
     * they can be viewed and modified via the Simulation Construction Set.
@@ -157,7 +157,7 @@ public class RobotArmOneController implements RobotController
    }
 
    @Override
-   public YoVariableRegistry getYoVariableRegistry()
+   public YoRegistry getYoRegistry()
    {
       return registry;
    }

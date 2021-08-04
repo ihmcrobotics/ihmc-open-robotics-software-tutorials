@@ -10,6 +10,7 @@ import us.ihmc.euclid.tuple2D.Point2D;
 import us.ihmc.mecano.frames.CenterOfMassReferenceFrame; //added
 import us.ihmc.mecano.multiBodySystem.interfaces.FloatingJointBasics;
 import us.ihmc.mecano.multiBodySystem.interfaces.OneDoFJointBasics;
+import us.ihmc.mecano.multiBodySystem.interfaces.OneDoFJointReadOnly;
 import us.ihmc.mecano.multiBodySystem.interfaces.RigidBodyBasics; //added
 import us.ihmc.robotics.robotSide.RobotSide;
 import us.ihmc.robotics.robotSide.SideDependentList;
@@ -222,8 +223,8 @@ public class RobotWalkerFour
     * @param inverseDynamicsJoint the joint of interest.
     * @param desiredEffort        the new effort value.
     */
-   public void setDesiredEffort(OneDoFJointBasics inverseDynamicsJoint, double desiredEffort)
+   public void setDesiredEffort(OneDoFJointReadOnly inverseDynamicsJoint, double desiredEffort)
    {
-      jointMap.getSimulatedOneDegreeOfFreedomJoint(inverseDynamicsJoint).setTau(desiredEffort);
+      jointMap.getSimulatedOneDegreeOfFreedomJoint((OneDoFJointBasics) inverseDynamicsJoint).setTau(desiredEffort);
    }
 }

@@ -5,6 +5,7 @@ import java.util.EnumMap;
 
 import org.apache.commons.lang3.StringUtils;
 
+import us.ihmc.commonWalkingControlModules.controllerCore.FeedbackControllerTemplate;
 import us.ihmc.commonWalkingControlModules.controllerCore.WholeBodyControlCoreToolbox;
 import us.ihmc.commonWalkingControlModules.controllerCore.WholeBodyControllerCore;
 import us.ihmc.commonWalkingControlModules.controllerCore.WholeBodyControllerCoreMode;
@@ -14,18 +15,18 @@ import us.ihmc.commonWalkingControlModules.controllerCore.command.feedbackContro
 import us.ihmc.commonWalkingControlModules.controllerCore.command.feedbackController.OneDoFJointFeedbackControlCommand;
 import us.ihmc.commonWalkingControlModules.momentumBasedController.optimization.ControllerCoreOptimizationSettings;
 import us.ihmc.graphicsDescription.yoGraphics.YoGraphicsListRegistry;
-import us.ihmc.robotArmOne.SevenDoFArmParameters.SevenDoFArmJointEnum;
-import us.ihmc.robotics.controllers.pidGains.implementations.YoPDGains;
 import us.ihmc.mecano.multiBodySystem.OneDoFJoint;
 import us.ihmc.mecano.multiBodySystem.interfaces.FloatingJointBasics;
 import us.ihmc.mecano.multiBodySystem.interfaces.JointBasics;
 import us.ihmc.mecano.multiBodySystem.interfaces.OneDoFJointBasics;
 import us.ihmc.mecano.multiBodySystem.interfaces.RigidBodyBasics;
 import us.ihmc.mecano.tools.MultiBodySystemTools;
+import us.ihmc.robotArmOne.SevenDoFArmParameters.SevenDoFArmJointEnum;
+import us.ihmc.robotics.controllers.pidGains.implementations.YoPDGains;
 import us.ihmc.sensorProcessing.outputData.JointDesiredOutputListReadOnly;
 import us.ihmc.sensorProcessing.outputData.JointDesiredOutputReadOnly;
 import us.ihmc.simulationconstructionset.util.RobotController;
-import us.ihmc.yoVariables.registry.YoVariableRegistry;
+import us.ihmc.yoVariables.registry.YoRegistry;
 import us.ihmc.yoVariables.variable.YoDouble;
 
 public class RobotArmTwoController implements RobotController
@@ -35,7 +36,7 @@ public class RobotArmTwoController implements RobotController
     * We use this registry to keep track of the controller variables which can then be viewed in
     * Simulation Construction Set.
     */
-   private final YoVariableRegistry registry = new YoVariableRegistry("Controller");
+   private final YoRegistry registry = new YoRegistry("Controller");
    /**
     * Desired position for each joint. {@code YoDouble}s are used instead of simple {@code double} so
     * they can be monitored via the Simulation Construction Set.
@@ -169,7 +170,7 @@ public class RobotArmTwoController implements RobotController
       allPossibleCommands.addCommand(jointCommands);
 
       // Finally we can create the controller core.
-      return new WholeBodyControllerCore(toolbox, allPossibleCommands, registry);
+      return new WholeBodyControllerCore(toolbox, new FeedbackControllerTemplate(allPossibleCommands), registry);
    }
 
    @Override
@@ -319,7 +320,7 @@ public class RobotArmTwoController implements RobotController
    }
 
    @Override
-   public YoVariableRegistry getYoVariableRegistry()
+   public YoRegistry getYoRegistry()
    {
       return registry;
    }
