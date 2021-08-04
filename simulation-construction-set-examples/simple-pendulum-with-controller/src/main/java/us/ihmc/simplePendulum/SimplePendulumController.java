@@ -1,7 +1,7 @@
 package us.ihmc.simplePendulum;
 
 import us.ihmc.simulationconstructionset.util.RobotController;
-import us.ihmc.yoVariables.registry.YoVariableRegistry;
+import us.ihmc.yoVariables.registry.YoRegistry;
 import us.ihmc.yoVariables.variable.YoDouble;
 
 public class SimplePendulumController implements RobotController
@@ -11,7 +11,7 @@ public class SimplePendulumController implements RobotController
 
    // This line instantiates a registry that will contain relevant controller
    // variables that will be accessible from the simulation panel.
-   private final YoVariableRegistry registry = new YoVariableRegistry("PendulumController");
+   private final YoRegistry registry = new YoRegistry("PendulumController");
 
    // This is a reference to the SimplePendulumRobot that enables the controller to
    // access this robot's variables.
@@ -74,7 +74,7 @@ public class SimplePendulumController implements RobotController
    }
 
    @Override
-   public YoVariableRegistry getYoVariableRegistry()
+   public YoRegistry getYoRegistry()
    {
       return registry;
    }

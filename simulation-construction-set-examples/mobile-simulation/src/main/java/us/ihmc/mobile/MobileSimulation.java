@@ -41,7 +41,7 @@ public class MobileSimulation
       simulationConstructionSet.setSimulateDuration(30.0);
       // Setting the buffer such that when SCS reaches the simulation duration, the
       // buffer is entirely filled and the graphs are
-      simulationConstructionSet.setMaxBufferSize(1501);
+      simulationConstructionSet.changeBufferSize(1501);
       // Launch the simulator.
       simulationConstructionSet.startOnAThread();
    }

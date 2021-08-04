@@ -89,7 +89,7 @@ public class FallingBrickRobot extends Robot
        * also worth nothing that internally, the ground contact model uses a default coefficient of
        * friction that is used to ensure that the ground reaction force remains within a friction cone.
        */
-      GroundContactModel groundModel = new LinearGroundContactModel(this, 1422, 150.6, 50.0, 1000.0, getRobotsYoVariableRegistry());
+      GroundContactModel groundModel = new LinearGroundContactModel(this, 1422, 150.6, 50.0, 1000.0, getRobotsYoRegistry());
       // A GroundProfile3D is a height map that is used to define the ground
       GroundProfile3D profile = new WavyGroundProfile();
       groundModel.setGroundProfile3D(profile);
