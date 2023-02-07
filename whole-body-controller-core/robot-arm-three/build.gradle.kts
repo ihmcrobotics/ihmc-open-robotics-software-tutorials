@@ -13,11 +13,11 @@ ihmc {
 }
 
 mainDependencies {
-   api("us.ihmc:simulation-construction-set:0.21.9")
-   api("us.ihmc:euclid:0.16.2")
-   api("us.ihmc:simulation-construction-set-tools:0.13.0-210804-2")
-   api("us.ihmc:ihmc-simulation-toolkit:0.13.0-210804-2")
-   api("us.ihmc:ihmc-common-walking-control-modules:0.13.0-210804-2")
+   api("us.ihmc:simulation-construction-set:0.22.10")
+   api("us.ihmc:euclid:0.19.1")
+   api("us.ihmc:simulation-construction-set-tools:0.14.0-230207")
+   api("us.ihmc:ihmc-simulation-toolkit:0.14.0-230207")
+   api("us.ihmc:ihmc-common-walking-control-modules:0.14.0-230207")
    api("us.ihmc:robot-arm-one:source")
    api("us.ihmc:robot-arm-two:source")
 }

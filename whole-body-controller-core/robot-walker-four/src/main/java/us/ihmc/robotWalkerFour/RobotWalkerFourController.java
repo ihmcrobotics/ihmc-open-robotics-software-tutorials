@@ -380,7 +380,7 @@ public class RobotWalkerFourController implements RobotController
       }
 
       @Override
-      public void onExit()
+      public void onExit(double timeInState)
       {
       }
 
@@ -461,7 +461,7 @@ public class RobotWalkerFourController implements RobotController
       }
 
       @Override
-      public void onExit()
+      public void onExit(double timeInState)
       {
       }
 
@@ -571,10 +571,10 @@ public class RobotWalkerFourController implements RobotController
       }
 
       @Override
-      public void onExit()
+      public void onExit(double timeInState)
       {
       }
-
+    
       @Override
       public boolean isDone(double timeInState)
       {
