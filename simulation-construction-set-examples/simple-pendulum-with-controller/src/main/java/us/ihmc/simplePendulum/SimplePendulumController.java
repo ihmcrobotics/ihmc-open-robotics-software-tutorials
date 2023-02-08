@@ -62,7 +62,7 @@ public class SimplePendulumController implements RobotController
       positionError = desiredPositionRadians.getDoubleValue() - robot.getFulcrumAngularPosition();
 
       // INTEGRAL term: Compute a simple numerical integration of the position error
-      integralError += positionError * SimplePendulumSimulation.DT;
+//      integralError += positionError * SimplePendulumSimulation.DT;
 
       // P.I.D control law
       torque = p_gain.getDoubleValue() * positionError + i_gain.getDoubleValue() * integralError
