@@ -1,7 +1,6 @@
 package us.ihmc.mobile;
 
-import us.ihmc.scs2.sessionVisualizer.jfx.SessionVisualizer;
-import us.ihmc.scs2.simulation.SimulationSession;
+import us.ihmc.scs2.SimulationConstructionSet2;
 
 /**
  * A simulation of a child's mobile toy that uses a tree structure of 21 gimbal
@@ -17,12 +16,12 @@ public class MobileSimulation {
 		MobileDefinition mobile = new MobileDefinition();
 
 		// Instantiate a SCS object and add the MobileRobot
-		SimulationSession scs = new SimulationSession();
+		SimulationConstructionSet2 scs = new SimulationConstructionSet2();
 
 		scs.addRobot(mobile);
 
 		// Launch the simulator
-		SessionVisualizer.startSessionVisualizer(scs);
+		scs.start(false, false, false);
 	}
 
 	public static void main(String[] args) {
