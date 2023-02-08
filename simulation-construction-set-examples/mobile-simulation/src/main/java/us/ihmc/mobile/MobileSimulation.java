@@ -16,12 +16,14 @@ public class MobileSimulation {
 		MobileDefinition mobile = new MobileDefinition();
 
 		// Instantiate a SCS object and add the MobileRobot
-		SimulationConstructionSet2 scs = new SimulationConstructionSet2();
+		SimulationConstructionSet2 scs = new SimulationConstructionSet2(SimulationConstructionSet2.impulseBasedPhysicsEngineFactory());
 
 		scs.addRobot(mobile);
-
+		
+		scs.setDT(0.001);
+		scs.setBufferRecordTickPeriod(1);
 		// Launch the simulator
-		scs.start(false, false, false);
+		scs.start(true, false, false);
 	}
 
 	public static void main(String[] args) {
