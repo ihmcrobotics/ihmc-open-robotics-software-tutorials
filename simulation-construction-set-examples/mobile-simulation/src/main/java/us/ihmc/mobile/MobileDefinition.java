@@ -207,15 +207,15 @@ public class MobileDefinition extends RobotDefinition {
 
 		// create the different visual elements
 		// create the upper sphere
-//		crossBar.addVisualDefinition(new VisualDefinition(sphere1, redMaterial));
+		crossBar.addVisualDefinition(new VisualDefinition(sphere1, redMaterial));
 		// create the cylinder directed downwards
-//		crossBar.addVisualDefinition(new VisualDefinition(verticalBarPose, cylinder1, blackMaterial));
-//		crossBar.addVisualDefinition(new VisualDefinition(crossBarCenter1, cylinder2, blackMaterial));
-//		crossBar.addVisualDefinition(new VisualDefinition(crossBarCenter2, cylinder2, blackMaterial));
-//		crossBar.addVisualDefinition(new VisualDefinition(crossBarTip1, sphere2, redMaterial));
-//		crossBar.addVisualDefinition(new VisualDefinition(crossBarTip2, sphere2, redMaterial));
-//		crossBar.addVisualDefinition(new VisualDefinition(crossBarTip3, sphere2, redMaterial));
-//		crossBar.addVisualDefinition(new VisualDefinition(crossBarTip4, sphere2, redMaterial));
+		crossBar.addVisualDefinition(new VisualDefinition(verticalBarPose, cylinder1, blackMaterial));
+		crossBar.addVisualDefinition(new VisualDefinition(crossBarCenter1, cylinder2, blackMaterial));
+		crossBar.addVisualDefinition(new VisualDefinition(crossBarCenter2, cylinder2, blackMaterial));
+		crossBar.addVisualDefinition(new VisualDefinition(crossBarTip1, sphere2, redMaterial));
+		crossBar.addVisualDefinition(new VisualDefinition(crossBarTip2, sphere2, redMaterial));
+		crossBar.addVisualDefinition(new VisualDefinition(crossBarTip3, sphere2, redMaterial));
+		crossBar.addVisualDefinition(new VisualDefinition(crossBarTip4, sphere2, redMaterial));
 
 		return crossBar;
 	}
@@ -235,8 +235,8 @@ public class MobileDefinition extends RobotDefinition {
 		RigidBodyTransform barVisualPose = new RigidBodyTransform();
 		barVisualPose.getTranslation().setZ(-stringLength / 2.0);
 		GeometryDefinition barGeometryDefinition = new Cylinder3DDefinition(stringLength, R3);
-//		toyRigidbody.addVisualDefinition(new VisualDefinition(barVisualPose, barGeometryDefinition,
-//				new MaterialDefinition(ColorDefinitions.Black())));
+		toyRigidbody.addVisualDefinition(new VisualDefinition(barVisualPose, barGeometryDefinition,
+				new MaterialDefinition(ColorDefinitions.Black())));
 
 		int toySelection = (int) (Math.random() * 7.0);
 		GeometryDefinition toyGeometryDefinition;
@@ -269,8 +269,8 @@ public class MobileDefinition extends RobotDefinition {
 		RigidBodyTransform toyVisualPose = new RigidBodyTransform();
 		toyVisualPose.getTranslation().setZ(-stringLength);
 		MaterialDefinition toyMaterialDefinition = new MaterialDefinition(ColorDefinition.rgb(new Random().nextInt()));
-//		toyRigidbody
-//				.addVisualDefinition(new VisualDefinition(toyVisualPose, toyGeometryDefinition, toyMaterialDefinition));
+		toyRigidbody
+				.addVisualDefinition(new VisualDefinition(toyVisualPose, toyGeometryDefinition, toyMaterialDefinition));
 
 		return toyRigidbody;
 	}
