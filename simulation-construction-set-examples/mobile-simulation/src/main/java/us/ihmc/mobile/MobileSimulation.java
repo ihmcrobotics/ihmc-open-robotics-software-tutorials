@@ -1,53 +1,38 @@
 package us.ihmc.mobile;
 
-import us.ihmc.simulationconstructionset.SimulationConstructionSet;
+import java.util.List;
+
+import us.ihmc.scs2.definition.terrain.TerrainObjectDefinition;
+import us.ihmc.scs2.sessionVisualizer.jfx.SessionVisualizer;
+import us.ihmc.scs2.simulation.SimulationSession;
 
 /**
- * A simulation of a child's mobile toy that uses a tree structure of 21 gimbal joints (63 degrees
- * of freedom total).
+ * A simulation of a child's mobile toy that uses a tree structure of 21 gimbal
+ * joints (63 degrees of 
+ * 
+ * 
+ * freedom total).
  */
-public class MobileSimulation
-{
-   private SimulationConstructionSet simulationConstructionSet;
+public class MobileSimulation {
 
-   public MobileSimulation()
-   {
-      // Create an instance of MobileRobot
-      MobileRobot mobile = new MobileRobot();
+	public MobileSimulation() throws Exception {
+		// Create an instance of the Mobile-Robot
+//		MobileDefinition mobile = new MobileDefinition();
 
-      // Instantiate a SCS object using the MobileRobot object reference
-      simulationConstructionSet = new SimulationConstructionSet(mobile);
-      // By default a ground plane is added in SCS, we have no need for it in this
-      // example.
-      simulationConstructionSet.setGroundVisible(false);
+		// Instantiate a SCS object and add the MobileRobot
+		SimulationSession scs = new SimulationSession();
+		List<TerrainObjectDefinition> test = scs.getTerrainObjectDefinitions();
+//		scs.addRobot(mobile);
 
-      simulationConstructionSet.setCameraTracking(false, false, false, false);
-      simulationConstructionSet.setCameraDolly(false, false, false, false);
+//		if(!test.isEmpty())
+//		{
+//			throw new Exception("Terrain is not empty");
+//		}
+		// Launch the simulator
+		SessionVisualizer.startSessionVisualizer(scs);
+	}
 
-      // set camera to a convenient viewing angle
-      simulationConstructionSet.setCameraPosition(3.0, 2.0, 1.5);
-      simulationConstructionSet.setCameraFix(0.0, 0.0, 0.8);
-
-      simulationConstructionSet.setCameraTrackingVars("ef_track00_x", "ef_track00_y", "ef_track00_z");
-
-      // As this example simulation is rather simple, let's prevent SCS from
-      // simulating faster than real-time.
-      simulationConstructionSet.setSimulateNoFasterThanRealTime(true);
-      // Defining the simulation tick duration and the rate at which the buffer should
-      // record data.
-      simulationConstructionSet.setDT(0.02, 1);
-      // Setting a default simulation duration after what SCS stops simulating.
-      // Simulation can be still be resumed in the GUI.
-      simulationConstructionSet.setSimulateDuration(30.0);
-      // Setting the buffer such that when SCS reaches the simulation duration, the
-      // buffer is entirely filled and the graphs are
-      simulationConstructionSet.changeBufferSize(1501);
-      // Launch the simulator.
-      simulationConstructionSet.startOnAThread();
-   }
-
-   public static void main(String[] args)
-   {
-      new MobileSimulation();
-   }
+	public static void main(String[] args) throws Exception {
+		new MobileSimulation();
+	}
 }
