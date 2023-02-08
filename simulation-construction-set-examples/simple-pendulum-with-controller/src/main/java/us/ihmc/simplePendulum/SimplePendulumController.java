@@ -1,21 +1,25 @@
 package us.ihmc.simplePendulum;
 
-import us.ihmc.simulationconstructionset.util.RobotController;
+import us.ihmc.mecano.multiBodySystem.interfaces.OneDoFJointReadOnly;
+import us.ihmc.scs2.definition.controller.ControllerInput;
+import us.ihmc.scs2.definition.controller.ControllerOutput;
+import us.ihmc.scs2.definition.controller.interfaces.Controller;
+import us.ihmc.scs2.definition.state.interfaces.OneDoFJointStateBasics;
 import us.ihmc.yoVariables.registry.YoRegistry;
 import us.ihmc.yoVariables.variable.YoDouble;
 
-public class SimplePendulumController implements RobotController
+public class SimplePendulumController implements Controller
 {
    // A name for this controller
    private final String name = "pendulumController";
 
    // This line instantiates a registry that will contain relevant controller
    // variables that will be accessible from the simulation panel.
-   private final YoRegistry registry = new YoRegistry("PendulumController");
+   private final YoRegistry registry = new YoRegistry("PIDControl");
 
-   // This is a reference to the SimplePendulumRobot that enables the controller to
-   // access this robot's variables.
-   private SimplePendulumRobot robot;
+   // Controller input and output
+   private ControllerInput controllerInput;
+   private ControllerOutput controllerOutput;
 
    /* Control variables: */
 
@@ -29,11 +33,12 @@ public class SimplePendulumController implements RobotController
    private double torque;
 
    // Constructor: Where we instantiate and initialize control variables
-   public SimplePendulumController(SimplePendulumRobot robot)
+   public SimplePendulumController(ControllerInput controllerInput, ControllerOutput controllerOutput)
    {
-      this.robot = robot;
       desiredPositionRadians = new YoDouble("DesiredPosRad", registry);
       desiredPositionRadians.set(-1.5); // set initial position of the pendulum
+      this.controllerOutput = controllerOutput;
+      this.controllerInput = controllerInput;
 
       // set the proportional, integral, and derivative gains
       p_gain = new YoDouble("ProportionalGain", registry);
@@ -56,21 +61,22 @@ public class SimplePendulumController implements RobotController
    @Override
    public void doControl()
    {
+      // Get the current position, velocity, and torque of the fulcrum joint
+      OneDoFJointReadOnly fulcrumJoint = (OneDoFJointReadOnly) this.controllerInput.getInput().findJoint("FulcrumPin");
 
       // ERROR term: Compute the difference between the desired position the pendulum
       // and its current position
-      positionError = desiredPositionRadians.getDoubleValue() - robot.getFulcrumAngularPosition();
+      positionError = desiredPositionRadians.getDoubleValue() - fulcrumJoint.getQ();
 
       // INTEGRAL term: Compute a simple numerical integration of the position error
-//      integralError += positionError * SimplePendulumSimulation.DT;
+      //      integralError += positionError * SimplePendulumSimulation.DT;
 
       // P.I.D control law
-      torque = p_gain.getDoubleValue() * positionError + i_gain.getDoubleValue() * integralError
-            + d_gain.getDoubleValue() * (0 - robot.getFulcrumAngularVelocity());
+      torque = p_gain.getDoubleValue() * positionError + i_gain.getDoubleValue() * integralError + d_gain.getDoubleValue() * (0 - fulcrumJoint.getQd());
 
-      // sets the fulcrum torque
-      robot.setFulcrumTorque(torque);
-
+      // Set the desired torque for the fulcrum joint as controller output
+      OneDoFJointStateBasics fulcrumJointCommand = controllerOutput.getOneDoFJointOutput(fulcrumJoint);
+      fulcrumJointCommand.setEffort(torque);
    }
 
    @Override
@@ -85,9 +91,4 @@ public class SimplePendulumController implements RobotController
       return name;
    }
 
-   @Override
-   public String getDescription()
-   {
-      return name;
-   }
 }
