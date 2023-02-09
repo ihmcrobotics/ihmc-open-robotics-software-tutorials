@@ -6,6 +6,8 @@ import us.ihmc.scs2.simulation.robot.Robot;
 
 public class SimplePendulumSimulation
 {
+   public static final double DT = 0.001;
+   
    public SimplePendulumSimulation()
    {
       // Setup the definition of our pendulum
@@ -23,12 +25,10 @@ public class SimplePendulumSimulation
       // Add a controller to the pendulum robot
       SimplePendulumController penController = new SimplePendulumController(pendulumRobot.getControllerInput(), pendulumRobot.getControllerOutput());
       pendulumRobot.addController(penController);
-      
+     
       // Sets data buffer to allow for this number of values for each variable to be saved.
       scs.setBufferRecordTickPeriod(32000);
-
-      scs.setDT(0.001);
-      scs.setBufferRecordTickPeriod(1);
+      
       // Launch the simulator
       scs.start(false, false, false);
 

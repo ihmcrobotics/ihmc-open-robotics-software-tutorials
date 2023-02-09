@@ -17,9 +17,11 @@ public class SimplePendulumController implements Controller
    // variables that will be accessible from the simulation panel.
    private final YoRegistry registry = new YoRegistry("PIDControl");
 
-   // Controller input and output
-   private ControllerInput controllerInput;
-   private ControllerOutput controllerOutput;
+   // Instance of our joint
+   private OneDoFJointReadOnly fulcrumJoint;
+   private OneDoFJointStateBasics fulcrumJointCommand;
+
+   private double gravityZ = -9.81;
 
    /* Control variables: */
 
@@ -37,8 +39,10 @@ public class SimplePendulumController implements Controller
    {
       desiredPositionRadians = new YoDouble("DesiredPosRad", registry);
       desiredPositionRadians.set(-1.5); // set initial position of the pendulum
-      this.controllerOutput = controllerOutput;
-      this.controllerInput = controllerInput;
+
+      // Get the objects of the fulcrum joint to read input and write output in the control loop
+      this.fulcrumJoint = (OneDoFJointReadOnly) controllerInput.getInput().findJoint("FulcrumPin");
+      this.fulcrumJointCommand = controllerOutput.getOneDoFJointOutput(fulcrumJoint);
 
       // set the proportional, integral, and derivative gains
       p_gain = new YoDouble("ProportionalGain", registry);
@@ -61,22 +65,22 @@ public class SimplePendulumController implements Controller
    @Override
    public void doControl()
    {
-      // Get the current position, velocity, and torque of the fulcrum joint
-      OneDoFJointReadOnly fulcrumJoint = (OneDoFJointReadOnly) this.controllerInput.getInput().findJoint("FulcrumPin");
-
       // ERROR term: Compute the difference between the desired position the pendulum
       // and its current position
       positionError = desiredPositionRadians.getDoubleValue() - fulcrumJoint.getQ();
 
       // INTEGRAL term: Compute a simple numerical integration of the position error
-      //      integralError += positionError * SimplePendulumSimulation.DT;
+      integralError += positionError * SimplePendulumSimulation.DT;
 
       // P.I.D control law
       torque = p_gain.getDoubleValue() * positionError + i_gain.getDoubleValue() * integralError + d_gain.getDoubleValue() * (0 - fulcrumJoint.getQd());
 
+//      torque = p_gain.getDoubleValue() * positionError + i_gain.getDoubleValue() * integralError + d_gain.getDoubleValue() * (0 - fulcrumJoint.getQd())
+//            - fulcrumJoint.getSuccessor().getInertia().getMass() * gravityZ * fulcrumJoint.getSuccessor().getInertia().getCenterOfMassOffset().norm()
+//                  * Math.sin(desiredPositionRadians.getDoubleValue());
+
       // Set the desired torque for the fulcrum joint as controller output
-      OneDoFJointStateBasics fulcrumJointCommand = controllerOutput.getOneDoFJointOutput(fulcrumJoint);
-      fulcrumJointCommand.setEffort(torque);
+      this.fulcrumJointCommand.setEffort(torque);
    }
 
    @Override
