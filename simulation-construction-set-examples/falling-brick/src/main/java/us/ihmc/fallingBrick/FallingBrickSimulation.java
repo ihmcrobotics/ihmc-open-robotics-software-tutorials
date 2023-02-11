@@ -1,60 +1,52 @@
 package us.ihmc.fallingBrick;
 
-import us.ihmc.simulationconstructionset.SimulationConstructionSet;
-import us.ihmc.simulationconstructionset.SimulationConstructionSetParameters;
+import us.ihmc.euclid.geometry.Pose3D;
+import us.ihmc.euclid.tuple3D.Vector3D;
+import us.ihmc.scs2.SimulationConstructionSet2;
+import us.ihmc.scs2.definition.state.SixDoFJointState;
 
-public class FallingBrickSimulation
-{
-   SimulationConstructionSet sim;
-
+public class FallingBrickSimulation{
    public FallingBrickSimulation()
    {
-      FallingBrickRobot FallingBrick = new FallingBrickRobot();
-      /* Creates simulation parameters */
-      SimulationConstructionSetParameters parameters = new SimulationConstructionSetParameters();
-      // Sets data buffer to allow for this number of values for each variable to be saved.
-      parameters.setDataBufferSize(16342);
-      // Creates a new simulation
-      sim = new SimulationConstructionSet(FallingBrick, parameters);
+      // Create an instance of the falling brick
+      FallingBrickDefinition fallingBrick = new FallingBrickDefinition();
 
+      // Set the initial positions, velocities, and accelerations of the brick
+      SixDoFJointState initialJointState = new SixDoFJointState();
+      initialJointState.setConfiguration(new Pose3D(-0.5, 0.0, 2.0, 0.0, 0.0, 0.0));
+      initialJointState.setAngularVelocity(new Vector3D(-0.1, -1.0, 10.0));
+      initialJointState.setLinearVelocity(new Vector3D(0.0, -0.1, 0.5));
+      fallingBrick.getRootJointDefinitions().get(0).setInitialJointState(initialJointState);
+      
+      // Instantiate a SCS object and ground contact model
       /*
-       * Sets the simulation to collect data every 20 simulation steps This is used to prune data so a
-       * smaller buffer is sufficient.
+       * This model is like a controller that is called every simulation tick and whose job is to detect
+       * contact point colliding with the ground. When a contact point collides with the ground, the model
+       * then computes the force to be applied on the robot at the contact point to resolve collision. The
+       * LinearGroundContactModel uses a spring-damper based strategy to compute the force to be applied,
+       * with the stiffness and damping parameters being axis dependent. One set of stiffness and damping
+       * values is used to compute the force along the contact normal while the other set of stiffness and
+       * damping values are used to compute the force tangent to the contact, or the friction force. It is
+       * also worth nothing that internally, the ground contact model uses a default coefficient of
+       * friction that is used to ensure that the ground reaction force remains within a friction cone.
        */
-      sim.setDT(0.001, 20);
+      SimulationConstructionSet2 scs = new SimulationConstructionSet2(SimulationConstructionSet2.contactPointBasedPhysicsEngineFactory());
+      
+      // Add the brick robot to the simulation
+      scs.addRobot(fallingBrick);
 
       // Sets location and orientation of the camera
-      sim.setCameraPosition(-0.5, 8.25, 3.5);
-      sim.setCameraFix(0.0, 0.0, 0.4);
+      scs.setCameraPosition(-0.4, 6.0, 4.0);
+      scs.setCameraFocusPosition(0.0, 0.0, 0.3);
 
-      /*
-       * Modifies the camera tracking state for the selected viewport. A camera set to track will not
-       * move. Instead, it will rotate to keep the target in view.
-       */
-      sim.setCameraTracking(false, true, true, false);
-      /*
-       * Modifies the camera dolly state for the selected viewport. A camera with dolly enabled will move
-       * to keep its target in view from the same orientation.
-       */
-      sim.setCameraDolly(false, true, true, false);
+      // Add a terrain
+      scs.addTerrainObject(new ClutteredGroundDefinition());
 
-      // Set up a graph of the Z position.
-      sim.setupGraph("q_z");
-
-      // Adds an entry box for the specified variable.  
-      sim.setupEntryBox("qd_x");
-      sim.setupEntryBox("qd_y");
-      sim.setupEntryBox("qd_z");
-
-      sim.setupEntryBox("qd_wx");
-      sim.setupEntryBox("qd_wy");
-      sim.setupEntryBox("qd_wz");
+      // Launch the simulator
+      scs.start(true, false, false);
 
       // Simulating in real-time
-      sim.setSimulateNoFasterThanRealTime(true);
-
-      // Launch the simulator.
-      sim.startOnAThread();
+      scs.setRealTimeRateSimulation(true);
    }
 
    public static void main(String[] args)
