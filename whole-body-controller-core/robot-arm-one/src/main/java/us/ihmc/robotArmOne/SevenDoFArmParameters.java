@@ -6,10 +6,16 @@ import us.ihmc.euclid.Axis3D;
 import us.ihmc.euclid.matrix.Matrix3D;
 import us.ihmc.euclid.tuple3D.Vector3D;
 import us.ihmc.euclid.tuple3D.interfaces.Vector3DReadOnly;
-import us.ihmc.graphicsDescription.Graphics3DObject;
-import us.ihmc.graphicsDescription.appearance.AppearanceDefinition;
-import us.ihmc.graphicsDescription.appearance.YoAppearance;
 import us.ihmc.robotics.geometry.RotationalInertiaCalculator;
+import us.ihmc.scs2.definition.geometry.Cylinder3DDefinition;
+import us.ihmc.scs2.definition.geometry.Ellipsoid3DDefinition;
+import us.ihmc.scs2.definition.geometry.GeometryDefinition;
+import us.ihmc.scs2.definition.geometry.Sphere3DDefinition;
+import us.ihmc.scs2.definition.robot.RigidBodyDefinition;
+import us.ihmc.scs2.definition.visual.ColorDefinition;
+import us.ihmc.scs2.definition.visual.ColorDefinitions;
+import us.ihmc.scs2.definition.visual.MaterialDefinition;
+import us.ihmc.scs2.definition.visual.VisualDefinition;
 
 /**
  * Use this class to obtain default parameters for building a 7-DoF robot arm.
@@ -118,11 +124,11 @@ public class SevenDoFArmParameters
       /**
        * @return graphics to use for representing the child link.
        */
-      public Graphics3DObject getChildLinkGraphics()
+      public RigidBodyDefinition getChildRigidBody()
       {
-         if (!jointChildLinkGraphics.containsKey(this))
-            throw new RuntimeException("No graphics has been registered for the child link of the joint: " + getJointName());
-         return jointChildLinkGraphics.get(this);
+         if (!jointChildRigidBody.containsKey(this))
+            throw new RuntimeException("No ribgid body has been registered for the child link of the joint: " + getJointName());
+         return jointChildRigidBody.get(this);
       }
    };
 
@@ -133,7 +139,7 @@ public class SevenDoFArmParameters
    public static final Matrix3D armLinkInertia = RotationalInertiaCalculator.getRotationalInertiaMatrixOfSolidCylinder(armLinkMass,
                                                                                                                        armLinkRadius,
                                                                                                                        armLinkLength,
-                                                                                                                       Axis3D.Z);
+                                                                                                                    Axis3D.Z);
    public static final Matrix3D smallInertia = diagional(1.0e-4, 1.0e-4, 1.0e-4);
 
    public static final double handMass = 1.2;
@@ -148,7 +154,7 @@ public class SevenDoFArmParameters
    public static final EnumMap<SevenDoFArmJointEnum, Double> jointChildLinkMasses = new EnumMap<>(SevenDoFArmJointEnum.class);
    public static final EnumMap<SevenDoFArmJointEnum, Vector3D> jointChildLinkCoMs = new EnumMap<>(SevenDoFArmJointEnum.class);
    public static final EnumMap<SevenDoFArmJointEnum, Matrix3D> jointChildLinkInertias = new EnumMap<>(SevenDoFArmJointEnum.class);
-   public static final EnumMap<SevenDoFArmJointEnum, Graphics3DObject> jointChildLinkGraphics = new EnumMap<>(SevenDoFArmJointEnum.class);
+   public static final EnumMap<SevenDoFArmJointEnum, RigidBodyDefinition> jointChildRigidBody = new EnumMap<>(SevenDoFArmJointEnum.class);
 
    static
    {
@@ -216,13 +222,13 @@ public class SevenDoFArmParameters
       jointChildLinkInertias.put(SevenDoFArmJointEnum.wristRoll, smallInertia);
       jointChildLinkInertias.put(SevenDoFArmJointEnum.wristYaw, handInertia);
 
-      jointChildLinkGraphics.put(SevenDoFArmJointEnum.shoulderYaw, emptyGraphics());
-      jointChildLinkGraphics.put(SevenDoFArmJointEnum.shoulderRoll, emptyGraphics());
-      jointChildLinkGraphics.put(SevenDoFArmJointEnum.shoulderPitch, createArmLinkGraphics(armLinkLength, armLinkRadius, YoAppearance.CadetBlue()));
-      jointChildLinkGraphics.put(SevenDoFArmJointEnum.elbowPitch, createArmLinkGraphics(armLinkLength, armLinkRadius, YoAppearance.DarkRed()));
-      jointChildLinkGraphics.put(SevenDoFArmJointEnum.wristPitch, emptyGraphics());
-      jointChildLinkGraphics.put(SevenDoFArmJointEnum.wristRoll, emptyGraphics());
-      jointChildLinkGraphics.put(SevenDoFArmJointEnum.wristYaw, createHandGraphics(YoAppearance.Thistle()));
+      jointChildRigidBody.put(SevenDoFArmJointEnum.shoulderYaw, emptyRigidBodyDefinition(SevenDoFArmJointEnum.shoulderYaw.getJointName()));
+      jointChildRigidBody.put(SevenDoFArmJointEnum.shoulderRoll, emptyRigidBodyDefinition(SevenDoFArmJointEnum.shoulderRoll.getJointName()));
+      jointChildRigidBody.put(SevenDoFArmJointEnum.shoulderPitch, createArmLinkGraphics(SevenDoFArmJointEnum.shoulderPitch.getJointName(), armLinkLength, armLinkRadius, ColorDefinitions.DarkSalmon()));
+      jointChildRigidBody.put(SevenDoFArmJointEnum.elbowPitch, createArmLinkGraphics(SevenDoFArmJointEnum.elbowPitch.getJointName(),armLinkLength, armLinkRadius, ColorDefinitions.DarkKhaki()));
+      jointChildRigidBody.put(SevenDoFArmJointEnum.wristPitch, emptyRigidBodyDefinition(SevenDoFArmJointEnum.wristPitch.getJointName()));
+      jointChildRigidBody.put(SevenDoFArmJointEnum.wristRoll, emptyRigidBodyDefinition(SevenDoFArmJointEnum.wristRoll.getJointName()));
+      jointChildRigidBody.put(SevenDoFArmJointEnum.wristYaw,createHandGraphics(SevenDoFArmJointEnum.wristYaw.getJointName()));
    }
 
    private static Matrix3D diagional(double ixx, double iyy, double izz)
@@ -234,25 +240,40 @@ public class SevenDoFArmParameters
       return matrix;
    }
 
-   public static Graphics3DObject emptyGraphics()
+   public static RigidBodyDefinition emptyRigidBodyDefinition(String name)
    {
-      return new Graphics3DObject();
+      return new RigidBodyDefinition(name + "body");
    }
 
-   public static Graphics3DObject createArmLinkGraphics(double length, double radius, AppearanceDefinition appearance)
+   public static RigidBodyDefinition createArmLinkGraphics(String name, double length, double radius, ColorDefinition color)
    {
-      Graphics3DObject armLinkGraphics = new Graphics3DObject();
-      armLinkGraphics.addSphere(radius, YoAppearance.Grey());
-      armLinkGraphics.addCylinder(length, radius, appearance);
+      RigidBodyDefinition armLinkGraphics = new RigidBodyDefinition(name + "body");
+
+      GeometryDefinition sphereGeometryDefinition = new Sphere3DDefinition(0.03);
+      MaterialDefinition sphereMaterialDefinition = new MaterialDefinition(ColorDefinitions.Grey());
+
+      GeometryDefinition cylinderGeometryDefinition = new Cylinder3DDefinition(length, radius);
+      MaterialDefinition cylinderMaterialDefinition = new MaterialDefinition(color);
+
+      armLinkGraphics.addVisualDefinition(new VisualDefinition(sphereGeometryDefinition, sphereMaterialDefinition));
+      armLinkGraphics.addVisualDefinition(new VisualDefinition(new Vector3D(0.0, 0.0, 0.5*length), cylinderGeometryDefinition, cylinderMaterialDefinition));
+
       return armLinkGraphics;
    }
 
-   public static Graphics3DObject createHandGraphics(AppearanceDefinition appearance)
+   public static RigidBodyDefinition createHandGraphics(String name)
    {
-      Graphics3DObject handGraphics = new Graphics3DObject();
-      handGraphics.addSphere(0.025, appearance);
-      handGraphics.translate(handCoM);
-      handGraphics.addEllipsoid(0.04, 0.01, 0.1);
+      RigidBodyDefinition handGraphics = new RigidBodyDefinition(name + "body");
+
+      GeometryDefinition sphereGeometryDefinition = new Sphere3DDefinition(0.025);
+      MaterialDefinition sphereMaterialDefinition = new MaterialDefinition(ColorDefinitions.Black());
+
+      GeometryDefinition ellipsoidGeometryDefinition = new Ellipsoid3DDefinition(0.04, 0.01, 0.1);
+      MaterialDefinition ellipsoidMaterialDefinition = new MaterialDefinition(ColorDefinitions.DarkBlue());
+
+      handGraphics.addVisualDefinition(new VisualDefinition(new Vector3D(0.0, 0.0, 0.0), sphereGeometryDefinition, sphereMaterialDefinition));
+      handGraphics.addVisualDefinition(new VisualDefinition(handCoM, ellipsoidGeometryDefinition, ellipsoidMaterialDefinition));
+
       return handGraphics;
    }
 }

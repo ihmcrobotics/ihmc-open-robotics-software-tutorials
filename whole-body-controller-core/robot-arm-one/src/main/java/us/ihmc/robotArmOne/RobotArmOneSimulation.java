@@ -1,6 +1,7 @@
 package us.ihmc.robotArmOne;
 
-import us.ihmc.simulationconstructionset.SimulationConstructionSet;
+import us.ihmc.scs2.SimulationConstructionSet2;
+import us.ihmc.scs2.simulation.robot.Robot;
 
 /**
  * In this example simulation, we will create a simple 7-DoF robot arm {@code RobotArmOne} which is
@@ -14,27 +15,39 @@ public class RobotArmOneSimulation
 {
    public RobotArmOneSimulation()
    {
-      // Create an instance of the robot arm.
-      RobotArmOne robotArm = new RobotArmOne();
-      // Create an instance of the controller.
-      RobotArmOneController robotArmController = new RobotArmOneController(robotArm);
-      // Make sure to initialize the controller.
-      robotArmController.initialize();
-      // Attach the controller to the robot.
-      robotArm.setController(robotArmController);
+      // Create an instance of the robot arm
+      RobotArmOneDefinition robotArmDef = new RobotArmOneDefinition();
 
-      // Creating the simulation.
-      SimulationConstructionSet scs = new SimulationConstructionSet(robotArm);
+      // Instantiate a SCS object
+      SimulationConstructionSet2 scs = new SimulationConstructionSet2(SimulationConstructionSet2.impulseBasedPhysicsEngineFactory());
+
+      // Generate a pendulum robot object according to our definition
+      Robot robotArm = new Robot(robotArmDef, scs.getInertialFrame());
+
+      // Add the robot to the simulation
+      robotArm = scs.addRobot(robotArmDef);
+
+      // Create an instance of the controller
+      RobotArmOneController armController = new RobotArmOneController(robotArm.getControllerInput(), robotArm.getControllerOutput());
+
+      // Attach the controller to the robot
+      robotArm.addController(armController);
+
+      // Add a terrain
+      scs.addTerrainObject(new FlatGroundDefinition());
+
       // As this example simulation is rather simple, let's prevent SCS from
-      // simulating faster than real-time.
-      scs.setSimulateNoFasterThanRealTime(true);
-      // Defining the simulation DT and the frequency at which data is logged.
-      scs.setDT(1.0e-4, 10);
+      // simulating faster than real-time
+      scs.setRealTimeRateSimulation(false);
+
+      // Defining the simulation DT 
+      scs.setDT(1.0e-4);
+
       // Defining the buffer size to ensure a minimum simulation duration before
-      // filling the graphs in the simulator.
-      scs.changeBufferSize(65536);
+      scs.changeBufferSize(100000);
+
       // Launch the simulator.
-      scs.startOnAThread();
+      scs.start(false, false, false);
    }
 
    public static void main(String[] args)
