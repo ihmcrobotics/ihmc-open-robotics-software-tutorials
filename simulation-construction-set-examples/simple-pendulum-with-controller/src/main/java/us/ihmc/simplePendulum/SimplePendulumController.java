@@ -21,8 +21,6 @@ public class SimplePendulumController implements Controller
    private OneDoFJointReadOnly fulcrumJoint;
    private OneDoFJointStateBasics fulcrumJointCommand;
 
-   private double gravityZ = -9.81;
-
    /* Control variables: */
 
    // Target angle
@@ -75,9 +73,9 @@ public class SimplePendulumController implements Controller
       // P.I.D control law
       torque = p_gain.getDoubleValue() * positionError + i_gain.getDoubleValue() * integralError + d_gain.getDoubleValue() * (0 - fulcrumJoint.getQd());
 
-//      torque = p_gain.getDoubleValue() * positionError + i_gain.getDoubleValue() * integralError + d_gain.getDoubleValue() * (0 - fulcrumJoint.getQd())
-//            - fulcrumJoint.getSuccessor().getInertia().getMass() * gravityZ * fulcrumJoint.getSuccessor().getInertia().getCenterOfMassOffset().norm()
-//                  * Math.sin(desiredPositionRadians.getDoubleValue());
+      //      torque = p_gain.getDoubleValue() * positionError + i_gain.getDoubleValue() * integralError + d_gain.getDoubleValue() * (0 - fulcrumJoint.getQd())
+      //            - fulcrumJoint.getSuccessor().getInertia().getMass() * gravityZ * fulcrumJoint.getSuccessor().getInertia().getCenterOfMassOffset().norm()
+      //                  * Math.sin(desiredPositionRadians.getDoubleValue());
 
       // Set the desired torque for the fulcrum joint as controller output
       this.fulcrumJointCommand.setEffort(torque);

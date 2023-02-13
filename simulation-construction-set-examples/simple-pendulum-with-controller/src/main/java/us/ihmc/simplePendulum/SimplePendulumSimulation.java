@@ -1,7 +1,6 @@
 package us.ihmc.simplePendulum;
 
 import us.ihmc.scs2.SimulationConstructionSet2;
-import us.ihmc.scs2.definition.controller.implementations.ControllerCollectionDefinition;
 import us.ihmc.scs2.simulation.robot.Robot;
 
 public class SimplePendulumSimulation
