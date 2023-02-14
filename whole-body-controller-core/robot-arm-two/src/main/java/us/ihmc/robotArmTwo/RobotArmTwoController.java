@@ -13,34 +13,33 @@ import us.ihmc.commonWalkingControlModules.controllerCore.command.ControllerCore
 import us.ihmc.commonWalkingControlModules.controllerCore.command.feedbackController.FeedbackControlCommandList;
 import us.ihmc.commonWalkingControlModules.controllerCore.command.feedbackController.JointspaceFeedbackControlCommand;
 import us.ihmc.commonWalkingControlModules.controllerCore.command.feedbackController.OneDoFJointFeedbackControlCommand;
+import us.ihmc.commonWalkingControlModules.controllerCore.command.inverseKinematics.InverseKinematicsOptimizationSettingsCommand;
 import us.ihmc.commonWalkingControlModules.momentumBasedController.optimization.ControllerCoreOptimizationSettings;
 import us.ihmc.euclid.referenceFrame.ReferenceFrame;
 import us.ihmc.graphicsDescription.yoGraphics.YoGraphicsListRegistry;
 import us.ihmc.mecano.frames.CenterOfMassReferenceFrame;
-import us.ihmc.mecano.multiBodySystem.OneDoFJoint;
 import us.ihmc.mecano.multiBodySystem.interfaces.FloatingJointBasics;
 import us.ihmc.mecano.multiBodySystem.interfaces.JointBasics;
 import us.ihmc.mecano.multiBodySystem.interfaces.MultiBodySystemBasics;
 import us.ihmc.mecano.multiBodySystem.interfaces.OneDoFJointBasics;
-import us.ihmc.mecano.multiBodySystem.interfaces.OneDoFJointReadOnly;
 import us.ihmc.mecano.multiBodySystem.interfaces.RigidBodyBasics;
 import us.ihmc.mecano.tools.JointStateType;
 import us.ihmc.mecano.tools.MultiBodySystemFactories;
 import us.ihmc.mecano.tools.MultiBodySystemTools;
-import us.ihmc.robotArmOne.RobotArmOneDefinition;
 import us.ihmc.robotArmOne.SevenDoFArmParameters.SevenDoFArmJointEnum;
 import us.ihmc.robotics.controllers.pidGains.implementations.YoPDGains;
 import us.ihmc.scs2.definition.controller.ControllerInput;
 import us.ihmc.scs2.definition.controller.ControllerOutput;
+import us.ihmc.scs2.definition.controller.interfaces.Controller;
 import us.ihmc.scs2.definition.state.interfaces.OneDoFJointStateBasics;
 import us.ihmc.sensorProcessing.outputData.JointDesiredOutputListReadOnly;
 import us.ihmc.sensorProcessing.outputData.JointDesiredOutputReadOnly;
-import us.ihmc.simulationconstructionset.util.RobotController;
 import us.ihmc.yoVariables.registry.YoRegistry;
 import us.ihmc.yoVariables.variable.YoDouble;
 
-public class RobotArmTwoController implements RobotController
+public class RobotArmTwoController implements Controller
 {
+
    private static final double TWO_PI = 2.0 * Math.PI;
    /**
     * We use this registry to keep track of the controller variables which can then be viewed in
@@ -107,7 +106,9 @@ public class RobotArmTwoController implements RobotController
       this.controllerInput = controllerInput;
       this.controllerCoreMode = controllerCoreMode;
 
-      controllerRobot = MultiBodySystemBasics.clone(controllerInput.getInput(), ReferenceFrame.getWorldFrame());
+      controllerRobot = MultiBodySystemBasics.toMultiBodySystemBasics(MultiBodySystemFactories.cloneMultiBodySystem(controllerInput.getInput().getRootBody(),
+                                                                                                                    ReferenceFrame.getWorldFrame(),
+                                                                                                                    ""));
       centerOfMassFrame = new CenterOfMassReferenceFrame("centerOfMassFrame", ReferenceFrame.getWorldFrame(), controllerRobot.getRootBody());
       wholeBodyControllerCore = createControllerCore(controlDT, gravityZ, yoGraphicsListRegistry);
 
@@ -117,18 +118,18 @@ public class RobotArmTwoController implements RobotController
        */
       for (SevenDoFArmJointEnum jointEnum : SevenDoFArmJointEnum.values())
       {
-         String jointName = StringUtils.capitalize(jointEnum.getJointName());
-         desiredPositions.put(jointEnum, new YoDouble("desiredPosition" + jointName, registry));
-         desiredVelocities.put(jointEnum, new YoDouble("desiredVelocity" + jointName, registry));
-         controllerJoints.put(jointEnum, (OneDoFJointBasics) controllerRobot.findJoint(jointName));
-         controllerJointOutputs.put(jointEnum, controllerOutput.getOneDoFJointOutput(jointName));
+         String jointNameCapitalized = StringUtils.capitalize(jointEnum.getJointName());
+         desiredPositions.put(jointEnum, new YoDouble("desiredPosition" + jointNameCapitalized, registry));
+         desiredVelocities.put(jointEnum, new YoDouble("desiredVelocity" + jointNameCapitalized, registry));
+
+         controllerJoints.put(jointEnum, (OneDoFJointBasics) controllerRobot.findJoint(jointEnum.getJointName()));
+         controllerJointOutputs.put(jointEnum, controllerOutput.getOneDoFJointOutput(jointEnum.getJointName()));
       }
    }
 
    private WholeBodyControllerCore createControllerCore(double controlDT, double gravityZ, YoGraphicsListRegistry yoGraphicsListRegistry)
    {
-      // As our robot arm only has a fixed-base, we just set the floating joint to
-      // null indicating that there is none.
+      // As our robot arm only has a fixed-base, we just set the floating joint to null indicating that there is none.
       FloatingJointBasics rootJoint = null;
 
       /*
@@ -142,15 +143,13 @@ public class RobotArmTwoController implements RobotController
       // These are all the joints of the robot arm.
       JointBasics[] jointsArray = MultiBodySystemTools.collectSubtreeJoints(elevator);
 
-      // The same joint but casted as we know they are all one degree-of-freedom
-      // joints.
-      OneDoFJoint[] controlledJoints = MultiBodySystemTools.filterJoints(jointsArray, OneDoFJoint.class);
+      // The same joint but casted as we know they are all one degree-of-freedom joints.
+      OneDoFJointBasics[] controlledJoints = MultiBodySystemTools.filterJoints(jointsArray, OneDoFJointBasics.class);
 
       // This class contains basic optimization settings required for QP formulation.
       ControllerCoreOptimizationSettings controllerCoreOptimizationSettings = new RobotArmTwoOptimizationSettings();
 
-      // This is the toolbox for the controller core with everything it needs to run
-      // properly.
+      // This is the toolbox for the controller core with everything it needs to run properly.
       WholeBodyControlCoreToolbox toolbox = new WholeBodyControlCoreToolbox(controlDT,
                                                                             gravityZ,
                                                                             rootJoint,
@@ -178,10 +177,9 @@ public class RobotArmTwoController implements RobotController
       FeedbackControlCommandList allPossibleCommands = new FeedbackControlCommandList();
       JointspaceFeedbackControlCommand jointCommands = new JointspaceFeedbackControlCommand();
 
-      for (OneDoFJoint joint : controlledJoints)
+      for (OneDoFJointBasics joint : controlledJoints)
       {
-         // No need to put actual data, only the joint being controlled is used at this
-         // stage.
+         // No need to put actual data, only the joint being controlled is used at this stage.
          jointCommands.addJointCommand(joint);
 
       }
@@ -220,14 +218,14 @@ public class RobotArmTwoController implements RobotController
       // the latest state of the simulated robot.
       MultiBodySystemTools.copyJointsState(controllerInput.getInput().getAllJoints(), controllerRobot.getAllJoints(), JointStateType.CONFIGURATION);
       MultiBodySystemTools.copyJointsState(controllerInput.getInput().getAllJoints(), controllerRobot.getAllJoints(), JointStateType.VELOCITY);
+      // Need to update frames
+      controllerRobot.getRootBody().updateFramesRecursively();
       centerOfMassFrame.update();
 
       // Update the joint desired positions and velocities.
-
       updateDesireds();
 
-      // We store the objective for each joint in this command that will be processed
-      // by the controller core.
+      // We store the objective for each joint in this command that will be processed by the controller core.
       JointspaceFeedbackControlCommand jointCommands = new JointspaceFeedbackControlCommand();
 
       for (SevenDoFArmJointEnum jointEnum : SevenDoFArmJointEnum.values())
@@ -273,6 +271,13 @@ public class RobotArmTwoController implements RobotController
       ControllerCoreCommand controllerCoreCommand = new ControllerCoreCommand(controllerCoreMode);
       controllerCoreCommand.addFeedbackControlCommand(jointCommands);
 
+      if (controllerCoreMode == WholeBodyControllerCoreMode.INVERSE_KINEMATICS)
+      {
+         InverseKinematicsOptimizationSettingsCommand invKinOptimizationSettingsCmd = new InverseKinematicsOptimizationSettingsCommand();
+         invKinOptimizationSettingsCmd.setJointAccelerationWeight(0.0);
+         controllerCoreCommand.addInverseKinematicsCommand(invKinOptimizationSettingsCmd);
+      }
+
       // Submit all the objectives to be achieved to the controller core.
       // Magic happens here.
       wholeBodyControllerCore.compute(controllerCoreCommand);
@@ -293,8 +298,9 @@ public class RobotArmTwoController implements RobotController
          { // The control mode is Inverse Kinematics, so the joint output is desired position and velocity.
             double desiredPosition = jointDesiredOutput.getDesiredPosition();
             double desiredVelocity = jointDesiredOutput.getDesiredVelocity();
-            controllerJointOutputs.get(jointEnum).setConfiguration(desiredPosition); // TODO might need to integrate: desiredPosition + desiredVelocity * dt
+            controllerJointOutputs.get(jointEnum).setConfiguration(desiredPosition);
             controllerJointOutputs.get(jointEnum).setVelocity(desiredVelocity);
+            controllerJointOutputs.get(jointEnum).setAcceleration(0);
          }
       }
    }
@@ -340,11 +346,5 @@ public class RobotArmTwoController implements RobotController
    public YoRegistry getYoRegistry()
    {
       return registry;
-   }
-
-   @Override
-   public String getDescription()
-   {
-      return "Controller demonstrating a jointspace control using the IHMC whole-body controller core.";
    }
 }
