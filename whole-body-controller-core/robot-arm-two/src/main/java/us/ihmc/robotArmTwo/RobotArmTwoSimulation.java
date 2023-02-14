@@ -2,8 +2,7 @@ package us.ihmc.robotArmTwo;
 
 import us.ihmc.commonWalkingControlModules.controllerCore.WholeBodyControllerCoreMode;
 import us.ihmc.graphicsDescription.yoGraphics.YoGraphicsListRegistry;
-import us.ihmc.simulationconstructionset.Robot;
-import us.ihmc.simulationconstructionset.SimulationConstructionSet;
+import us.ihmc.scs2.simulation.robot.Robot;
 
 /**
  * As in the {@code RobotArmOneSimulation} example, we will use the same 7-DoF robot arm which is
@@ -60,7 +59,9 @@ public class RobotArmTwoSimulation
       // When using the inverse kinematics mode, the simulation dynamics is disabled
       // to simply provide a direct visualization of the controller core ouptut.
       if (controlMode == WholeBodyControllerCoreMode.INVERSE_KINEMATICS)
-         simulatedRobot.setDynamic(false);
+      {
+         simulatedRobot.getAllJoints().forEach(joint -> joint.setPinned(true));
+      }
       // Make sure to initialize the controller.
       robotArmController.initialize();
       // Attach the controller to the robot.
