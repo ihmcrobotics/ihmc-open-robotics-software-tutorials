@@ -3,9 +3,7 @@ package us.ihmc.robotArmOne;
 import us.ihmc.euclid.transform.RigidBodyTransform;
 import us.ihmc.scs2.definition.collision.CollisionShapeDefinition;
 import us.ihmc.scs2.definition.geometry.Box3DDefinition;
-import us.ihmc.scs2.definition.geometry.Cylinder3DDefinition;
 import us.ihmc.scs2.definition.geometry.GeometryDefinition;
-import us.ihmc.scs2.definition.geometry.Sphere3DDefinition;
 import us.ihmc.scs2.definition.terrain.TerrainObjectDefinition;
 import us.ihmc.scs2.definition.visual.ColorDefinitions;
 import us.ihmc.scs2.definition.visual.MaterialDefinition;
@@ -21,7 +19,6 @@ public class FlatGroundDefinition extends TerrainObjectDefinition
       groundPose.getRotation();
       groundPose.appendTranslation(0.0, 0.0, -0.05);
 
-     
       GeometryDefinition groundGeometryDefinition = new Box3DDefinition(10.0, 10.0, 0.1);
       addVisualDefinition(new VisualDefinition(groundPose, groundGeometryDefinition, new MaterialDefinition(ColorDefinitions.DarkGray())));
       addCollisionShapeDefinition(new CollisionShapeDefinition(groundPose, groundGeometryDefinition));
