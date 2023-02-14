@@ -19,5 +19,5 @@ mainDependencies {
    api("us.ihmc:ihmc-robotics-toolkit:0.14.0-230207")
    api("us.ihmc:scs2-simulation-construction-set:17-0.12.2")
 }
-}
+
 

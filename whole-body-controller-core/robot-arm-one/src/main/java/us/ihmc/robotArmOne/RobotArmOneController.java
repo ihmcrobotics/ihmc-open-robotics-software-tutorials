@@ -21,7 +21,7 @@ public class RobotArmOneController implements Controller
    private final EnumMap<SevenDoFArmJointEnum, OneDoFJointReadOnly> robotJoints = new EnumMap<>(SevenDoFArmJointEnum.class);
    private final EnumMap<SevenDoFArmJointEnum, OneDoFJointStateBasics> robotJointsOutputs = new EnumMap<>(SevenDoFArmJointEnum.class);
    
-   private ControllerInput controllerInput;
+   private final ControllerInput controllerInput;
 
    private static final double TWO_PI = 2.0 * Math.PI;
 

@@ -21,7 +21,7 @@ public class RobotArmOneSimulation
       // Instantiate a SCS object
       SimulationConstructionSet2 scs = new SimulationConstructionSet2(SimulationConstructionSet2.impulseBasedPhysicsEngineFactory());
 
-      // Generate a pendulum robot object according to our definition
+      // Generate a robot object according to our definition
       Robot robotArm = new Robot(robotArmDef, scs.getInertialFrame());
 
       // Add the robot to the simulation
@@ -36,8 +36,7 @@ public class RobotArmOneSimulation
       // Add a terrain
       scs.addTerrainObject(new FlatGroundDefinition());
 
-      // As this example simulation is rather simple, let's prevent SCS from
-      // simulating faster than real-time
+      // As this example simulation is rather simple, let's prevent SCS from simulating faster than real-time
       scs.setRealTimeRateSimulation(false);
 
       // Defining the simulation DT 
