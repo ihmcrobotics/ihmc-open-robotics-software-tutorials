@@ -139,7 +139,7 @@ public class SevenDoFArmParameters
    public static final Matrix3D armLinkInertia = RotationalInertiaCalculator.getRotationalInertiaMatrixOfSolidCylinder(armLinkMass,
                                                                                                                        armLinkRadius,
                                                                                                                        armLinkLength,
-                                                                                                                    Axis3D.Z);
+                                                                                                                       Axis3D.Z);
    public static final Matrix3D smallInertia = diagional(1.0e-4, 1.0e-4, 1.0e-4);
 
    public static final double handMass = 1.2;
@@ -224,11 +224,19 @@ public class SevenDoFArmParameters
 
       jointChildRigidBody.put(SevenDoFArmJointEnum.shoulderYaw, emptyRigidBodyDefinition(SevenDoFArmJointEnum.shoulderYaw.getJointName()));
       jointChildRigidBody.put(SevenDoFArmJointEnum.shoulderRoll, emptyRigidBodyDefinition(SevenDoFArmJointEnum.shoulderRoll.getJointName()));
-      jointChildRigidBody.put(SevenDoFArmJointEnum.shoulderPitch, createArmLinkGraphics(SevenDoFArmJointEnum.shoulderPitch.getJointName(), armLinkLength, armLinkRadius, ColorDefinitions.DarkSalmon()));
-      jointChildRigidBody.put(SevenDoFArmJointEnum.elbowPitch, createArmLinkGraphics(SevenDoFArmJointEnum.elbowPitch.getJointName(),armLinkLength, armLinkRadius, ColorDefinitions.DarkKhaki()));
+      jointChildRigidBody.put(SevenDoFArmJointEnum.shoulderPitch,
+                              createArmLinkGraphics(SevenDoFArmJointEnum.shoulderPitch.getJointName(),
+                                                    armLinkLength,
+                                                    armLinkRadius,
+                                                    ColorDefinitions.DarkSalmon()));
+      jointChildRigidBody.put(SevenDoFArmJointEnum.elbowPitch,
+                              createArmLinkGraphics(SevenDoFArmJointEnum.elbowPitch.getJointName(),
+                                                    armLinkLength,
+                                                    armLinkRadius,
+                                                    ColorDefinitions.DarkKhaki()));
       jointChildRigidBody.put(SevenDoFArmJointEnum.wristPitch, emptyRigidBodyDefinition(SevenDoFArmJointEnum.wristPitch.getJointName()));
       jointChildRigidBody.put(SevenDoFArmJointEnum.wristRoll, emptyRigidBodyDefinition(SevenDoFArmJointEnum.wristRoll.getJointName()));
-      jointChildRigidBody.put(SevenDoFArmJointEnum.wristYaw,createHandGraphics(SevenDoFArmJointEnum.wristYaw.getJointName()));
+      jointChildRigidBody.put(SevenDoFArmJointEnum.wristYaw, createHandGraphics(SevenDoFArmJointEnum.wristYaw.getJointName()));
    }
 
    private static Matrix3D diagional(double ixx, double iyy, double izz)
@@ -256,7 +264,7 @@ public class SevenDoFArmParameters
       MaterialDefinition cylinderMaterialDefinition = new MaterialDefinition(color);
 
       armLinkGraphics.addVisualDefinition(new VisualDefinition(sphereGeometryDefinition, sphereMaterialDefinition));
-      armLinkGraphics.addVisualDefinition(new VisualDefinition(new Vector3D(0.0, 0.0, 0.5*length), cylinderGeometryDefinition, cylinderMaterialDefinition));
+      armLinkGraphics.addVisualDefinition(new VisualDefinition(new Vector3D(0.0, 0.0, 0.5 * length), cylinderGeometryDefinition, cylinderMaterialDefinition));
 
       return armLinkGraphics;
    }

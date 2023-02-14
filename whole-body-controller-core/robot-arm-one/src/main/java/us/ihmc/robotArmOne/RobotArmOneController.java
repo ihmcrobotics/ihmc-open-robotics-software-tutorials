@@ -20,7 +20,7 @@ public class RobotArmOneController implements Controller
 
    private final EnumMap<SevenDoFArmJointEnum, OneDoFJointReadOnly> robotJoints = new EnumMap<>(SevenDoFArmJointEnum.class);
    private final EnumMap<SevenDoFArmJointEnum, OneDoFJointStateBasics> robotJointsOutputs = new EnumMap<>(SevenDoFArmJointEnum.class);
-   
+
    private final ControllerInput controllerInput;
 
    private static final double TWO_PI = 2.0 * Math.PI;
@@ -63,14 +63,14 @@ public class RobotArmOneController implements Controller
 
    public RobotArmOneController(ControllerInput controllerInput, ControllerOutput controllerOutput)
    {
-      
+
       this.controllerInput = controllerInput;
-      
+
       /*
        * YoDoubles need to be created first with a given name that is to represent the variable in the
        * Simulation Construction Set, and the registry so the simulation can find them.
        */
-     
+
       for (SevenDoFArmJointEnum jointEnum : SevenDoFArmJointEnum.values())
       {
          String jointName = StringUtils.capitalize(jointEnum.getJointName());
@@ -83,7 +83,7 @@ public class RobotArmOneController implements Controller
          velocityErrors.put(jointEnum, new YoDouble("velocityError" + jointName, registry));
 
          robotJoints.put(jointEnum, (OneDoFJointReadOnly) controllerInput.getInput().findJoint(jointEnum.getJointName()));
-         robotJointsOutputs.put(jointEnum, (OneDoFJointStateBasics) controllerOutput.getOneDoFJointOutput(jointEnum.getJointName()));       
+         robotJointsOutputs.put(jointEnum, (OneDoFJointStateBasics) controllerOutput.getOneDoFJointOutput(jointEnum.getJointName()));
       }
    }
 
@@ -151,7 +151,7 @@ public class RobotArmOneController implements Controller
       {
          OneDoFJointReadOnly joint = robotJoints.get(jointEnum);
          OneDoFJointStateBasics jointOutput = robotJointsOutputs.get(jointEnum);
-         
+
          // calculate desired effort based on current joint state
          double qError = desiredPositions.get(jointEnum).getValue() - joint.getQ();
          double qErrorDot = desiredVelocities.get(jointEnum).getValue() - joint.getQd();

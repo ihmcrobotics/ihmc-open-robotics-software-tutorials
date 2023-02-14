@@ -18,7 +18,6 @@ import us.ihmc.scs2.definition.state.OneDoFJointState;
  */
 public class RobotArmOneDefinition extends RobotDefinition
 {
-
    private static final String ROBOTARM = "robotArm";
 
    private final RevoluteJointDefinition shoulderYawJoint;
@@ -67,7 +66,7 @@ public class RobotArmOneDefinition extends RobotDefinition
       RevoluteJointDefinition pinJoint = new RevoluteJointDefinition(jointName, jointOffset, jointAxis);
       pinJoint.setPositionLimits(jointEnum.getJointLowerLimit(), jointEnum.getJointUpperLimit());
       pinJoint.setDamping(10.0);
-      pinJoint.setKpSoftLimitStop(50.0); 
+      pinJoint.setKpSoftLimitStop(50.0);
       pinJoint.setKdSoftLimitStop(10.0);
       RigidBodyDefinition linkBody = jointEnum.getChildRigidBody();
 
@@ -77,7 +76,7 @@ public class RobotArmOneDefinition extends RobotDefinition
 
       predecessor.getChildrenJoints().add(pinJoint);
       pinJoint.setSuccessor(linkBody);
-      
+
       // Define the initial joint state
       pinJoint.setInitialJointState(new OneDoFJointState(0.0));
 
