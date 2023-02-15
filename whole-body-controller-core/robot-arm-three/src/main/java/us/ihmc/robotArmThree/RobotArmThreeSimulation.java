@@ -1,8 +1,6 @@
 package us.ihmc.robotArmThree;
 
 import us.ihmc.commonWalkingControlModules.controllerCore.WholeBodyControllerCoreMode;
-import us.ihmc.graphicsDescription.yoGraphics.YoGraphicsListRegistry;
-import us.ihmc.mecano.multiBodySystem.interfaces.RigidBodyBasics;
 import us.ihmc.robotArmOne.FlatGroundDefinition;
 import us.ihmc.robotArmOne.RobotArmOneDefinition;
 import us.ihmc.scs2.SimulationConstructionSet2;
@@ -18,7 +16,6 @@ import us.ihmc.scs2.simulation.robot.Robot;
  * it with 3 different modes: inverse dynamics, inverse kinematics, and virtual model control.
  * </p>
  * <p>
- * Even though this example applies the controller core on a simple system, the procedure for
  * controlling a much more complicated robot system remains extremely similar.
  * </p>
  * <p>
@@ -38,6 +35,7 @@ public class RobotArmThreeSimulation
     * velocities to output both desired joint velocities and positions.
     * </ul>
     */
+
    private final WholeBodyControllerCoreMode controlMode = WholeBodyControllerCoreMode.INVERSE_DYNAMICS;
 
    public RobotArmThreeSimulation()
@@ -57,14 +55,11 @@ public class RobotArmThreeSimulation
 
       // Generate a robot for the simulation
       Robot robotArm = scs.addRobot(robotArmDef);
-      
+
       // The control frequency, which is equal to simulation frequency in this example, has to be provided to the controller core.
       double simulateDT = 1.0e-4;
       // Make sure the simulation uses the same DT
       scs.setDT(simulateDT);
-
-      // This is an additional registry that allows to display 3D graphics in the simulation. This feature is not demonstrated in this example.
-      YoGraphicsListRegistry yoGraphicsListRegistry = new YoGraphicsListRegistry();
 
       // The gravity has to be explicitly defined for the controller core (maybe a robot on the Moon someday...?)
       double gravityMagnitude = 9.81;
@@ -76,8 +71,9 @@ public class RobotArmThreeSimulation
                                                                                robotArm.getControllerOutput(),
                                                                                simulateDT,
                                                                                gravityMagnitude,
-                                                                               controlMode,
-                                                                               yoGraphicsListRegistry);
+                                                                               controlMode);
+      // Add the YoGraphics to the simulation
+      scs.addYoGraphic(robotArmController.getYoGraphicDefinition());
 
       // Camera settings
       scs.setCameraFocusPosition(0.0, 0.0, 1.0);
