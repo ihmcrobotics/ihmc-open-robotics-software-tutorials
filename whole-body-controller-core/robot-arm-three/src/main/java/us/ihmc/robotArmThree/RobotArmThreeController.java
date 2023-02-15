@@ -1,6 +1,9 @@
 package us.ihmc.robotArmThree;
 
 import java.util.Collections;
+import java.util.EnumMap;
+
+import org.apache.commons.lang3.StringUtils;
 
 import us.ihmc.commonWalkingControlModules.configurations.JointPrivilegedConfigurationParameters;
 import us.ihmc.commonWalkingControlModules.controllerCore.FeedbackControllerTemplate;
@@ -20,23 +23,28 @@ import us.ihmc.graphicsDescription.appearance.YoAppearance;
 import us.ihmc.graphicsDescription.yoGraphics.BagOfBalls;
 import us.ihmc.graphicsDescription.yoGraphics.YoGraphicCoordinateSystem;
 import us.ihmc.graphicsDescription.yoGraphics.YoGraphicsListRegistry;
+import us.ihmc.mecano.frames.CenterOfMassReferenceFrame;
 import us.ihmc.mecano.multiBodySystem.OneDoFJoint;
 import us.ihmc.mecano.multiBodySystem.interfaces.FloatingJointBasics;
 import us.ihmc.mecano.multiBodySystem.interfaces.JointBasics;
+import us.ihmc.mecano.multiBodySystem.interfaces.MultiBodySystemBasics;
 import us.ihmc.mecano.multiBodySystem.interfaces.OneDoFJointBasics;
 import us.ihmc.mecano.multiBodySystem.interfaces.RigidBodyBasics;
+import us.ihmc.mecano.tools.MultiBodySystemFactories;
 import us.ihmc.mecano.tools.MultiBodySystemTools;
 import us.ihmc.robotArmOne.SevenDoFArmParameters.SevenDoFArmJointEnum;
-import us.ihmc.robotArmTwo.RobotArmTwo;
 import us.ihmc.robotArmTwo.RobotArmTwoOptimizationSettings;
 import us.ihmc.robotics.controllers.pidGains.GainCoupling;
 import us.ihmc.robotics.controllers.pidGains.implementations.DefaultYoPIDSE3Gains;
 import us.ihmc.robotics.controllers.pidGains.implementations.PIDSE3Configuration;
 import us.ihmc.robotics.geometry.RotationTools;
 import us.ihmc.robotics.screwTheory.SelectionMatrix6D;
+import us.ihmc.scs2.definition.controller.ControllerInput;
+import us.ihmc.scs2.definition.controller.ControllerOutput;
+import us.ihmc.scs2.definition.controller.interfaces.Controller;
+import us.ihmc.scs2.definition.state.interfaces.OneDoFJointStateBasics;
 import us.ihmc.sensorProcessing.outputData.JointDesiredOutputListReadOnly;
 import us.ihmc.sensorProcessing.outputData.JointDesiredOutputReadOnly;
-import us.ihmc.simulationconstructionset.util.RobotController;
 import us.ihmc.yoVariables.euclid.referenceFrame.YoFramePoint3D;
 import us.ihmc.yoVariables.euclid.referenceFrame.YoFramePoseUsingYawPitchRoll;
 import us.ihmc.yoVariables.euclid.referenceFrame.YoFrameQuaternion;
@@ -45,7 +53,7 @@ import us.ihmc.yoVariables.registry.YoRegistry;
 import us.ihmc.yoVariables.variable.YoDouble;
 import us.ihmc.yoVariables.variable.YoInteger;
 
-public class RobotArmThreeController implements RobotController
+public class RobotArmThreeController implements Controller
 {
    private static final ReferenceFrame WORLD_FRAME = ReferenceFrame.getWorldFrame();
    private static final double TWO_PI = 2.0 * Math.PI;
@@ -53,6 +61,18 @@ public class RobotArmThreeController implements RobotController
     * We use this registry to keep track of the controller variables which can then be viewed in
     * Simulation Construction Set.
     */
+
+   /**
+    * Desired position for each joint. {@code YoDouble}s are used instead of simple {@code double} so
+    * they can be monitored via the Simulation Construction Set.
+    */
+   private final EnumMap<SevenDoFArmJointEnum, YoDouble> desiredPositions = new EnumMap<>(SevenDoFArmJointEnum.class);
+   /**
+    * Desired velocity for each joint. {@code YoDouble}s are used instead of simple {@code double} so
+    * they can be monitored via the Simulation Construction Set.
+    */
+   private final EnumMap<SevenDoFArmJointEnum, YoDouble> desiredVelocities = new EnumMap<>(SevenDoFArmJointEnum.class);
+
    private final YoRegistry registry = new YoRegistry("Controller");
    /**
     * This variable stores the current simulation time and is updated by the simulation.
@@ -109,7 +129,14 @@ public class RobotArmThreeController implements RobotController
     * </p>
     */
    private final WholeBodyControllerCoreMode controllerCoreMode;
-   private final RobotArmTwo robotArm;
+   private final ControllerInput controllerInput;
+
+   private final MultiBodySystemBasics controllerRobot;
+   private final CenterOfMassReferenceFrame centerOfMassFrame;
+   private final EnumMap<SevenDoFArmJointEnum, OneDoFJointBasics> controllerJoints = new EnumMap<>(SevenDoFArmJointEnum.class);
+   private final EnumMap<SevenDoFArmJointEnum, OneDoFJointStateBasics> controllerJointOutputs = new EnumMap<>(SevenDoFArmJointEnum.class);
+
+   //   private final RobotArmTwo robotArm;
    /**
     * In this controller, we add some visualization to see the end-effector desired trajectory in the
     * Simulation Construction Set. In addition to have an interesting name, a {@code BagOfBalls} allows
@@ -132,13 +159,24 @@ public class RobotArmThreeController implements RobotController
     * @param yoGraphicsListRegistry in this example, we use this registry to enable the
     *                               {@link #trajectoryPositionVisualization}.
     */
-   public RobotArmThreeController(RobotArmTwo robotArm, double controlDT, double gravityZ, WholeBodyControllerCoreMode controllerCoreMode,
+   public RobotArmThreeController(ControllerInput controllerInput,
+                                  ControllerOutput controllerOutput,
+                                  double controlDT,
+                                  double gravityZ,
+                                  WholeBodyControllerCoreMode controllerCoreMode,
                                   YoGraphicsListRegistry yoGraphicsListRegistry)
    {
-      this.robotArm = robotArm;
-      time = robotArm.getYoTime();
+      //      this.robotArm = robotArm;
+      //      time = robotArm.getYoTime();
+      this.controllerInput = controllerInput;
+
       this.controllerCoreMode = controllerCoreMode;
 
+      controllerRobot = MultiBodySystemBasics.toMultiBodySystemBasics(MultiBodySystemFactories.cloneMultiBodySystem(controllerInput.getInput().getRootBody(),
+                                                                                                                    ReferenceFrame.getWorldFrame(),
+                                                                                                                    ""));
+
+      centerOfMassFrame = new CenterOfMassReferenceFrame("centerOfMassFrame", ReferenceFrame.getWorldFrame(), controllerRobot.getRootBody());
       wholeBodyControllerCore = createControllerCore(controlDT, gravityZ, yoGraphicsListRegistry);
 
       // This defines how many balls we can display at once.
@@ -148,6 +186,17 @@ public class RobotArmThreeController implements RobotController
       trajectoryPositionVisualization = new BagOfBalls(numberOfBalls, ballSize, YoAppearance.Yellow(), registry, yoGraphicsListRegistry);
       numberOfControlTicksPerVizUpdate.set(300);
 
+      for (SevenDoFArmJointEnum jointEnum : SevenDoFArmJointEnum.values())
+      {
+         String jointNameCapitalized = StringUtils.capitalize(jointEnum.getJointName());
+         desiredPositions.put(jointEnum, new YoDouble("desiredPosition" + jointNameCapitalized, registry));
+         desiredVelocities.put(jointEnum, new YoDouble("desiredVelocity" + jointNameCapitalized, registry));
+
+         controllerJoints.put(jointEnum, (OneDoFJointBasics) controllerRobot.findJoint(jointEnum.getJointName()));
+         controllerJointOutputs.put(jointEnum, controllerOutput.getOneDoFJointOutput(jointEnum.getJointName()));
+      }
+      
+      
       /*
        * We create here a graphical coordinate system so we can visualize where the control frame is in
        * the simulation.
@@ -163,7 +212,8 @@ public class RobotArmThreeController implements RobotController
    {
       // The following steps are the same as in RobotArmTwoController.
       FloatingJointBasics rootJoint = null;
-      RigidBodyBasics elevator = robotArm.getElevator();
+      RigidBodyBasics elevator = controllerRobot.getRootBody();
+
       // InverseDynamicsJoint[] inverseDynamicsJoints =
       // ScrewTools.computeSubtreeJoints(elevator);
       JointBasics[] jointsArray = MultiBodySystemTools.collectSubtreeJoints(elevator);
@@ -175,7 +225,7 @@ public class RobotArmThreeController implements RobotController
                                                                             gravityZ,
                                                                             rootJoint,
                                                                             controlledJoints,
-                                                                            robotArm.getCenterOfMassFrame(),
+                                                                            centerOfMassFrame,
                                                                             controllerCoreOptimizationSettings,
                                                                             yoGraphicsListRegistry,
                                                                             registry);
@@ -188,6 +238,7 @@ public class RobotArmThreeController implements RobotController
        * This time, we will control the robot in taskspace by directly commanding the end-effector pose in
        * space. We will be using a SpatialFeedbackControlCommand for this purpose.
        */
+ 
       RigidBodyBasics endEffector = robotArm.getEndEffector();
       FeedbackControlCommandList allPossibleCommands = new FeedbackControlCommandList();
       SpatialFeedbackControlCommand command = new SpatialFeedbackControlCommand();
@@ -348,8 +399,8 @@ public class RobotArmThreeController implements RobotController
             double phase = phases.getElement(axisIndex);
             double offset = offsets.getElement(axisIndex);
 
-            double x = offset + amplitude * Math.sin(omega * time.getValue() + phase);
-            double xDot = omega * amplitude * Math.cos(omega * time.getValue() + phase);
+            double x = offset + amplitude * Math.sin(omega * controllerInput.getTime() + phase);
+            double xDot = omega * amplitude * Math.cos(omega * controllerInput.getTime() + phase);
 
             desiredEndEffectorPosition.setElement(axisIndex, x);
             desiredEndEffectorLinearVelocity.setElement(axisIndex, xDot);
@@ -376,8 +427,8 @@ public class RobotArmThreeController implements RobotController
             double phase = phases[rotationIndex];
             double offset = offsets[rotationIndex];
 
-            yawPitchRoll[rotationIndex] = offset + amplitude * Math.sin(omega * time.getValue() + phase);
-            yawPitchRollRates[rotationIndex] = omega * amplitude * Math.cos(omega * time.getValue() + phase);
+            yawPitchRoll[rotationIndex] = offset + amplitude * Math.sin(omega * controllerInput.getTime() + phase);
+            yawPitchRollRates[rotationIndex] = omega * amplitude * Math.cos(omega * controllerInput.getTime() + phase);
          }
 
          // desiredEndEffectorOrientation.setYawPitchRoll(yawPitchRoll);
