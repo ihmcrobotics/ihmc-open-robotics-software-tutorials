@@ -14,6 +14,7 @@ import us.ihmc.commonWalkingControlModules.controllerCore.WholeBodyControllerCor
 import us.ihmc.commonWalkingControlModules.controllerCore.command.ControllerCoreCommand;
 import us.ihmc.commonWalkingControlModules.controllerCore.command.feedbackController.FeedbackControlCommandList;
 import us.ihmc.commonWalkingControlModules.controllerCore.command.feedbackController.SpatialFeedbackControlCommand;
+import us.ihmc.commonWalkingControlModules.controllerCore.command.inverseKinematics.InverseKinematicsOptimizationSettingsCommand;
 import us.ihmc.commonWalkingControlModules.controllerCore.command.inverseKinematics.PrivilegedConfigurationCommand;
 import us.ihmc.commonWalkingControlModules.controllerCore.command.inverseKinematics.PrivilegedConfigurationCommand.PrivilegedConfigurationOption;
 import us.ihmc.commonWalkingControlModules.momentumBasedController.optimization.ControllerCoreOptimizationSettings;
@@ -255,6 +256,7 @@ public class RobotArmThreeController implements Controller
       FeedbackControlCommandList allPossibleCommands = new FeedbackControlCommandList();
       SpatialFeedbackControlCommand command = new SpatialFeedbackControlCommand();
       command.set(elevator, endEffector); // No need to add any additional information for now.
+//      command.setControlMode(WholeBodyControllerCoreMode.INVERSE_KINEMATICS);
       allPossibleCommands.addCommand(command);
 
       /*
@@ -353,6 +355,8 @@ public class RobotArmThreeController implements Controller
       FramePose3D controlFramePose = new FramePose3D(endEffector.getBodyFixedFrame());
       controlFramePose.setZ(0.1); // Let's offset the control frame to be located at the tip of the end-effector.
       command.setControlFrameFixedInEndEffector(controlFramePose);
+      command.setControlMode(controllerCoreMode); 
+      
       // Let's update the following variable which in turn will cause the graphical
       // coordinate system to be updated in the simulation.
       controlFramePoseForVisualization.setMatchingFrame(controlFramePose);
@@ -368,11 +372,18 @@ public class RobotArmThreeController implements Controller
       PrivilegedConfigurationCommand privilegedCommand = new PrivilegedConfigurationCommand();
       privilegedCommand.setPrivilegedConfigurationOption(PrivilegedConfigurationOption.AT_MID_RANGE);
       controllerCoreCommand.addInverseDynamicsCommand(privilegedCommand);
-
+  
+      if (controllerCoreMode == WholeBodyControllerCoreMode.INVERSE_KINEMATICS)
+      {
+         InverseKinematicsOptimizationSettingsCommand invKinOptimizationSettingsCmd = new InverseKinematicsOptimizationSettingsCommand();
+         invKinOptimizationSettingsCmd.setJointAccelerationWeight(0.0);
+         controllerCoreCommand.addInverseKinematicsCommand(invKinOptimizationSettingsCmd);
+      }
+      
       // Submit all the objectives to be achieved to the controller core.
-      wholeBodyControllerCore.submitControllerCoreCommand(controllerCoreCommand);
       // Magic happens here.
-      wholeBodyControllerCore.compute();
+      wholeBodyControllerCore.compute(controllerCoreCommand);
+
       // Get the result for this control tick.
       JointDesiredOutputListReadOnly outputForLowLevelController = wholeBodyControllerCore.getOutputForLowLevelController();
 

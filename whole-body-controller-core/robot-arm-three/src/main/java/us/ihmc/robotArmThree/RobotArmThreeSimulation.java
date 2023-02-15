@@ -37,6 +37,8 @@ public class RobotArmThreeSimulation
     */
 
    private final WholeBodyControllerCoreMode controlMode = WholeBodyControllerCoreMode.INVERSE_DYNAMICS;
+//   private final WholeBodyControllerCoreMode controlMode = WholeBodyControllerCoreMode.INVERSE_KINEMATICS;
+//   private final WholeBodyControllerCoreMode controlMode = WholeBodyControllerCoreMode.VIRTUAL_MODEL;
 
    public RobotArmThreeSimulation()
    {
