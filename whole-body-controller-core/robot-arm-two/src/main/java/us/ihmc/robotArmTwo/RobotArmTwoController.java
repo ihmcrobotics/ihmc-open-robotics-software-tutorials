@@ -214,8 +214,7 @@ public class RobotArmTwoController implements Controller
    @Override
    public void doControl()
    {
-      // We update the configuration state of our inverse dynamics robot model from
-      // the latest state of the simulated robot.
+      // We update the configuration state of our inverse dynamics robot model from the latest state of the simulated robot.
       MultiBodySystemTools.copyJointsState(controllerInput.getInput().getAllJoints(), controllerRobot.getAllJoints(), JointStateType.CONFIGURATION);
       MultiBodySystemTools.copyJointsState(controllerInput.getInput().getAllJoints(), controllerRobot.getAllJoints(), JointStateType.VELOCITY);
       // Need to update frames
