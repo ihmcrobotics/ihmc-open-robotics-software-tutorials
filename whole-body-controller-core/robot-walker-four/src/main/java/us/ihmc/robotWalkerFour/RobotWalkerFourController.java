@@ -24,6 +24,7 @@ import us.ihmc.euclid.referenceFrame.FrameVector3D;
 import us.ihmc.euclid.referenceFrame.ReferenceFrame;
 import us.ihmc.euclid.referenceFrame.interfaces.FramePoint3DReadOnly;
 import us.ihmc.graphicsDescription.yoGraphics.YoGraphicsListRegistry;
+import us.ihmc.mecano.multiBodySystem.OneDoFJoint;
 import us.ihmc.mecano.multiBodySystem.interfaces.FloatingJointBasics;
 import us.ihmc.mecano.multiBodySystem.interfaces.JointBasics;
 import us.ihmc.mecano.multiBodySystem.interfaces.OneDoFJointReadOnly;
@@ -38,9 +39,11 @@ import us.ihmc.robotics.stateMachine.core.State;
 import us.ihmc.robotics.stateMachine.core.StateMachine;
 import us.ihmc.robotics.stateMachine.factories.StateMachineFactory;
 import us.ihmc.robotics.trajectories.TrajectoryType;
+import us.ihmc.scs2.definition.controller.ControllerInput;
+import us.ihmc.scs2.definition.controller.ControllerOutput;
+import us.ihmc.scs2.definition.controller.interfaces.Controller;
 import us.ihmc.sensorProcessing.outputData.JointDesiredOutputListReadOnly;
 import us.ihmc.sensorProcessing.outputData.JointDesiredOutputReadOnly;
-import us.ihmc.simulationconstructionset.util.RobotController;
 import us.ihmc.yoVariables.euclid.referenceFrame.YoFramePoint3D;
 import us.ihmc.yoVariables.euclid.referenceFrame.YoFrameVector3D;
 import us.ihmc.yoVariables.registry.YoRegistry;
@@ -62,7 +65,7 @@ import us.ihmc.yoVariables.variable.YoDouble;
  * Finally, this controller also introduces the state machine framework: {@code StateMachine}.
  * </p>
  */
-public class RobotWalkerFourController implements RobotController
+public class RobotWalkerFourController implements Controller
 {
    private static final ReferenceFrame WORLD_FRAME = ReferenceFrame.getWorldFrame();
    private static final double CENTER_OF_MASS_HEIGHT = 0.75;
@@ -94,6 +97,7 @@ public class RobotWalkerFourController implements RobotController
     * on Atlas and Valkyrie.
     */
    private final WholeBodyControllerCore wholeBodyControllerCore;
+   private final ControllerInput controllerInput;
 
    /**
     * We define as an enum the list of possible states that the state machine will be allowed to go
@@ -133,19 +137,8 @@ public class RobotWalkerFourController implements RobotController
     * transitions to go from one controller to another.
     */
    private final StateMachine<WalkingStateEnum, State> stateMachine;
-   /**
-    * This variable stores the current simulation time and is updated by the simulation.
-    */
-   private final YoDouble time;
    private final RobotWalkerFour robotWalkerFour;
 
-   /**
-    * The elevator is a massless, sizeless rigid-body fixed in world to which the first joint of the
-    * robot is attached. The name comes from the use of this rigid-body to add the gravity effect to
-    * the robot by making it accelerate like an elevator when it starts moving. However, this elevator
-    * is always fixed in world with no velocity.
-    */
-   private final RigidBodyBasics elevator;
    /**
     * We will use a single instance of the controller core command for convenience. Note that in this
     * example, only the Inverse Dynamics control mode will be demonstrated.
@@ -158,11 +151,17 @@ public class RobotWalkerFourController implements RobotController
     */
    private final DefaultYoPIDSE3Gains gains = new DefaultYoPIDSE3Gains("gains", GainCoupling.XYZ, false, registry);
 
-   public RobotWalkerFourController(RobotWalkerFour robotWalkerFour, double controlDT, double gravityZ, YoGraphicsListRegistry yoGraphicsListRegistry)
+   public RobotWalkerFourController(ControllerInput controllerInput,
+                                    ControllerOutput controllerOutput,
+                                    double controlDT,
+                                    double gravityZ,
+                                    M2RobotDefinition robotDefinition)
    {
-      this.robotWalkerFour = robotWalkerFour;
-      time = robotWalkerFour.getYoTime();
-      elevator = robotWalkerFour.getElevator();
+      this.controllerInput = controllerInput;
+      this.robotWalkerFour = new RobotWalkerFour(controllerInput, controllerOutput, robotDefinition);
+
+      // create an empty graphics registry (is needed due to SCS 1)
+      YoGraphicsListRegistry yoGraphicsListRegistry = new YoGraphicsListRegistry();
       wholeBodyControllerCore = createControllerCore(controlDT, gravityZ, yoGraphicsListRegistry);
       stateMachine = createStateMachine();
 
@@ -175,9 +174,11 @@ public class RobotWalkerFourController implements RobotController
    {
       // This time the robot has a floating joint.
       FloatingJointBasics rootJoint = robotWalkerFour.getRootJoint();
+      RigidBodyBasics elevator = robotWalkerFour.getElevator(); //TODO needed?
 
       // These are all the joints of the robot arm.
       JointBasics[] jointsArray = MultiBodySystemTools.collectSubtreeJoints(elevator);
+      OneDoFJoint[] controlledJoints = MultiBodySystemTools.filterJoints(jointsArray, OneDoFJoint.class);
 
       // This class contains basic optimization settings required for QP formulation.
       ControllerCoreOptimizationSettings controllerCoreOptimizationSettings = new RobotWalkerFourOptimizationSettings();
@@ -186,13 +187,13 @@ public class RobotWalkerFourController implements RobotController
       WholeBodyControlCoreToolbox toolbox = new WholeBodyControlCoreToolbox(controlDT,
                                                                             gravityZ,
                                                                             rootJoint,
-                                                                            jointsArray,
+                                                                            controlledJoints,
                                                                             robotWalkerFour.getCenterOfMassFrame(),
                                                                             controllerCoreOptimizationSettings,
                                                                             yoGraphicsListRegistry,
                                                                             registry);
-      // The controller core needs all the possibly contacting bodies of the robot to
-      // create all the modules needed for later.
+
+      // The controller core needs all the possibly contacting bodies of the robot to create all the modules needed for later.
       toolbox.setupForInverseDynamicsSolver(Arrays.asList(robotWalkerFour.getFootContactableBody(RobotSide.LEFT),
                                                           robotWalkerFour.getFootContactableBody(RobotSide.RIGHT)));
 
@@ -235,9 +236,8 @@ public class RobotWalkerFourController implements RobotController
       factory.setNamePrefix("stateMachine");
       // The registry to which the YoVariables will be registered with.
       factory.setRegistry(registry);
-      // We will need a clock to have access to the time spent in each state for
-      // computing trajectories.
-      factory.buildYoClock(time);
+      // We will need a clock to have access to the time spent in each state for computing trajectories.
+      factory.buildYoClock(controllerInput::getTime);
 
       /*
        * Then we get to the point where actually create the state and the transitions. In this example, we
@@ -269,6 +269,7 @@ public class RobotWalkerFourController implements RobotController
       gains.setPositionDerivativeGains(10.0);
       gains.setOrientationProportionalGains(100.0);
       gains.setOrientationDerivativeGains(10.0);
+      
    }
 
    /**
@@ -296,15 +297,15 @@ public class RobotWalkerFourController implements RobotController
       OrientationFeedbackControlCommand pelvisOrientationCommand = new OrientationFeedbackControlCommand();
       pelvisOrientationCommand.setControlMode(WholeBodyControllerCoreMode.INVERSE_DYNAMICS); // sets control mode to
       // inverse dynamics
-      pelvisOrientationCommand.set(elevator, robotWalkerFour.getPelvis());
+      pelvisOrientationCommand.set(robotWalkerFour.getElevator(), robotWalkerFour.getPelvis());
       pelvisOrientationCommand.setGains(gains.getOrientationGains());
       pelvisOrientationCommand.setWeightForSolver(1.0);
       controllerCoreCommand.addFeedbackControlCommand(pelvisOrientationCommand);
 
-      // As before, we submit the commands to the controller core.
-      wholeBodyControllerCore.submitControllerCoreCommand(controllerCoreCommand);
-      // Let the magic happen
-      wholeBodyControllerCore.compute();
+      // Submit all the objectives to be achieved to the controller core.
+      // Magic happens here.
+      wholeBodyControllerCore.compute(controllerCoreCommand);
+
       // And collect the output to update the simulated robot.
       JointDesiredOutputListReadOnly outputForLowLevelController = wholeBodyControllerCore.getOutputForLowLevelController();
 
@@ -312,7 +313,7 @@ public class RobotWalkerFourController implements RobotController
       {
          OneDoFJointReadOnly oneDoFJoint = outputForLowLevelController.getOneDoFJoint(i);
          JointDesiredOutputReadOnly jointDesiredOutput = outputForLowLevelController.getJointDesiredOutput(i);
-         robotWalkerFour.setDesiredEffort(oneDoFJoint, jointDesiredOutput.getDesiredTorque());
+         robotWalkerFour.setDesiredEffort(oneDoFJoint.getName(), jointDesiredOutput.getDesiredTorque());
       }
    }
 
@@ -562,7 +563,7 @@ public class RobotWalkerFourController implements RobotController
          SpatialFeedbackControlCommand swingFootCommand = new SpatialFeedbackControlCommand();
          swingFootCommand.setControlMode(WholeBodyControllerCoreMode.INVERSE_DYNAMICS); // sets control mode to
          // inverse dynamics
-         swingFootCommand.set(elevator, robotWalkerFour.getFoot(swingSide));
+         swingFootCommand.set(robotWalkerFour.getElevator(), robotWalkerFour.getFoot(swingSide));
          swingFootCommand.setInverseDynamics(position, velocity, acceleration);
          swingFootCommand.setControlFrameFixedInEndEffector(swingControlFramePose);
          swingFootCommand.setGains(gains);
@@ -574,7 +575,7 @@ public class RobotWalkerFourController implements RobotController
       public void onExit(double timeInState)
       {
       }
-    
+
       @Override
       public boolean isDone(double timeInState)
       {
@@ -593,7 +594,7 @@ public class RobotWalkerFourController implements RobotController
    public SpatialAccelerationCommand createFootZeroAccelerationCommand(RobotSide robotSide)
    {
       SpatialAccelerationCommand footZeroAcceleration = new SpatialAccelerationCommand();
-      footZeroAcceleration.set(elevator, robotWalkerFour.getFoot(robotSide));
+      footZeroAcceleration.set(robotWalkerFour.getElevator(), robotWalkerFour.getFoot(robotSide));
       footZeroAcceleration.setWeight(1.0);
       return footZeroAcceleration;
    }
@@ -639,9 +640,4 @@ public class RobotWalkerFourController implements RobotController
       return registry;
    }
 
-   @Override
-   public String getDescription()
-   {
-      return "Controller demonstrating a quasi-static walking controller using the IHMC whole-body controller core.";
-   }
 }
