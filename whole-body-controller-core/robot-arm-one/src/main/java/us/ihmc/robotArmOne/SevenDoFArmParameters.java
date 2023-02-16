@@ -233,7 +233,7 @@ public class SevenDoFArmParameters
                               createArmLinkGraphics(SevenDoFArmJointEnum.elbowPitch.getJointName(),
                                                     armLinkLength,
                                                     armLinkRadius,
-                                                    ColorDefinitions.DarkKhaki()));
+                                                    ColorDefinitions.DarkSlateBlue()));
       jointChildRigidBody.put(SevenDoFArmJointEnum.wristPitch, emptyRigidBodyDefinition(SevenDoFArmJointEnum.wristPitch.getJointName()));
       jointChildRigidBody.put(SevenDoFArmJointEnum.wristRoll, emptyRigidBodyDefinition(SevenDoFArmJointEnum.wristRoll.getJointName()));
       jointChildRigidBody.put(SevenDoFArmJointEnum.wristYaw, createHandGraphics(SevenDoFArmJointEnum.wristYaw.getJointName()));
@@ -277,7 +277,7 @@ public class SevenDoFArmParameters
       MaterialDefinition sphereMaterialDefinition = new MaterialDefinition(ColorDefinitions.Black());
 
       GeometryDefinition ellipsoidGeometryDefinition = new Ellipsoid3DDefinition(0.04, 0.01, 0.1);
-      MaterialDefinition ellipsoidMaterialDefinition = new MaterialDefinition(ColorDefinitions.DarkBlue());
+      MaterialDefinition ellipsoidMaterialDefinition = new MaterialDefinition(ColorDefinitions.DarkCyan());
 
       handGraphics.addVisualDefinition(new VisualDefinition(new Vector3D(0.0, 0.0, 0.0), sphereGeometryDefinition, sphereMaterialDefinition));
       handGraphics.addVisualDefinition(new VisualDefinition(handCoM, ellipsoidGeometryDefinition, ellipsoidMaterialDefinition));

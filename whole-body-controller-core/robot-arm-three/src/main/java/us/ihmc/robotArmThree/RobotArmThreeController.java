@@ -19,6 +19,7 @@ import us.ihmc.commonWalkingControlModules.controllerCore.command.inverseKinemat
 import us.ihmc.commonWalkingControlModules.controllerCore.command.inverseKinematics.PrivilegedConfigurationCommand.PrivilegedConfigurationOption;
 import us.ihmc.commonWalkingControlModules.momentumBasedController.optimization.ControllerCoreOptimizationSettings;
 import us.ihmc.euclid.referenceFrame.FramePose3D;
+import us.ihmc.euclid.referenceFrame.FrameVector3D;
 import us.ihmc.euclid.referenceFrame.ReferenceFrame;
 import us.ihmc.euclid.tuple3D.Vector3D;
 import us.ihmc.graphicsDescription.yoGraphics.YoGraphicsListRegistry;
@@ -136,13 +137,14 @@ public class RobotArmThreeController implements Controller
    private final EnumMap<SevenDoFArmJointEnum, OneDoFJointBasics> controllerJoints = new EnumMap<>(SevenDoFArmJointEnum.class);
    private final EnumMap<SevenDoFArmJointEnum, OneDoFJointStateBasics> controllerJointOutputs = new EnumMap<>(SevenDoFArmJointEnum.class);
 
+   /**
+    * Visualize the end-effector frame and a set of balls representing the desired path. We setup a
+    * graphics group where the visualizations are defined and connected to YoVariables. The controller
+    * then only needs to update these YoVariables to update the graphics.
+    */
    private final YoGraphicDefinition graphicsGroup;
-
    private final ArrayList<YoFramePoint3D> yoGraphicPositions = new ArrayList<>();
    private int index;
-   /**
-    * We use this field to control the rate at which a new sphere is to be displayed.
-    */
    private final YoInteger numberOfControlTicksPerVizUpdate = new YoInteger("numberOfControlTicksPerVizUpdate", registry);
    private final YoFramePose3D controlFramePoseForVisualization = new YoFramePose3D("controlFrame", WORLD_FRAME, registry);
 
@@ -169,7 +171,7 @@ public class RobotArmThreeController implements Controller
       controllerRobot = MultiBodySystemBasics.toMultiBodySystemBasics(MultiBodySystemFactories.cloneMultiBodySystem(controllerInput.getInput().getRootBody(),
                                                                                                                     ReferenceFrame.getWorldFrame(),
                                                                                                                     ""));
-      // create empty graphics registry (was needed due to SCS 1)
+      // create an empty graphics registry (was needed due to SCS 1)
       YoGraphicsListRegistry yoGraphicsListRegistry = new YoGraphicsListRegistry();
 
       centerOfMassFrame = new CenterOfMassReferenceFrame("centerOfMassFrame", ReferenceFrame.getWorldFrame(), controllerRobot.getRootBody());
@@ -199,9 +201,9 @@ public class RobotArmThreeController implements Controller
 
       // add a graphical coordinate system so we can visualize where the control frame is in the simulation
       graphicsGroup.addChild(YoGraphicDefinitionFactory.newYoGraphicCoordinateSystem3D("controlFrameFrame",
-                                                                               controlFramePoseForVisualization,
-                                                                               0.2,
-                                                                               ColorDefinitions.Black()));
+                                                                                       controlFramePoseForVisualization,
+                                                                                       0.2,
+                                                                                       ColorDefinitions.Black()));
       String name = "Controller";
 
       // this defines how many balls we can display at once
@@ -218,7 +220,7 @@ public class RobotArmThreeController implements Controller
          yoFramePoint.setToNaN();
          yoGraphicPositions.add(yoFramePoint);
 
-         graphicsGroup.addChild(YoGraphicDefinitionFactory.newYoGraphicPoint3D(name + i, yoFramePoint, ballSize, ColorDefinitions.DarkCyan()));
+         graphicsGroup.addChild(YoGraphicDefinitionFactory.newYoGraphicPoint3D(name + i, yoFramePoint, ballSize, ColorDefinitions.Yellow()));
       }
       registry.addChild(ballregistry);
       return graphicsGroup;
@@ -255,8 +257,7 @@ public class RobotArmThreeController implements Controller
       RigidBodyBasics endEffector = controlledJoints[controlledJoints.length - 1].getSuccessor();
       FeedbackControlCommandList allPossibleCommands = new FeedbackControlCommandList();
       SpatialFeedbackControlCommand command = new SpatialFeedbackControlCommand();
-      command.set(elevator, endEffector); // No need to add any additional information for now.
-//      command.setControlMode(WholeBodyControllerCoreMode.INVERSE_KINEMATICS);
+      command.set(elevator, endEffector); // No need to add any additional information for now
       allPossibleCommands.addCommand(command);
 
       /*
@@ -328,9 +329,26 @@ public class RobotArmThreeController implements Controller
       RigidBodyBasics endEffector = controlledJoints[controlledJoints.length - 1].getSuccessor();
 
       command.set(elevator, endEffector);
-      // Then we provide the current desireds for the end-effector.
-      command.setInverseDynamics(desiredEndEffectorPosition, desiredEndEffectorLinearVelocity, feedForwardLinearAcceleration);
-      command.setInverseDynamics(desiredEndEffectorOrientation, desiredEndEffectorAngularVelocity, feedForwardLinearAcceleration);
+
+      // We provide the current desireds for the end-effector depending on the control mode.
+      switch (controllerCoreMode)
+      {
+         case INVERSE_DYNAMICS:
+            command.setInverseDynamics(desiredEndEffectorPosition, desiredEndEffectorLinearVelocity, feedForwardLinearAcceleration);
+            command.setInverseDynamics(desiredEndEffectorOrientation, desiredEndEffectorAngularVelocity, feedForwardLinearAcceleration);
+            break;
+         case INVERSE_KINEMATICS:
+            command.setInverseKinematics(desiredEndEffectorPosition, desiredEndEffectorLinearVelocity);
+            command.setInverseKinematics(desiredEndEffectorOrientation, desiredEndEffectorAngularVelocity);
+            break;
+         case VIRTUAL_MODEL:
+            command.setVirtualModelControl(desiredEndEffectorPosition, desiredEndEffectorLinearVelocity, new FrameVector3D());
+            command.setVirtualModelControl(desiredEndEffectorOrientation, desiredEndEffectorAngularVelocity, new FrameVector3D());
+            break;
+         default:
+            throw new IllegalStateException("Unexpected mode: " + controllerCoreMode);
+      }
+
       // Update the gains
       command.setGains(gains);
       /*
@@ -355,8 +373,8 @@ public class RobotArmThreeController implements Controller
       FramePose3D controlFramePose = new FramePose3D(endEffector.getBodyFixedFrame());
       controlFramePose.setZ(0.1); // Let's offset the control frame to be located at the tip of the end-effector.
       command.setControlFrameFixedInEndEffector(controlFramePose);
-      command.setControlMode(controllerCoreMode); 
-      
+      //      command.setControlMode(controllerCoreMode); 
+
       // Let's update the following variable which in turn will cause the graphical
       // coordinate system to be updated in the simulation.
       controlFramePoseForVisualization.setMatchingFrame(controlFramePose);
@@ -369,17 +387,27 @@ public class RobotArmThreeController implements Controller
        * want to use it to bring the joints towards the middle of their range of motion using the robot
        * redundancy.
        */
-      PrivilegedConfigurationCommand privilegedCommand = new PrivilegedConfigurationCommand();
-      privilegedCommand.setPrivilegedConfigurationOption(PrivilegedConfigurationOption.AT_MID_RANGE);
-      controllerCoreCommand.addInverseDynamicsCommand(privilegedCommand);
-  
-      if (controllerCoreMode == WholeBodyControllerCoreMode.INVERSE_KINEMATICS)
+      switch (controllerCoreMode)
       {
-         InverseKinematicsOptimizationSettingsCommand invKinOptimizationSettingsCmd = new InverseKinematicsOptimizationSettingsCommand();
-         invKinOptimizationSettingsCmd.setJointAccelerationWeight(0.0);
-         controllerCoreCommand.addInverseKinematicsCommand(invKinOptimizationSettingsCmd);
+         case INVERSE_DYNAMICS:
+            PrivilegedConfigurationCommand privilegedCommand = new PrivilegedConfigurationCommand();
+            privilegedCommand.setPrivilegedConfigurationOption(PrivilegedConfigurationOption.AT_MID_RANGE);
+            controllerCoreCommand.addInverseDynamicsCommand(privilegedCommand);
+
+            break;
+         case INVERSE_KINEMATICS:
+            InverseKinematicsOptimizationSettingsCommand invKinOptimizationSettingsCmd = new InverseKinematicsOptimizationSettingsCommand();
+            invKinOptimizationSettingsCmd.setJointAccelerationWeight(0.0);
+            controllerCoreCommand.addInverseKinematicsCommand(invKinOptimizationSettingsCmd);
+
+            break;
+         case VIRTUAL_MODEL:
+
+            break;
+         default:
+            throw new IllegalStateException("Unexpected mode: " + controllerCoreMode);
       }
-      
+
       // Submit all the objectives to be achieved to the controller core.
       // Magic happens here.
       wholeBodyControllerCore.compute(controllerCoreCommand);
@@ -474,7 +502,7 @@ public class RobotArmThreeController implements Controller
 
       if (tickCount >= numberOfControlTicksPerVizUpdate.getValue())
       {
-         tickCount = 0;     
+         tickCount = 0;
          if (index >= yoGraphicPositions.size())
          {
             index = 0;

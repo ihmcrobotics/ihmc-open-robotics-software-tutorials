@@ -25,7 +25,7 @@ import us.ihmc.scs2.simulation.robot.Robot;
 public class RobotArmThreeSimulation
 {
    /**
-    * Three modes are available for the controller core:
+    * Three modes are available for the controller core: 
     * <ul>
     * <li>Inverse Dynamics: Given desired accelerations and contact states, the controller core
     * computes desired joint torques.
@@ -42,7 +42,6 @@ public class RobotArmThreeSimulation
 
    public RobotArmThreeSimulation()
    {
-
       // Create an instance of the robot arm
       RobotArmOneDefinition robotArmDef = new RobotArmOneDefinition();
 
