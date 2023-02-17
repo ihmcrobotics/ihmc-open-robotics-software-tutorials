@@ -37,8 +37,8 @@ public class RobotArmThreeSimulation
     */
 
    private final WholeBodyControllerCoreMode controlMode = WholeBodyControllerCoreMode.INVERSE_DYNAMICS;
-//      private final WholeBodyControllerCoreMode controlMode = WholeBodyControllerCoreMode.INVERSE_KINEMATICS;
-//      private final WholeBodyControllerCoreMode controlMode = WholeBodyControllerCoreMode.VIRTUAL_MODEL;
+   //      private final WholeBodyControllerCoreMode controlMode = WholeBodyControllerCoreMode.INVERSE_KINEMATICS;
+   //      private final WholeBodyControllerCoreMode controlMode = WholeBodyControllerCoreMode.VIRTUAL_MODEL;
 
    public RobotArmThreeSimulation()
    {
@@ -46,7 +46,7 @@ public class RobotArmThreeSimulation
       RobotArmOneDefinition robotArmDef = new RobotArmOneDefinition();
 
       // Instantiate a SCS object - create the simulation
-      SimulationConstructionSet2 scs = new SimulationConstructionSet2(SimulationConstructionSet2.contactPointBasedPhysicsEngineFactory());
+      SimulationConstructionSet2 scs = new SimulationConstructionSet2(SimulationConstructionSet2.impulseBasedPhysicsEngineFactory());
 
       // Ignore joints in controller for inverse kinematics
       if (controlMode == WholeBodyControllerCoreMode.INVERSE_KINEMATICS)
