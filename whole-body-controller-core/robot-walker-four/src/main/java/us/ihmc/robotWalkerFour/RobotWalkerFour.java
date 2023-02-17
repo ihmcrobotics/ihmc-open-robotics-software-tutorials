@@ -28,20 +28,9 @@ public class RobotWalkerFour
 {
    private static final ReferenceFrame WORLD_FRAME = ReferenceFrame.getWorldFrame();
    /**
-    * This is the robot.
+    * This is the robot the controller uses.
     */
    private final MultiBodySystemBasics controllerRobot;
-   //   private final M2RobotDefinition m2RobotDefinition = new M2RobotDefinition();
-   /**
-    * As in the previous examples, we need this generator to create an inverse dynamics robot model
-    * that the whole-body controller core can work with.
-    */
-   //   private final InverseDynamicsJointsFromSCSRobotGenerator inverseDynamicsRobot;
-   /**
-    * A mapping to easily retrieve joints in the inverse dynamics robot given a joint from the
-    * simulated robot.
-    */
-   //   private final SCSToInverseDynamicsJointMap jointMap;
    /**
     * In this example, the center of mass reference frame will become handy as it allows to control the
     * robot's center of mass position.
@@ -58,13 +47,15 @@ public class RobotWalkerFour
     * to distribute the ground reaction forces on the foot when it is in support.
     */
    private final SideDependentList<ContactablePlaneBody> footContactableBodies = new SideDependentList<>();
-
-   //   private final EnumMap<SevenDoFArmJointEnum, OneDoFJointBasics> controllerJoints = new EnumMap<>(SevenDoFArmJointEnum.class);
-   //   private final EnumMap<SevenDoFArmJointEnum, OneDoFJointStateBasics> controllerJointOutputs = new EnumMap<>(SevenDoFArmJointEnum.class);
-
+   /**
+    * To generate the robot model we need the controller input and the robot definition
+    */
    private final ControllerInput controllerInput;
-   private final ControllerOutput controllerOutput;
    private final M2RobotDefinition robotDefintion;
+   /**
+    * We need to be able to write to the controller output
+    */
+   private final ControllerOutput controllerOutput;
 
    public RobotWalkerFour(ControllerInput controllerInput, ControllerOutput controllerOutput, M2RobotDefinition robotDefinition)
    {
@@ -72,11 +63,8 @@ public class RobotWalkerFour
       this.controllerOutput = controllerOutput;
       this.robotDefintion = robotDefinition;
 
-      // controller and simulation hold and maintain their own versions of frames (because they might run on separate threads)
-      // make sure to use the frame of the controller here and not of the simulated robot\
-      // generate a instance of the robot for the controller (independent of the simulation robot)
+      // Generate an instance of the robot for the controller (independent of the simulation robot). Make sure to use the same coordinate frame.
       controllerRobot = MultiBodySystemBasics.toMultiBodySystemBasics(robotDefinition.newInstance(WORLD_FRAME));
-
       centerOfMassFrame = new CenterOfMassReferenceFrame("centerOfMassFrame", WORLD_FRAME, getElevator());
 
       /*
@@ -97,8 +85,7 @@ public class RobotWalkerFour
          String soleFrameName = robotSide.getCamelCaseName() + "SoleFrame";
          RigidBodyTransform transformToAnkle = new RigidBodyTransform();
          transformToAnkle.getTranslation().setZ(-M2RobotDefinition.FOOT_HEIGHT); // Offset to be at the bottom of the foot.
-         transformToAnkle.getTranslation().setX(-footBack + 0.5 * footLength); // Offset to center the frame in the
-         // middle of the sole.
+         transformToAnkle.getTranslation().setX(-footBack + 0.5 * footLength); // Offset to center the frame in the middle of the sole.
          ReferenceFrame soleFrame = ReferenceFrameTools.constructFrameWithUnchangingTransformToParent(soleFrameName, frameAfterAnkleJoint, transformToAnkle);
          soleFrames.put(robotSide, soleFrame);
 
@@ -125,11 +112,10 @@ public class RobotWalkerFour
       MultiBodySystemTools.copyJointsState(controllerInput.getInput().getAllJoints(), controllerRobot.getAllJoints(), JointStateType.VELOCITY);
       MultiBodySystemTools.copyJointsState(controllerInput.getInput().getAllJoints(), controllerRobot.getAllJoints(), JointStateType.ACCELERATION);
       MultiBodySystemTools.copyJointsState(controllerInput.getInput().getAllJoints(), controllerRobot.getAllJoints(), JointStateType.EFFORT);
-      
+
       // Need to update frames
       controllerRobot.getRootBody().updateFramesRecursively();
       centerOfMassFrame.update();
-
    }
 
    /**
@@ -145,10 +131,8 @@ public class RobotWalkerFour
     */
    public RigidBodyBasics getElevator()
    {
-      // controller and simulation hold and maintain their own versions of frames (because they might run on separate threads)
-      // make sure to use the frame of the controller here and not of the simulated robot
-
-      return controllerRobot.getRootBody();//(RigidBodyBasics) controllerInput.getInput().getRootBody();
+      // Note: the controller and simulation hold and maintain their own versions of frames (because they might run on separate threads). So we have to make sure to use the frame of the controller here and not of the simulated robot
+      return controllerRobot.getRootBody();
    }
 
    /**

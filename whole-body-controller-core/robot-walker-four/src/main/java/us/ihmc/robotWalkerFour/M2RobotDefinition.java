@@ -29,8 +29,7 @@ public class M2RobotDefinition extends RobotDefinition
 {
    private static final String M2ROBOT = "M2";
 
-   // This scale is used to make the feet wider so it is easier to keep the robot
-   // balance in single support.
+   // This scale is used to make the feet wider so it is easier to keep the robot balance in single support.
    private static final double FOOT_WIDTH_SCALE_FACTOR = 1.5;
 
    public static final double HIP_OFFSET_Y = 0.184 / 2.0;
@@ -86,7 +85,7 @@ public class M2RobotDefinition extends RobotDefinition
 
       // Create the top (fixed) link that serves as the base of the robot
       /**
-       * The elevator is a massless, sizeless rigid-body fixed in world to which the first joint of the
+       * The elevator is a mass-less, size-less rigid-body fixed in world to which the first joint of the
        * robot is attached. The name comes from the use of this rigid-body to add the gravity effect to
        * the robot by making it accelerate like an elevator when it starts moving. However, this elevator
        * is always fixed in world with no velocity.
@@ -94,8 +93,10 @@ public class M2RobotDefinition extends RobotDefinition
       RigidBodyDefinition elevator = new RigidBodyDefinition("elevator");
       setRootBodyDefinition(elevator);
 
-      // Define and add a floating joint to the robot base
+      // Define and add a floating joint to the robot base   
       SixDoFJointDefinition floatingJoint = new SixDoFJointDefinition(getRootJointName());
+
+      //The robot needs to start standing on the ground because the controller will start in the "standing"-state and will expect ground contact
       floatingJoint.setInitialJointState(new SixDoFJointState(null, new Vector3D(0.0, 0.0, 0.96)));
       elevator.addChildJoint(floatingJoint);
 
@@ -103,8 +104,7 @@ public class M2RobotDefinition extends RobotDefinition
       RigidBodyDefinition mainBody = createBody();
       floatingJoint.setSuccessor(mainBody);
 
-      // RIGHT LEG.
-
+      // RIGHT LEG
       // right hip joint
       OneDoFJointDefinition[] rightHipUni = createUniversalJoint("right_hip_yaw",
                                                                  "right_hip_roll",
@@ -139,8 +139,7 @@ public class M2RobotDefinition extends RobotDefinition
       RigidBodyDefinition rightFootBody = foot(RobotSide.RIGHT);
       rightRetinaculumBody.addChildJoint(rightAnklePitch);
       rightAnklePitch.setSuccessor(rightFootBody);
-//      rightAnklePitch.setPositionLimits(0.0, Math.PI);
-      
+
       footParentJoints.put(RobotSide.RIGHT, rightAnklePitch);
 
       /*
@@ -161,7 +160,7 @@ public class M2RobotDefinition extends RobotDefinition
       rightAnklePitch.addGroundContactPointDefinition(right_heel_in);
       rightAnklePitch.addGroundContactPointDefinition(right_heel_out);
 
-      //       LEFT LEG.
+      // LEFT LEG
       OneDoFJointDefinition[] leftHipUni = createUniversalJoint("left_hip_yaw",
                                                                 "left_hip_roll",
                                                                 new Vector3D(0.0, HIP_OFFSET_Y, 0.0),
@@ -193,7 +192,6 @@ public class M2RobotDefinition extends RobotDefinition
       RigidBodyDefinition leftFootBody = foot(RobotSide.LEFT);
       leftRetinaculumBody.addChildJoint(leftAnklePitch);
       leftAnklePitch.setSuccessor(leftFootBody);
-//      leftAnklePitch.setPositionLimits(0.0, Math.PI);
 
       footParentJoints.put(RobotSide.LEFT, leftAnklePitch);
 
@@ -214,6 +212,9 @@ public class M2RobotDefinition extends RobotDefinition
       leftAnklePitch.addGroundContactPointDefinition(left_toe_out);
       leftAnklePitch.addGroundContactPointDefinition(left_heel_in);
       leftAnklePitch.addGroundContactPointDefinition(left_heel_out);
+
+      // Set damping to 0.0 (due to bug in OneDoFJointDefinition which initializes the damping to -1)
+      forEachOneDoFJointDefinition(j -> j.setDamping(0.0));
    }
 
    public FloatingJoint getFloatingJoint()
@@ -281,12 +282,6 @@ public class M2RobotDefinition extends RobotDefinition
       ret.addVisualDefinition(new VisualDefinition(hemiEllipsoidPose, hemiEllipsoid, materialDefinition));
       ret.addVisualDefinition(new VisualDefinition(cylinderPose, cylinder, materialDefinitionCylinder));
 
-      // Setup collision properties based on defined geometry
-      // This is only needed in case we use impulse based physics engine
-      // TODO no need to consider the pose of the body?
-      ret.addCollisionShapeDefinition(new CollisionShapeDefinition(cylinder));
-      //      ret.addCollisionShapeDefinition(new CollisionShapeDefinition(hemiEllipsoid));
-
       return ret;
    }
 
@@ -301,7 +296,6 @@ public class M2RobotDefinition extends RobotDefinition
       MaterialDefinition materialDefinition = new MaterialDefinition(ColorDefinitions.White());
 
       ret.addVisualDefinition(new VisualDefinition(geometryDefintion, materialDefinition));
-      ret.addCollisionShapeDefinition(new CollisionShapeDefinition(geometryDefintion));
 
       return ret;
    }
@@ -320,7 +314,6 @@ public class M2RobotDefinition extends RobotDefinition
       MaterialDefinition materialDefinition = new MaterialDefinition(ColorDefinitions.Black());
 
       ret.addVisualDefinition(new VisualDefinition(cylinderPose, cylinder, materialDefinition));
-      ret.addCollisionShapeDefinition(new CollisionShapeDefinition(cylinder));
 
       return ret;
    }
@@ -339,7 +332,6 @@ public class M2RobotDefinition extends RobotDefinition
       MaterialDefinition materialDefinition = new MaterialDefinition(ColorDefinitions.Black());
 
       ret.addVisualDefinition(new VisualDefinition(cylinderPose, cylinder, materialDefinition));
-      ret.addCollisionShapeDefinition(new CollisionShapeDefinition(cylinder));
 
       return ret;
    }
@@ -362,7 +354,6 @@ public class M2RobotDefinition extends RobotDefinition
       MaterialDefinition materialDefinitionCylinder = new MaterialDefinition(ColorDefinitions.Black());
 
       ret.addVisualDefinition(new VisualDefinition(cylinderPose, cylinder, materialDefinitionCylinder));
-      ret.addCollisionShapeDefinition(new CollisionShapeDefinition(cylinder));
 
       return ret;
    }
@@ -378,7 +369,6 @@ public class M2RobotDefinition extends RobotDefinition
       MaterialDefinition materialDefinition = new MaterialDefinition(ColorDefinitions.White());
 
       ret.addVisualDefinition(new VisualDefinition(geometryDefintion, materialDefinition));
-      ret.addCollisionShapeDefinition(new CollisionShapeDefinition(geometryDefintion));
 
       return ret;
    }
@@ -397,7 +387,6 @@ public class M2RobotDefinition extends RobotDefinition
       MaterialDefinition materialDefinition = new MaterialDefinition(ColorDefinitions.Red());
 
       ret.addVisualDefinition(new VisualDefinition(geometryPose, geometryDefinition, materialDefinition));
-      ret.addCollisionShapeDefinition(new CollisionShapeDefinition(geometryDefinition));
 
       return ret;
    }

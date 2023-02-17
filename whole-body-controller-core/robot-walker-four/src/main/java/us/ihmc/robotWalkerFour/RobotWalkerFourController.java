@@ -78,7 +78,6 @@ public class RobotWalkerFourController implements Controller
     * This variable triggers the controller to initiate walking.
     */
    private final YoBoolean walk = new YoBoolean("walk", registry);
-
    /**
     * The duration for the double support phase.
     */
@@ -97,6 +96,11 @@ public class RobotWalkerFourController implements Controller
     * on Atlas and Valkyrie.
     */
    private final WholeBodyControllerCore wholeBodyControllerCore;
+
+   /**
+    * This is the controller input. This is needed to setup a local version of the robot for the
+    * controller.
+    */
    private final ControllerInput controllerInput;
 
    /**
@@ -160,7 +164,7 @@ public class RobotWalkerFourController implements Controller
       this.controllerInput = controllerInput;
       this.robotWalkerFour = new RobotWalkerFour(controllerInput, controllerOutput, robotDefinition);
 
-      // create an empty graphics registry (is needed due to SCS 1)
+      // Create an empty graphics registry (is needed due to SCS 1)
       YoGraphicsListRegistry yoGraphicsListRegistry = new YoGraphicsListRegistry();
       wholeBodyControllerCore = createControllerCore(controlDT, gravityZ, yoGraphicsListRegistry);
       stateMachine = createStateMachine();
@@ -174,7 +178,7 @@ public class RobotWalkerFourController implements Controller
    {
       // This time the robot has a floating joint.
       FloatingJointBasics rootJoint = robotWalkerFour.getRootJoint();
-      RigidBodyBasics elevator = robotWalkerFour.getElevator(); //TODO needed?
+      RigidBodyBasics elevator = robotWalkerFour.getElevator();
 
       // These are all the joints of the robot arm.
       JointBasics[] jointsArray = MultiBodySystemTools.collectSubtreeJoints(elevator);
@@ -182,8 +186,7 @@ public class RobotWalkerFourController implements Controller
 
       // This class contains basic optimization settings required for QP formulation.
       ControllerCoreOptimizationSettings controllerCoreOptimizationSettings = new RobotWalkerFourOptimizationSettings();
-      // This is the toolbox for the controller core with everything it needs to run
-      // properly.
+      // This is the toolbox for the controller core with everything it needs to run properly.
       WholeBodyControlCoreToolbox toolbox = new WholeBodyControlCoreToolbox(controlDT,
                                                                             gravityZ,
                                                                             rootJoint,
@@ -198,7 +201,7 @@ public class RobotWalkerFourController implements Controller
                                                           robotWalkerFour.getFootContactableBody(RobotSide.RIGHT)));
 
       /*
-       * Finally, we register all the commands that we will use in this controller, i.e. commands for the
+       * We register all the commands that we will use in this controller, i.e. commands for the
        * feet that we'll for the swing, an orientation command for the pelvis to keep it level to the
        * ground, and the command for controlling the center of mass.
        */
@@ -206,22 +209,19 @@ public class RobotWalkerFourController implements Controller
       for (RobotSide robotSide : RobotSide.values)
       {
          SpatialFeedbackControlCommand footCommand = new SpatialFeedbackControlCommand();
-         footCommand.setControlMode(WholeBodyControllerCoreMode.INVERSE_DYNAMICS); // sets control mode to inverse
-         // dynamics
+         footCommand.setControlMode(WholeBodyControllerCoreMode.INVERSE_DYNAMICS); // sets control mode to inverse dynamics
          RigidBodyBasics foot = robotWalkerFour.getFoot(robotSide);
          footCommand.set(elevator, foot);
          allPossibleCommands.addCommand(footCommand);
       }
 
       OrientationFeedbackControlCommand pelvisOrientationCommand = new OrientationFeedbackControlCommand();
-      pelvisOrientationCommand.setControlMode(WholeBodyControllerCoreMode.INVERSE_DYNAMICS); // sets control mode to
-      // inverse dynamics
+      pelvisOrientationCommand.setControlMode(WholeBodyControllerCoreMode.INVERSE_DYNAMICS); // sets control mode to inverse dynamics
       pelvisOrientationCommand.set(elevator, robotWalkerFour.getPelvis());
       allPossibleCommands.addCommand(pelvisOrientationCommand);
 
       CenterOfMassFeedbackControlCommand centerOfMassCommand = new CenterOfMassFeedbackControlCommand();
-      centerOfMassCommand.setControlMode(WholeBodyControllerCoreMode.INVERSE_DYNAMICS); // sets control mode to
-      // inverse dynamics
+      centerOfMassCommand.setControlMode(WholeBodyControllerCoreMode.INVERSE_DYNAMICS); // sets control mode to inverse dynamics
       allPossibleCommands.addCommand(centerOfMassCommand);
 
       // Finally we can create the controller core.
@@ -244,32 +244,28 @@ public class RobotWalkerFourController implements Controller
        * will only use what is called here "done transitions". These transitions get triggered as a state
        * reports that it is done, when triggered the state machine goes to the next state.
        */
-      // Here we setup the STANDING state. When done, the state machine will
-      // transition to the TRANSFER_TO_LEFT state.
+      // Here we setup the STANDING state. When done, the state machine will transition to the TRANSFER_TO_LEFT state.
       factory.addStateAndDoneTransition(WalkingStateEnum.STANDING, new StandingState(), WalkingStateEnum.TRANSFER_TO_LEFT);
 
-      // Here using the transitions, we create a cycle that will result in having the
-      // robot walking indefinitely.
+      // Here using the transitions, we create a cycle that will result in having the robot walking indefinitely.
       factory.addStateAndDoneTransition(WalkingStateEnum.TRANSFER_TO_LEFT, new TransferState(RobotSide.LEFT), WalkingStateEnum.LEFT_SUPPORT);
       factory.addStateAndDoneTransition(WalkingStateEnum.LEFT_SUPPORT, new SingleSupportState(RobotSide.LEFT), WalkingStateEnum.TRANSFER_TO_RIGHT);
       factory.addStateAndDoneTransition(WalkingStateEnum.TRANSFER_TO_RIGHT, new TransferState(RobotSide.RIGHT), WalkingStateEnum.RIGHT_SUPPORT);
       factory.addStateAndDoneTransition(WalkingStateEnum.RIGHT_SUPPORT, new SingleSupportState(RobotSide.RIGHT), WalkingStateEnum.TRANSFER_TO_LEFT);
 
-      // Finally we can build the state machine which will start with the STANDING
-      // state.
+      // Finally we can build the state machine which will start with the STANDING state.
       return factory.build(WalkingStateEnum.STANDING);
    }
 
    @Override
    public void initialize()
    {
-      // We initialize the gains. As in the previous examples, the values here are
-      // rather arbitrary.
+      // We initialize the gains. As in the previous examples, the values here are rather arbitrary.
       gains.setPositionProportionalGains(100.0);
       gains.setPositionDerivativeGains(10.0);
       gains.setOrientationProportionalGains(100.0);
       gains.setOrientationDerivativeGains(10.0);
-      
+
    }
 
    /**
@@ -279,8 +275,7 @@ public class RobotWalkerFourController implements Controller
    @Override
    public void doControl()
    {
-      // We update the configuration state of our inverse dynamics robot model from
-      // the latest state of the simulated robot.
+      // We update the configuration state of our inverse dynamics robot model from the latest state of the simulated robot.
       robotWalkerFour.updateInverseDynamicsRobotState();
 
       /*
@@ -327,8 +322,7 @@ public class RobotWalkerFourController implements Controller
    public void sendCenterOfMassCommand(FramePoint3DReadOnly centerOfMassPosition)
    {
       CenterOfMassFeedbackControlCommand centerOfMassCommand = new CenterOfMassFeedbackControlCommand();
-      centerOfMassCommand.setControlMode(WholeBodyControllerCoreMode.INVERSE_DYNAMICS); // sets control mode to
-      // inverse dynamics
+      centerOfMassCommand.setControlMode(WholeBodyControllerCoreMode.INVERSE_DYNAMICS); // sets control mode to inverse dynamics
       FrameVector3D feedForwardLinearVelocity = new FrameVector3D(WORLD_FRAME, 0.0, 0.0, 0.0);
       FrameVector3D feedForwardLinearAcceleration = new FrameVector3D(WORLD_FRAME, 0.0, 0.0, 0.0);
       centerOfMassCommand.setInverseDynamics(centerOfMassPosition, feedForwardLinearVelocity, feedForwardLinearAcceleration);
@@ -369,12 +363,10 @@ public class RobotWalkerFourController implements Controller
          // Now it is the turn of the feet.
          for (RobotSide robotSide : RobotSide.values)
          {
-            // As their are in support, they should not be accelerating. So we make a
-            // zero-acceleration command.
+            // As their are in support, they should not be accelerating. So we make a zero-acceleration command.
             SpatialAccelerationCommand footZeroAcceleration = createFootZeroAccelerationCommand(robotSide);
             controllerCoreCommand.addInverseDynamicsCommand(footZeroAcceleration);
-            // This is the command that we can use to request a contactable body to be used
-            // for support or not.
+            // This is the command that we can use to request a contactable body to be used for support or not.
             PlaneContactStateCommand planeContactStateCommand = createPlaneContactStateCommand(robotSide, true);
             controllerCoreCommand.addInverseDynamicsCommand(planeContactStateCommand);
          }
@@ -436,13 +428,11 @@ public class RobotWalkerFourController implements Controller
       @Override
       public void doAction(double timeInState)
       {
-         // The trajectory generator is updated to get the current progression percentage
-         // alpha which is in [0, 1].
+         // The trajectory generator is updated to get the current progression percentage alpha which is in [0, 1].
          centerOfMassTrajectory.compute(MathTools.clamp(timeInState, 0.0, transferDuration.getValue()));
          double alpha = centerOfMassTrajectory.getValue();
 
-         // The alpha parameter is now used to interpolate between the initial and final
-         // center of mass positions.
+         // The alpha parameter is now used to interpolate between the initial and final center of mass positions.
          FramePoint3D centerOfMassPosition = new FramePoint3D(WORLD_FRAME);
          centerOfMassPosition.interpolate(initialCenterOfMassPosition, finalCenterOfMassPosition, alpha);
          centerOfMassPosition.setZ(CENTER_OF_MASS_HEIGHT);
@@ -450,7 +440,7 @@ public class RobotWalkerFourController implements Controller
          // And now we pack the command for the controller core.
          sendCenterOfMassCommand(centerOfMassPosition);
 
-         // as for the standing state, we request both feet to be in support.
+         // As for the standing state, we request both feet to be in support.
          for (RobotSide robotSide : RobotSide.values)
          {
             SpatialAccelerationCommand footZeroAcceleration = createFootZeroAccelerationCommand(robotSide);
