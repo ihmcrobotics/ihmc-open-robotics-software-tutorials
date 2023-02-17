@@ -39,7 +39,6 @@ import us.ihmc.yoVariables.variable.YoDouble;
 
 public class RobotArmTwoController implements Controller
 {
-
    private static final double TWO_PI = 2.0 * Math.PI;
    /**
     * We use this registry to keep track of the controller variables which can then be viewed in
@@ -79,9 +78,15 @@ public class RobotArmTwoController implements Controller
     * </p>
     */
    private final WholeBodyControllerCoreMode controllerCoreMode;
-   private final ControllerInput controllerInput;
-
+   /**
+    * This is the robot the controller uses.
+    */
    private final MultiBodySystemBasics controllerRobot;
+   /**
+    * To generate the robot model we need the controller input 
+    */
+   private final ControllerInput controllerInput;
+   
    private final CenterOfMassReferenceFrame centerOfMassFrame;
    private final EnumMap<SevenDoFArmJointEnum, OneDoFJointBasics> controllerJoints = new EnumMap<>(SevenDoFArmJointEnum.class);
    private final EnumMap<SevenDoFArmJointEnum, OneDoFJointStateBasics> controllerJointOutputs = new EnumMap<>(SevenDoFArmJointEnum.class);
