@@ -25,7 +25,7 @@ import us.ihmc.scs2.simulation.robot.Robot;
 public class RobotArmThreeSimulation
 {
    /**
-    * Three modes are available for the controller core: 
+    * Three modes are available for the controller core:
     * <ul>
     * <li>Inverse Dynamics: Given desired accelerations and contact states, the controller core
     * computes desired joint torques.
@@ -37,8 +37,8 @@ public class RobotArmThreeSimulation
     */
 
    private final WholeBodyControllerCoreMode controlMode = WholeBodyControllerCoreMode.INVERSE_DYNAMICS;
-//   private final WholeBodyControllerCoreMode controlMode = WholeBodyControllerCoreMode.INVERSE_KINEMATICS;
-//   private final WholeBodyControllerCoreMode controlMode = WholeBodyControllerCoreMode.VIRTUAL_MODEL;
+   //   private final WholeBodyControllerCoreMode controlMode = WholeBodyControllerCoreMode.INVERSE_KINEMATICS;
+   //   private final WholeBodyControllerCoreMode controlMode = WholeBodyControllerCoreMode.VIRTUAL_MODEL;
 
    public RobotArmThreeSimulation()
    {
@@ -46,7 +46,7 @@ public class RobotArmThreeSimulation
       RobotArmOneDefinition robotArmDef = new RobotArmOneDefinition();
 
       // Instantiate a SCS object - create the simulation
-      SimulationConstructionSet2 scs = new SimulationConstructionSet2(SimulationConstructionSet2.impulseBasedPhysicsEngineFactory());
+      SimulationConstructionSet2 scs = new SimulationConstructionSet2(SimulationConstructionSet2.contactPointBasedPhysicsEngineFactory());
 
       // Ignore joints in controller for inverse kinematics
       if (controlMode == WholeBodyControllerCoreMode.INVERSE_KINEMATICS)
