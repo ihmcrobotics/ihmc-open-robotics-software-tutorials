@@ -18,10 +18,15 @@ public class MobileSimulation {
 		// Instantiate a SCS object and add the MobileRobot
 		SimulationConstructionSet2 scs = new SimulationConstructionSet2(SimulationConstructionSet2.impulseBasedPhysicsEngineFactory());
 
+		// Add robot to simulation
 		scs.addRobot(mobile);
 		
+		// Set simulation deltaTime
 		scs.setDT(0.001);
+		
+		// Set frequency for data recording 
 		scs.setBufferRecordTickPeriod(1);
+		
 		// Launch the simulator
 		scs.start(true, false, false);
 	}

@@ -45,7 +45,7 @@ public class RobotArmOneSimulation
       // Defining the buffer size to ensure a minimum simulation duration before
       scs.changeBufferSize(100000);
 
-      // Launch the simulator.
+      // Launch the simulator
       scs.start(false, false, false);
    }
 
