@@ -37,8 +37,8 @@ public class RobotArmThreeSimulation
     */
 
    private final WholeBodyControllerCoreMode controlMode = WholeBodyControllerCoreMode.INVERSE_DYNAMICS;
-   //   private final WholeBodyControllerCoreMode controlMode = WholeBodyControllerCoreMode.INVERSE_KINEMATICS;
-   //   private final WholeBodyControllerCoreMode controlMode = WholeBodyControllerCoreMode.VIRTUAL_MODEL;
+//      private final WholeBodyControllerCoreMode controlMode = WholeBodyControllerCoreMode.INVERSE_KINEMATICS;
+//      private final WholeBodyControllerCoreMode controlMode = WholeBodyControllerCoreMode.VIRTUAL_MODEL;
 
    public RobotArmThreeSimulation()
    {
@@ -95,7 +95,7 @@ public class RobotArmThreeSimulation
       // Defining the buffer size to ensure a minimum simulation duration before filling the graphs in the simulator.
       scs.changeBufferSize(65536);
 
-      // Launch the simulator.
+      // Launch the simulator
       scs.start(false, false, false);
    }
 
