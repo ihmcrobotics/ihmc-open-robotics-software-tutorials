@@ -23,7 +23,6 @@ import us.ihmc.scs2.definition.state.SixDoFJointState;
 import us.ihmc.scs2.definition.visual.ColorDefinitions;
 import us.ihmc.scs2.definition.visual.MaterialDefinition;
 import us.ihmc.scs2.definition.visual.VisualDefinition;
-import us.ihmc.simulationconstructionset.FloatingJoint;
 
 public class M2RobotDefinition extends RobotDefinition
 {
@@ -76,7 +75,7 @@ public class M2RobotDefinition extends RobotDefinition
    public static final Vector3DReadOnly FOOT_COM = new Vector3D(0.050700, 0.0, -0.025500);
    public static final Vector3DReadOnly FOOT_I = new Vector3D(0.00036326, 0.00152067, 0.00170404);
 
-   private FloatingJoint bodyJoint;
+   private SixDoFJointDefinition bodyJoint;
    private SideDependentList<RevoluteJointDefinition> footParentJoints = new SideDependentList<>();
 
    public M2RobotDefinition()
@@ -217,7 +216,7 @@ public class M2RobotDefinition extends RobotDefinition
       forEachOneDoFJointDefinition(j -> j.setDamping(0.0));
    }
 
-   public FloatingJoint getFloatingJoint()
+   public SixDoFJointDefinition getFloatingJoint()
    {
       return bodyJoint;
    }

@@ -135,10 +135,10 @@ public class RobotArmThreeController implements Controller
     */
    private final MultiBodySystemBasics controllerRobot;
    /**
-    * To generate the robot model we need the controller input 
+    * To generate the robot model we need the controller input
     */
    private final ControllerInput controllerInput;
-   
+
    private final CenterOfMassReferenceFrame centerOfMassFrame;
    private final EnumMap<SevenDoFArmJointEnum, OneDoFJointBasics> controllerJoints = new EnumMap<>(SevenDoFArmJointEnum.class);
    private final EnumMap<SevenDoFArmJointEnum, OneDoFJointStateBasics> controllerJointOutputs = new EnumMap<>(SevenDoFArmJointEnum.class);
