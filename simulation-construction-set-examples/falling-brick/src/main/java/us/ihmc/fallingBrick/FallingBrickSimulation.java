@@ -5,7 +5,8 @@ import us.ihmc.euclid.tuple3D.Vector3D;
 import us.ihmc.scs2.SimulationConstructionSet2;
 import us.ihmc.scs2.definition.state.SixDoFJointState;
 
-public class FallingBrickSimulation{
+public class FallingBrickSimulation
+{
    public FallingBrickSimulation()
    {
       // Create an instance of the falling brick
@@ -16,22 +17,19 @@ public class FallingBrickSimulation{
       initialJointState.setConfiguration(new Pose3D(-0.5, 0.0, 2.0, 0.0, 0.0, 0.0));
       initialJointState.setAngularVelocity(new Vector3D(-0.1, -1.0, 10.0));
       initialJointState.setLinearVelocity(new Vector3D(0.0, -0.1, 0.5));
-      fallingBrick.getRootJointDefinitions().get(0).setInitialJointState(initialJointState);
-      
-      // Instantiate a SCS object and ground contact model
+      fallingBrick.getFloatingRootJointDefinition().setInitialJointState(initialJointState);
+
+      // Instantiate a SCS2 object and specify the physics engine to use
       /*
-       * This model is like a controller that is called every simulation tick and whose job is to detect
-       * contact point colliding with the ground. When a contact point collides with the ground, the model
-       * then computes the force to be applied on the robot at the contact point to resolve collision. The
-       * LinearGroundContactModel uses a spring-damper based strategy to compute the force to be applied,
-       * with the stiffness and damping parameters being axis dependent. One set of stiffness and damping
-       * values is used to compute the force along the contact normal while the other set of stiffness and
-       * damping values are used to compute the force tangent to the contact, or the friction force. It is
-       * also worth nothing that internally, the ground contact model uses a default coefficient of
-       * friction that is used to ensure that the ground reaction force remains within a friction cone.
+       * Creating the simulation environment using the contact-point based physics engine. This physics
+       * engine relies on forward dynamics to simulate robot joint acceleration and includes robot <->
+       * environment interactions using a non-linear spring damping contact force calculator. Note that
+       * this physics engine only uses the ground contact points attached to the robot (defined as
+       * GroundContactPointDefinition in the RobotDefinition) and TerrainObjectDefinition for the
+       * environment.
        */
       SimulationConstructionSet2 scs = new SimulationConstructionSet2(SimulationConstructionSet2.contactPointBasedPhysicsEngineFactory());
-      
+
       // Add the brick robot to the simulation
       scs.addRobot(fallingBrick);
 

@@ -19,9 +19,10 @@ public class FallingBrickDefinition extends RobotDefinition
    // Define the parameters of the brick
    private static final double BASE_H = 0.1, BASE_W = 0.2, BASE_L = 0.3;
    private static final double M1 = 2.0;
-   private static final double Ixx1 = (1.0 / 12.0) * M1 * (BASE_W * BASE_W + BASE_H * BASE_H), Iyy1 = (1.0 / 12.0) * M1 * (BASE_L * BASE_L + BASE_H * BASE_H),
-         Izz1 = (1.0 / 12.0) * M1 * (BASE_L * BASE_L + BASE_W * BASE_W);
-
+   private static final double Ixx1 = (1.0 / 12.0) * M1 * (BASE_W * BASE_W + BASE_H * BASE_H);
+   private static final double Iyy1 = (1.0 / 12.0) * M1 * (BASE_L * BASE_L + BASE_H * BASE_H);
+   private static final double Izz1 = (1.0 / 12.0) * M1 * (BASE_L * BASE_L + BASE_W * BASE_W);
+   
    public FallingBrickDefinition()
    {
       // Call parent class "Robot" constructor. The string "FallingBrick" will be the name of the robot.
