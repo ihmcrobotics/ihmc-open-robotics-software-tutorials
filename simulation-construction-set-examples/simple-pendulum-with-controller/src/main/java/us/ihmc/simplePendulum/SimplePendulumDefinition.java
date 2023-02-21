@@ -45,13 +45,13 @@ public class SimplePendulumDefinition extends RobotDefinition
 
    private static final double DAMP = 0.06;
 
+   /*
+    * Some joint state variables. Allows SimplePendulumRobot to have access to and set joint
+    * properties.
+    */
    private final OneDoFJointDampingControllerDefinition jointDampingControllerDefinition = new OneDoFJointDampingControllerDefinition();
 
-   /*
-    * private final OneDoFJointDampingControllerDefinition jointLvl1DampingControllerDefinition = new
-    * OneDoFJointDampingControllerDefinition(); Some joint state variables. Allows SimplePendulumRobot
-    * to have access to and set fulcrum joint properties.
-    */
+   public static String jointName = "FulcrumPin";
 
    // Define its constructor
    public SimplePendulumDefinition()
@@ -65,13 +65,13 @@ public class SimplePendulumDefinition extends RobotDefinition
       setRootBodyDefinition(elevator);
 
       /*
-       * The first parameter "FulcrumPin" is the name of the joint and will be used in all the variables
-       * associated with the joint. The second parameter "new Vector3d(0.0, 0.0, 1.5)" defines the offset
-       * of this joint from the previous joint. Since we want to position the fulcrum of the pendulum at a
-       * height of 1.5 meters above the ground, the default vector (0.0, 0.0, 1.5) will be used. The
-       * parameter "Axis3D.Y" defines the axis of rotation for this pin joint.
+       * The first parameter is the name of the joint and will be used in all the variables associated
+       * with the joint. The second parameter "new Vector3d(0.0, 0.0, 1.5)" defines the offset of this
+       * joint from the previous joint. Since we want to position the fulcrum of the pendulum at a height
+       * of 1.5 meters above the ground, the default vector (0.0, 0.0, 1.5) will be used. The parameter
+       * "Axis3D.Y" defines the axis of rotation for this pin joint.
        */
-      OneDoFJointDefinition fulcrumPinJoint = new RevoluteJointDefinition("FulcrumPin", new Vector3D(0.0, 0.0, 1.5), Axis3D.Y);
+      OneDoFJointDefinition fulcrumPinJoint = new RevoluteJointDefinition(jointName, new Vector3D(0.0, 0.0, 1.5), Axis3D.Y);
 
       // Attach this joint to the top link 
       elevator.getChildrenJoints().add(fulcrumPinJoint);

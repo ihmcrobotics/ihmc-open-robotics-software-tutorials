@@ -5,7 +5,6 @@ import us.ihmc.scs2.definition.collision.CollisionShapeDefinition;
 import us.ihmc.scs2.definition.geometry.Box3DDefinition;
 import us.ihmc.scs2.definition.geometry.Cylinder3DDefinition;
 import us.ihmc.scs2.definition.geometry.GeometryDefinition;
-import us.ihmc.scs2.definition.geometry.PyramidBox3DDefinition;
 import us.ihmc.scs2.definition.geometry.Sphere3DDefinition;
 import us.ihmc.scs2.definition.terrain.TerrainObjectDefinition;
 import us.ihmc.scs2.definition.visual.ColorDefinitions;
@@ -14,6 +13,13 @@ import us.ihmc.scs2.definition.visual.VisualDefinition;
 
 public class ClutteredGroundDefinition extends TerrainObjectDefinition
 {
+   // Defining the terrain
+   /*
+    * The terrain object definition is used to visualize a static environment and to define its
+    * collision model. The collision model is used to resolve contact between the robots and the
+    * environment.
+    */
+   //
    public ClutteredGroundDefinition()
    {
       super();
@@ -54,7 +60,7 @@ public class ClutteredGroundDefinition extends TerrainObjectDefinition
       addVisualDefinition(new VisualDefinition(spherePose, sphere, new MaterialDefinition(ColorDefinitions.CadetBlue())));
       addCollisionShapeDefinition(new CollisionShapeDefinition(spherePose, sphere));
 
-      // tilted box
+      // 3rd tilted box
       RigidBodyTransform boxPose3 = new RigidBodyTransform();
       boxPose3.appendTranslation(-1.0, 0.0, 0.3);
       boxPose3.getRotation().setToPitchOrientation(Math.toRadians(-50));
@@ -65,7 +71,7 @@ public class ClutteredGroundDefinition extends TerrainObjectDefinition
       // cylinder
       RigidBodyTransform cylinderPose = new RigidBodyTransform();
       cylinderPose.appendTranslation(-1.0, 0.0, 0.3);
-      cylinderPose.getRotation().setYawPitchRoll(10, 20, -10);;
+      cylinderPose.getRotation().setYawPitchRoll(10, 20, -10);
       GeometryDefinition cylinder = new Cylinder3DDefinition(0.5, 0.5);
       addVisualDefinition(new VisualDefinition(cylinderPose, cylinder, new MaterialDefinition(ColorDefinitions.PapayaWhip())));
       addCollisionShapeDefinition(new CollisionShapeDefinition(cylinderPose, cylinder));

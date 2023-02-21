@@ -22,7 +22,7 @@ public class FallingBrickDefinition extends RobotDefinition
    private static final double Ixx1 = (1.0 / 12.0) * M1 * (BASE_W * BASE_W + BASE_H * BASE_H);
    private static final double Iyy1 = (1.0 / 12.0) * M1 * (BASE_L * BASE_L + BASE_H * BASE_H);
    private static final double Izz1 = (1.0 / 12.0) * M1 * (BASE_L * BASE_L + BASE_W * BASE_W);
-   
+
    public FallingBrickDefinition()
    {
       // Call parent class "Robot" constructor. The string "FallingBrick" will be the name of the robot.
@@ -47,8 +47,11 @@ public class FallingBrickDefinition extends RobotDefinition
 
       // Add ground contact points to the brick
       /*
-       * The first parameter is the name of the ground contact point. The second parameter is the offset
-       * vector with respect to the joint the contact point will be attached to.
+       * Each GroundContactPointDefinition will be used to create a GroundContactPoint attached to the
+       * robot. The ground contact points are used by the contact-point based physics engine to prevent
+       * penetration into the environment. The first parameter is the name of the ground contact point.
+       * The second parameter is the offset vector with respect to the joint the contact point will be
+       * attached to.
        */
       // Corner points
       GroundContactPointDefinition gc1 = new GroundContactPointDefinition("gc1", new Vector3D(0.5 * BASE_L, 0.5 * BASE_W, 0.5 * BASE_H));

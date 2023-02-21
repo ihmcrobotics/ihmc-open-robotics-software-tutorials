@@ -40,12 +40,12 @@ public class RobotArmOneDefinition extends RobotDefinition
 
       // Lets create all the joints and attach them in series
       shoulderYawJoint = createArmJoint(SevenDoFArmJointEnum.shoulderYaw, elevator);
-      shoulderRollJoint = createArmJoint(SevenDoFArmJointEnum.shoulderRoll, SevenDoFArmJointEnum.shoulderYaw.getChildRigidBody());
-      shoulderPitchJoint = createArmJoint(SevenDoFArmJointEnum.shoulderPitch, SevenDoFArmJointEnum.shoulderRoll.getChildRigidBody());
-      elbowPitchJoint = createArmJoint(SevenDoFArmJointEnum.elbowPitch, SevenDoFArmJointEnum.shoulderPitch.getChildRigidBody());
-      wristPitchJoint = createArmJoint(SevenDoFArmJointEnum.wristPitch, SevenDoFArmJointEnum.elbowPitch.getChildRigidBody());
-      wristRollJoint = createArmJoint(SevenDoFArmJointEnum.wristRoll, SevenDoFArmJointEnum.wristPitch.getChildRigidBody());
-      wristYawJoint = createArmJoint(SevenDoFArmJointEnum.wristYaw, SevenDoFArmJointEnum.wristRoll.getChildRigidBody());
+      shoulderRollJoint = createArmJoint(SevenDoFArmJointEnum.shoulderRoll, shoulderYawJoint.getSuccessor());
+      shoulderPitchJoint = createArmJoint(SevenDoFArmJointEnum.shoulderPitch, shoulderRollJoint.getSuccessor());
+      elbowPitchJoint = createArmJoint(SevenDoFArmJointEnum.elbowPitch, shoulderPitchJoint.getSuccessor());
+      wristPitchJoint = createArmJoint(SevenDoFArmJointEnum.wristPitch, elbowPitchJoint.getSuccessor());
+      wristRollJoint = createArmJoint(SevenDoFArmJointEnum.wristRoll, wristPitchJoint.getSuccessor());
+      wristYawJoint = createArmJoint(SevenDoFArmJointEnum.wristYaw, wristRollJoint.getSuccessor());
 
       // Add joints to joint map
       jointMap.put(SevenDoFArmJointEnum.shoulderYaw, shoulderYawJoint);
@@ -68,7 +68,12 @@ public class RobotArmOneDefinition extends RobotDefinition
       pinJoint.setDamping(10.0);
       pinJoint.setKpSoftLimitStop(50.0);
       pinJoint.setKdSoftLimitStop(10.0);
-      RigidBodyDefinition linkBody = jointEnum.getChildRigidBody();
+      RigidBodyDefinition linkBody = new RigidBodyDefinition("body" + jointName);
+
+      if (!jointEnum.getChildVisulalizationDefinitionList().isEmpty())
+      {
+         linkBody.addVisualDefinitions(jointEnum.getChildVisulalizationDefinitionList());
+      }
 
       linkBody.setMass(jointEnum.getChildLinkMass());
       linkBody.setCenterOfMassOffset(jointEnum.getChildLinkCoM());

@@ -39,7 +39,7 @@ public class SimplePendulumController implements Controller
       desiredPositionRadians.set(-1.5); // set initial position of the pendulum
 
       // Get the objects of the fulcrum joint to read input and write output in the control loop
-      this.fulcrumJoint = (OneDoFJointReadOnly) controllerInput.getInput().findJoint("FulcrumPin");
+      this.fulcrumJoint = (OneDoFJointReadOnly) controllerInput.getInput().findJoint(SimplePendulumDefinition.jointName);
       this.fulcrumJointCommand = controllerOutput.getOneDoFJointOutput(fulcrumJoint);
 
       // set the proportional, integral, and derivative gains
@@ -54,7 +54,6 @@ public class SimplePendulumController implements Controller
    @Override
    public void initialize()
    {
-
    }
 
    private double positionError = 0;
@@ -72,10 +71,6 @@ public class SimplePendulumController implements Controller
 
       // P.I.D control law
       torque = p_gain.getDoubleValue() * positionError + i_gain.getDoubleValue() * integralError + d_gain.getDoubleValue() * (0 - fulcrumJoint.getQd());
-
-      //      torque = p_gain.getDoubleValue() * positionError + i_gain.getDoubleValue() * integralError + d_gain.getDoubleValue() * (0 - fulcrumJoint.getQd())
-      //            - fulcrumJoint.getSuccessor().getInertia().getMass() * gravityZ * fulcrumJoint.getSuccessor().getInertia().getCenterOfMassOffset().norm()
-      //                  * Math.sin(desiredPositionRadians.getDoubleValue());
 
       // Set the desired torque for the fulcrum joint as controller output
       this.fulcrumJointCommand.setEffort(torque);

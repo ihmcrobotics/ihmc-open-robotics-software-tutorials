@@ -453,6 +453,8 @@ public class RobotArmThreeController implements Controller
     */
    public void updateDesireds()
    {
+      double time = controllerInput.getTime();
+
       { // Let's make a 3D position trajectory using a composition of sine-waves:
          Vector3D frequencies = new Vector3D(0.1, 0.1, 0.2);
          Vector3D amplitudes = new Vector3D(0.3, 0.1, 0.075);
@@ -466,8 +468,8 @@ public class RobotArmThreeController implements Controller
             double phase = phases.getElement(axisIndex);
             double offset = offsets.getElement(axisIndex);
 
-            double x = offset + amplitude * Math.sin(omega * controllerInput.getTime() + phase);
-            double xDot = omega * amplitude * Math.cos(omega * controllerInput.getTime() + phase);
+            double x = offset + amplitude * Math.sin(omega * time + phase);
+            double xDot = omega * amplitude * Math.cos(omega * time + phase);
 
             desiredEndEffectorPosition.setElement(axisIndex, x);
             desiredEndEffectorLinearVelocity.setElement(axisIndex, xDot);
@@ -493,8 +495,8 @@ public class RobotArmThreeController implements Controller
             double phase = phases[rotationIndex];
             double offset = offsets[rotationIndex];
 
-            yawPitchRoll[rotationIndex] = offset + amplitude * Math.sin(omega * controllerInput.getTime() + phase);
-            yawPitchRollRates[rotationIndex] = omega * amplitude * Math.cos(omega * controllerInput.getTime() + phase);
+            yawPitchRoll[rotationIndex] = offset + amplitude * Math.sin(omega * time + phase);
+            yawPitchRollRates[rotationIndex] = omega * amplitude * Math.cos(omega * time + phase);
          }
 
          desiredEndEffectorOrientation.setYawPitchRoll(yawPitchRoll[0], yawPitchRoll[1], yawPitchRoll[2]);

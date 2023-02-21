@@ -65,7 +65,7 @@ public class RobotArmOneController implements Controller
    {
 
       this.controllerInput = controllerInput;
-
+ 
       /*
        * YoDoubles need to be created first with a given name that is to represent the variable in the
        * Simulation Construction Set, and the registry so the simulation can find them.
@@ -120,13 +120,15 @@ public class RobotArmOneController implements Controller
    @Override
    public void doControl()
    {
+      double time = controllerInput.getTime();
+
       { // Making the shoulder yaw joint follow a sine wave trajectory:
          double frequency = 0.2;
          double phase = Math.PI;
          double amplitude = 0.5;
          double omega = TWO_PI * frequency;
-         double q = amplitude * Math.sin(omega * controllerInput.getTime() + phase);
-         double qDot = omega * amplitude * Math.cos(omega * controllerInput.getTime() + phase);
+         double q = amplitude * Math.sin(omega * time + phase);
+         double qDot = omega * amplitude * Math.cos(omega * time + phase);
 
          desiredPositions.get(SevenDoFArmJointEnum.shoulderYaw).set(q);
          desiredVelocities.get(SevenDoFArmJointEnum.shoulderYaw).set(qDot);
@@ -138,8 +140,8 @@ public class RobotArmOneController implements Controller
          double phase = -0.5 * Math.PI;
          double amplitude = 0.5;
          double omega = TWO_PI * frequency;
-         double q = offset + amplitude * Math.sin(omega * controllerInput.getTime() + phase);
-         double qDot = omega * amplitude * Math.cos(omega * controllerInput.getTime() + phase);
+         double q = offset + amplitude * Math.sin(omega * time + phase);
+         double qDot = omega * amplitude * Math.cos(omega * time + phase);
 
          desiredPositions.get(SevenDoFArmJointEnum.elbowPitch).set(q);
          desiredVelocities.get(SevenDoFArmJointEnum.elbowPitch).set(qDot);

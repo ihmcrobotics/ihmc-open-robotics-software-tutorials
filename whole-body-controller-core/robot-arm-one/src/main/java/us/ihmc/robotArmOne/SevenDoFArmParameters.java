@@ -1,6 +1,8 @@
 package us.ihmc.robotArmOne;
 
+import java.util.ArrayList;
 import java.util.EnumMap;
+import java.util.List;
 
 import us.ihmc.euclid.Axis3D;
 import us.ihmc.euclid.matrix.Matrix3D;
@@ -11,7 +13,6 @@ import us.ihmc.scs2.definition.geometry.Cylinder3DDefinition;
 import us.ihmc.scs2.definition.geometry.Ellipsoid3DDefinition;
 import us.ihmc.scs2.definition.geometry.GeometryDefinition;
 import us.ihmc.scs2.definition.geometry.Sphere3DDefinition;
-import us.ihmc.scs2.definition.robot.RigidBodyDefinition;
 import us.ihmc.scs2.definition.visual.ColorDefinition;
 import us.ihmc.scs2.definition.visual.ColorDefinitions;
 import us.ihmc.scs2.definition.visual.MaterialDefinition;
@@ -124,11 +125,11 @@ public class SevenDoFArmParameters
       /**
        * @return graphics to use for representing the child link.
        */
-      public RigidBodyDefinition getChildRigidBody()
+      public List<VisualDefinition> getChildVisulalizationDefinitionList()
       {
-         if (!jointChildRigidBody.containsKey(this))
-            throw new RuntimeException("No ribgid body has been registered for the child link of the joint: " + getJointName());
-         return jointChildRigidBody.get(this);
+         if (!jointChildVisualDefinition.containsKey(this))
+            throw new RuntimeException("No visualization definition list has been registered for the child link of the joint: " + getJointName());
+         return jointChildVisualDefinition.get(this);
       }
    };
 
@@ -154,7 +155,7 @@ public class SevenDoFArmParameters
    public static final EnumMap<SevenDoFArmJointEnum, Double> jointChildLinkMasses = new EnumMap<>(SevenDoFArmJointEnum.class);
    public static final EnumMap<SevenDoFArmJointEnum, Vector3D> jointChildLinkCoMs = new EnumMap<>(SevenDoFArmJointEnum.class);
    public static final EnumMap<SevenDoFArmJointEnum, Matrix3D> jointChildLinkInertias = new EnumMap<>(SevenDoFArmJointEnum.class);
-   public static final EnumMap<SevenDoFArmJointEnum, RigidBodyDefinition> jointChildRigidBody = new EnumMap<>(SevenDoFArmJointEnum.class);
+   public static final EnumMap<SevenDoFArmJointEnum, List<VisualDefinition>> jointChildVisualDefinition = new EnumMap<>(SevenDoFArmJointEnum.class);
 
    static
    {
@@ -222,21 +223,21 @@ public class SevenDoFArmParameters
       jointChildLinkInertias.put(SevenDoFArmJointEnum.wristRoll, smallInertia);
       jointChildLinkInertias.put(SevenDoFArmJointEnum.wristYaw, handInertia);
 
-      jointChildRigidBody.put(SevenDoFArmJointEnum.shoulderYaw, emptyRigidBodyDefinition(SevenDoFArmJointEnum.shoulderYaw.getJointName()));
-      jointChildRigidBody.put(SevenDoFArmJointEnum.shoulderRoll, emptyRigidBodyDefinition(SevenDoFArmJointEnum.shoulderRoll.getJointName()));
-      jointChildRigidBody.put(SevenDoFArmJointEnum.shoulderPitch,
-                              createArmLinkGraphics(SevenDoFArmJointEnum.shoulderPitch.getJointName(),
-                                                    armLinkLength,
-                                                    armLinkRadius,
-                                                    ColorDefinitions.DarkSalmon()));
-      jointChildRigidBody.put(SevenDoFArmJointEnum.elbowPitch,
-                              createArmLinkGraphics(SevenDoFArmJointEnum.elbowPitch.getJointName(),
-                                                    armLinkLength,
-                                                    armLinkRadius,
-                                                    ColorDefinitions.DarkSlateBlue()));
-      jointChildRigidBody.put(SevenDoFArmJointEnum.wristPitch, emptyRigidBodyDefinition(SevenDoFArmJointEnum.wristPitch.getJointName()));
-      jointChildRigidBody.put(SevenDoFArmJointEnum.wristRoll, emptyRigidBodyDefinition(SevenDoFArmJointEnum.wristRoll.getJointName()));
-      jointChildRigidBody.put(SevenDoFArmJointEnum.wristYaw, createHandGraphics(SevenDoFArmJointEnum.wristYaw.getJointName()));
+      jointChildVisualDefinition.put(SevenDoFArmJointEnum.shoulderYaw, emptyVisualDefinitionList());
+      jointChildVisualDefinition.put(SevenDoFArmJointEnum.shoulderRoll, emptyVisualDefinitionList());
+      jointChildVisualDefinition.put(SevenDoFArmJointEnum.shoulderPitch,
+                                     createArmLinkGraphics(SevenDoFArmJointEnum.shoulderPitch.getJointName(),
+                                                           armLinkLength,
+                                                           armLinkRadius,
+                                                           ColorDefinitions.DarkSalmon()));
+      jointChildVisualDefinition.put(SevenDoFArmJointEnum.elbowPitch,
+                                     createArmLinkGraphics(SevenDoFArmJointEnum.elbowPitch.getJointName(),
+                                                           armLinkLength,
+                                                           armLinkRadius,
+                                                           ColorDefinitions.DarkSlateBlue()));
+      jointChildVisualDefinition.put(SevenDoFArmJointEnum.wristPitch, emptyVisualDefinitionList());
+      jointChildVisualDefinition.put(SevenDoFArmJointEnum.wristRoll, emptyVisualDefinitionList());
+      jointChildVisualDefinition.put(SevenDoFArmJointEnum.wristYaw, createHandGraphics(SevenDoFArmJointEnum.wristYaw.getJointName()));
    }
 
    private static Matrix3D diagional(double ixx, double iyy, double izz)
@@ -248,14 +249,16 @@ public class SevenDoFArmParameters
       return matrix;
    }
 
-   public static RigidBodyDefinition emptyRigidBodyDefinition(String name)
+   public static List<VisualDefinition> emptyVisualDefinitionList()
    {
-      return new RigidBodyDefinition(name + "body");
+      List<VisualDefinition> visualDefinitions = new ArrayList<VisualDefinition>();
+
+      return visualDefinitions;
    }
 
-   public static RigidBodyDefinition createArmLinkGraphics(String name, double length, double radius, ColorDefinition color)
+   public static List<VisualDefinition> createArmLinkGraphics(String name, double length, double radius, ColorDefinition color)
    {
-      RigidBodyDefinition armLinkGraphics = new RigidBodyDefinition(name + "body");
+      List<VisualDefinition> visualDefinitions = new ArrayList<VisualDefinition>();
 
       GeometryDefinition sphereGeometryDefinition = new Sphere3DDefinition(0.03);
       MaterialDefinition sphereMaterialDefinition = new MaterialDefinition(ColorDefinitions.Grey());
@@ -263,15 +266,15 @@ public class SevenDoFArmParameters
       GeometryDefinition cylinderGeometryDefinition = new Cylinder3DDefinition(length, radius);
       MaterialDefinition cylinderMaterialDefinition = new MaterialDefinition(color);
 
-      armLinkGraphics.addVisualDefinition(new VisualDefinition(sphereGeometryDefinition, sphereMaterialDefinition));
-      armLinkGraphics.addVisualDefinition(new VisualDefinition(new Vector3D(0.0, 0.0, 0.5 * length), cylinderGeometryDefinition, cylinderMaterialDefinition));
+      visualDefinitions.add(new VisualDefinition(sphereGeometryDefinition, sphereMaterialDefinition));
+      visualDefinitions.add(new VisualDefinition(new Vector3D(0.0, 0.0, 0.5 * length), cylinderGeometryDefinition, cylinderMaterialDefinition));
 
-      return armLinkGraphics;
+      return visualDefinitions;
    }
 
-   public static RigidBodyDefinition createHandGraphics(String name)
+   public static List<VisualDefinition> createHandGraphics(String name)
    {
-      RigidBodyDefinition handGraphics = new RigidBodyDefinition(name + "body");
+      List<VisualDefinition> visualDefinitions = new ArrayList<VisualDefinition>();
 
       GeometryDefinition sphereGeometryDefinition = new Sphere3DDefinition(0.025);
       MaterialDefinition sphereMaterialDefinition = new MaterialDefinition(ColorDefinitions.Black());
@@ -279,9 +282,9 @@ public class SevenDoFArmParameters
       GeometryDefinition ellipsoidGeometryDefinition = new Ellipsoid3DDefinition(0.04, 0.01, 0.1);
       MaterialDefinition ellipsoidMaterialDefinition = new MaterialDefinition(ColorDefinitions.DarkCyan());
 
-      handGraphics.addVisualDefinition(new VisualDefinition(new Vector3D(0.0, 0.0, 0.0), sphereGeometryDefinition, sphereMaterialDefinition));
-      handGraphics.addVisualDefinition(new VisualDefinition(handCoM, ellipsoidGeometryDefinition, ellipsoidMaterialDefinition));
+      visualDefinitions.add(new VisualDefinition(new Vector3D(0.0, 0.0, 0.0), sphereGeometryDefinition, sphereMaterialDefinition));
+      visualDefinitions.add(new VisualDefinition(handCoM, ellipsoidGeometryDefinition, ellipsoidMaterialDefinition));
 
-      return handGraphics;
+      return visualDefinitions;
    }
 }

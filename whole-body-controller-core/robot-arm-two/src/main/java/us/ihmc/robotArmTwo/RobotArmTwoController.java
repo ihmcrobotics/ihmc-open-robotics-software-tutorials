@@ -83,10 +83,10 @@ public class RobotArmTwoController implements Controller
     */
    private final MultiBodySystemBasics controllerRobot;
    /**
-    * To generate the robot model we need the controller input 
+    * To generate the robot model we need the controller input
     */
    private final ControllerInput controllerInput;
-   
+
    private final CenterOfMassReferenceFrame centerOfMassFrame;
    private final EnumMap<SevenDoFArmJointEnum, OneDoFJointBasics> controllerJoints = new EnumMap<>(SevenDoFArmJointEnum.class);
    private final EnumMap<SevenDoFArmJointEnum, OneDoFJointStateBasics> controllerJointOutputs = new EnumMap<>(SevenDoFArmJointEnum.class);
@@ -314,13 +314,14 @@ public class RobotArmTwoController implements Controller
     */
    public void updateDesireds()
    {
+      double time = controllerInput.getTime();
       { // Making the shoulder yaw joint follow a sine wave trajectory:
          double frequency = 0.2;
          double phase = Math.PI;
          double amplitude = 0.5;
          double omega = TWO_PI * frequency;
-         double q = amplitude * Math.sin(omega * controllerInput.getTime() + phase);
-         double qDot = omega * amplitude * Math.cos(omega * controllerInput.getTime() + phase);
+         double q = amplitude * Math.sin(omega * time + phase);
+         double qDot = omega * amplitude * Math.cos(omega * time + phase);
 
          desiredPositions.get(SevenDoFArmJointEnum.shoulderYaw).set(q);
          desiredVelocities.get(SevenDoFArmJointEnum.shoulderYaw).set(qDot);
@@ -332,8 +333,8 @@ public class RobotArmTwoController implements Controller
          double phase = -0.5 * Math.PI;
          double amplitude = 0.5;
          double omega = TWO_PI * frequency;
-         double q = offset + amplitude * Math.sin(omega * controllerInput.getTime() + phase);
-         double qDot = omega * amplitude * Math.cos(omega * controllerInput.getTime() + phase);
+         double q = offset + amplitude * Math.sin(omega * time + phase);
+         double qDot = omega * amplitude * Math.cos(omega * time + phase);
 
          desiredPositions.get(SevenDoFArmJointEnum.elbowPitch).set(q);
          desiredVelocities.get(SevenDoFArmJointEnum.elbowPitch).set(qDot);
