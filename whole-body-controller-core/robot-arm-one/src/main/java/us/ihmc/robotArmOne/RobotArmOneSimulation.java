@@ -44,7 +44,11 @@ public class RobotArmOneSimulation
 
       // Defining the buffer size to ensure a minimum simulation duration before
       scs.changeBufferSize(100000);
-
+      
+      // Camera settings
+      scs.setCameraFocusPosition(0.0, 0.0, 0.4);
+      scs.setCameraPosition(0.0, 4.0, 0.5);
+      
       // Launch the simulator
       scs.start(false, false, false);
    }
