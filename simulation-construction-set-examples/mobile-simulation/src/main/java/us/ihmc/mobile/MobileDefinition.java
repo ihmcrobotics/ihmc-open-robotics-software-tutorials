@@ -54,12 +54,13 @@ public class MobileDefinition extends RobotDefinition {
 
 		// Create the top (fixed) link that serves as the base of the mobile
 		RigidBodyDefinition elevator = new RigidBodyDefinition("elevator");
-		setRootBodyDefinition(elevator);
-
-		// create first gimbal joint at the top of the mobile; the offset places the
+		setRootBodyDefinition(elevator);	
+		
+		
+		// Create first gimbal joint at the top of the mobile; the offset places the
 		// mobile in the air
 		OneDoFJointDefinition[] jointsLevel1 = createGimbal("jointLvl1", elevator, new Vector3D(0.0, 0.0, 1.0));
-
+	
 		// attach the first bar of the crossbar to the top gimbal joint
 		RigidBodyDefinition crossBarLvl1 = createCrossBar("crossBarLvl1", jointsLevel1[2], M1, L1, R1, Ixx1, Iyy1,
 				Izz1);
@@ -96,6 +97,13 @@ public class MobileDefinition extends RobotDefinition {
 			crossBarLvl2 = createCrossBar("crossBarLvl2_" + i, jointsLevel2[2], M2, L2, R2, Ixx2, Iyy2, Izz2);
 			jointLvl2DampingControllerDefinition
 					.addJointsToControl(Stream.of(jointsLevel2).map(JointDefinition::getName).toArray(String[]::new));
+
+		   // Create top wall mount visualization
+	      GeometryDefinition flatCylinder = new Cylinder3DDefinition(0.01, 0.1);
+	      MaterialDefinition materialDefinition = new MaterialDefinition(ColorDefinitions.DarkBlue());    
+	      RigidBodyTransform cylinderPose = new RigidBodyTransform();
+	      cylinderPose.appendTranslation( jointsLevel1[0].getTransformToParent().getTranslation());
+	      elevator.addVisualDefinition(new VisualDefinition(cylinderPose,flatCylinder, materialDefinition));
 
 			// for each point of the smaller crossbar, add a gimbal joint with a "toy" link
 			// attached
