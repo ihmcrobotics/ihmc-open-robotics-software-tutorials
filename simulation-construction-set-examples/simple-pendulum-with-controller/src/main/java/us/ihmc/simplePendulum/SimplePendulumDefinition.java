@@ -1,13 +1,10 @@
 package us.ihmc.simplePendulum;
 
-import java.util.stream.Stream;
-
 import us.ihmc.euclid.Axis3D;
 import us.ihmc.euclid.axisAngle.AxisAngle;
 import us.ihmc.euclid.transform.RigidBodyTransform;
 import us.ihmc.euclid.tuple3D.Vector3D;
-import us.ihmc.scs2.definition.controller.implementations.ControllerCollectionDefinition;
-import us.ihmc.scs2.definition.controller.implementations.OneDoFJointDampingControllerDefinition;
+import us.ihmc.scs2.definition.controller.interfaces.Controller;
 import us.ihmc.scs2.definition.geometry.Cylinder3DDefinition;
 import us.ihmc.scs2.definition.geometry.GeometryDefinition;
 import us.ihmc.scs2.definition.geometry.Sphere3DDefinition;
@@ -39,17 +36,17 @@ public class SimplePendulumDefinition extends RobotDefinition
    public static final double FULCRUM_MOMENT_OF_INERTIA_ABOUT_Y = BALL_MASS * ROD_LENGTH * ROD_LENGTH;
 
    // Initial state of the pendulum
-   private double fulcrumInitialPositionDegrees = 45.0;
+   private double fulcrumInitialPositionDegrees = 90.0;
    private double fulcrumInitialPositionRadians = fulcrumInitialPositionDegrees * Math.PI / 180.0;
    private double fulcrumInitialVelocity = 0.0;
 
-   private static final double DAMP = 0.06;
+   private static final double DAMP = 0.3;
 
    /*
     * Some joint state variables. Allows SimplePendulumRobot to have access to and set joint
     * properties.
     */
-   private final OneDoFJointDampingControllerDefinition jointDampingControllerDefinition = new OneDoFJointDampingControllerDefinition();
+   //   private final OneDoFJointDampingControllerDefinition jointDampingControllerDefinition = new OneDoFJointDampingControllerDefinition();
 
    public static String jointName = "FulcrumPin";
 
@@ -73,6 +70,9 @@ public class SimplePendulumDefinition extends RobotDefinition
        */
       OneDoFJointDefinition fulcrumPinJoint = new RevoluteJointDefinition(jointName, new Vector3D(0.0, 0.0, 1.5), Axis3D.Y);
 
+      // Set damping for the joint 
+      fulcrumPinJoint.setDamping(DAMP);
+
       // Attach this joint to the top link 
       elevator.getChildrenJoints().add(fulcrumPinJoint);
 
@@ -82,17 +82,19 @@ public class SimplePendulumDefinition extends RobotDefinition
        */
       fulcrumPinJoint.setInitialJointState(fulcrumInitialPositionRadians, fulcrumInitialVelocity);
 
-      // Implement a controller with a damping level and add the fulcrum joint to this controller
-      jointDampingControllerDefinition.setControllerName("Damping").createDampingVariable("damp", DAMP);
-      jointDampingControllerDefinition.addJointsToControl(Stream.of(fulcrumPinJoint).map(JointDefinition::getName).toArray(String[]::new));
-
       // Setup the pendulum link with the ball at its end
       createPendulumLink("PendulumLink", fulcrumPinJoint, BALL_MASS, ROD_LENGTH, ROD_RADIUS, 0.0, FULCRUM_MOMENT_OF_INERTIA_ABOUT_Y, 0.0);
 
-      // Adds the previously defined controller (adding damping to force the pendulum ball to converge faster to equilibrium position)
-      addControllerDefinition(new ControllerCollectionDefinition().setControllerName("PendulumControl")
-                                                                  .addControllerOutputReset()
-                                                                  .addControllerDefinition(jointDampingControllerDefinition));
+      // TODO fix issue in SCS2
+      addControllerDefinition((input, output) -> new Controller()
+      {
+
+         @Override
+         public void doControl()
+         {
+            output.getOneDoFJointOutput(fulcrumPinJoint.getName()).setEffort(0);
+         }
+      });
    }
 
    /**

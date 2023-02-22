@@ -68,7 +68,7 @@ public class SimplePendulumController implements Controller
 
       // INTEGRAL term: Compute a simple numerical integration of the position error
       integralError += positionError * SimplePendulumSimulation.DT;
-
+      
       // P.I.D control law
       torque = p_gain.getDoubleValue() * positionError + i_gain.getDoubleValue() * integralError + d_gain.getDoubleValue() * (0 - fulcrumJoint.getQd());
 
