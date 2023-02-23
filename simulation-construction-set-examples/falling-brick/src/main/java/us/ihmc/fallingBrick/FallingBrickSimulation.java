@@ -4,6 +4,7 @@ import us.ihmc.euclid.geometry.Pose3D;
 import us.ihmc.euclid.tuple3D.Vector3D;
 import us.ihmc.scs2.SimulationConstructionSet2;
 import us.ihmc.scs2.definition.state.SixDoFJointState;
+import us.ihmc.scs2.simulation.parameters.ContactPointBasedContactParameters;
 
 public class FallingBrickSimulation
 {
@@ -14,7 +15,7 @@ public class FallingBrickSimulation
 
       // Set the initial positions, velocities, and accelerations of the brick
       SixDoFJointState initialJointState = new SixDoFJointState();
-      initialJointState.setConfiguration(new Pose3D(-0.5, 0.0, 2.0, 0.0, 0.0, 0.0));
+      initialJointState.setConfiguration(new Pose3D(0.0, 0.0, 2.0, 0.0, 0.0, 0.0));
       initialJointState.setAngularVelocity(new Vector3D(-0.1, -1.0, 10.0));
       initialJointState.setLinearVelocity(new Vector3D(0.0, -0.1, 0.5));
       fallingBrick.getFloatingRootJointDefinition().setInitialJointState(initialJointState);
@@ -28,23 +29,30 @@ public class FallingBrickSimulation
        * GroundContactPointDefinition in the RobotDefinition) and TerrainObjectDefinition for the
        * environment.
        */
-      SimulationConstructionSet2 scs = new SimulationConstructionSet2(SimulationConstructionSet2.contactPointBasedPhysicsEngineFactory());
+      // Define ground contact parameters stiffness (k) and damping (b). These parameters are used for the spring-damper model of all surfaces in the simulation
+      ContactPointBasedContactParameters contact = ContactPointBasedContactParameters.defaultParameters();
+      contact.setKxy(40000.0);
+      contact.setBxy(100.0);
+      contact.setKz(500.0);
+      contact.setBz(250.0);
+
+      SimulationConstructionSet2 scs = new SimulationConstructionSet2(SimulationConstructionSet2.contactPointBasedPhysicsEngineFactory(contact));
 
       // Add the brick robot to the simulation
       scs.addRobot(fallingBrick);
 
       // Sets location and orientation of the camera
-      scs.setCameraPosition(-0.4, 6.0, 4.0);
-      scs.setCameraFocusPosition(0.0, 0.0, 0.3);
+      scs.setCameraPosition(0.0, 5.0, 3.5);
+      scs.setCameraFocusPosition(0.0, 0.0, 0.8);
 
       // Add a terrain
       scs.addTerrainObject(new ClutteredGroundDefinition());
 
-      // Launch the simulator
-      scs.start(true, false, false);
-
       // Simulating in real-time
       scs.setRealTimeRateSimulation(true);
+
+      // Launch the simulator
+      scs.start(true, false, false);
    }
 
    public static void main(String[] args)

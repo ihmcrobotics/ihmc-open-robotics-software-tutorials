@@ -1,6 +1,7 @@
 package us.ihmc.fallingBrick;
 
 import us.ihmc.euclid.transform.RigidBodyTransform;
+import us.ihmc.euclid.tuple3D.Vector3D;
 import us.ihmc.scs2.definition.collision.CollisionShapeDefinition;
 import us.ihmc.scs2.definition.geometry.Box3DDefinition;
 import us.ihmc.scs2.definition.geometry.Cylinder3DDefinition;
@@ -39,17 +40,18 @@ public class ClutteredGroundDefinition extends TerrainObjectDefinition
 
       // 1st tilted box 
       RigidBodyTransform boxPose = new RigidBodyTransform();
-      boxPose.getRotation().setToPitchOrientation(Math.toRadians(30));
-      boxPose.appendTranslation(0.0, 0.2, 0.25);
+      boxPose.getRotation().setToPitchOrientation(Math.toRadians(45));
+      boxPose.getTranslation().set(new Vector3D(0.1, 0.2, 0.8));
       GeometryDefinition tiltedBoxOnGround = new Box3DDefinition(0.2, 0.5, 0.80);
       addVisualDefinition(new VisualDefinition(boxPose, tiltedBoxOnGround, new MaterialDefinition(ColorDefinitions.DarkBlue())));
       addCollisionShapeDefinition(new CollisionShapeDefinition(boxPose, tiltedBoxOnGround));
 
       // 2nd tilted box
       RigidBodyTransform boxPose2 = new RigidBodyTransform();
-      boxPose2.getRotation().setToPitchOrientation(Math.toRadians(-30));
-      boxPose2.appendTranslation(0.5, -0.2, 0.25);
-      GeometryDefinition tiltedBoxOnGround2 = new Box3DDefinition(0.2, 0.5, 0.80);
+      boxPose2.getRotation().setToPitchOrientation(Math.toRadians(-45));
+      boxPose2.appendYawRotation(Math.toRadians(50));
+      boxPose2.getTranslation().set(new Vector3D(-0.3, -0.2, 1.6));
+      GeometryDefinition tiltedBoxOnGround2 = new Box3DDefinition(0.2, 0.5, 0.8);
       addVisualDefinition(new VisualDefinition(boxPose2, tiltedBoxOnGround2, new MaterialDefinition(ColorDefinitions.DarkSeaGreen())));
       addCollisionShapeDefinition(new CollisionShapeDefinition(boxPose2, tiltedBoxOnGround2));
 

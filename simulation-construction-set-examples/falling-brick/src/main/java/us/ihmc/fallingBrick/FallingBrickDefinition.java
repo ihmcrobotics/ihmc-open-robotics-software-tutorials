@@ -4,6 +4,7 @@ import us.ihmc.euclid.tuple3D.Vector3D;
 import us.ihmc.scs2.definition.collision.CollisionShapeDefinition;
 import us.ihmc.scs2.definition.geometry.Box3DDefinition;
 import us.ihmc.scs2.definition.geometry.GeometryDefinition;
+import us.ihmc.scs2.definition.geometry.Sphere3DDefinition;
 import us.ihmc.scs2.definition.robot.GroundContactPointDefinition;
 import us.ihmc.scs2.definition.robot.RigidBodyDefinition;
 import us.ihmc.scs2.definition.robot.RobotDefinition;
@@ -18,7 +19,7 @@ public class FallingBrickDefinition extends RobotDefinition
 
    // Define the parameters of the brick
    private static final double BASE_H = 0.1, BASE_W = 0.2, BASE_L = 0.3;
-   private static final double M1 = 2.0;
+   private static final double M1 = 0.5;
    private static final double Ixx1 = (1.0 / 12.0) * M1 * (BASE_W * BASE_W + BASE_H * BASE_H);
    private static final double Iyy1 = (1.0 / 12.0) * M1 * (BASE_L * BASE_L + BASE_H * BASE_H);
    private static final double Izz1 = (1.0 / 12.0) * M1 * (BASE_L * BASE_L + BASE_W * BASE_W);
@@ -94,6 +95,14 @@ public class FallingBrickDefinition extends RobotDefinition
       floatingJoint.addGroundContactPointDefinition(gc17);
       GroundContactPointDefinition gc18 = new GroundContactPointDefinition("gc18", new Vector3D(-0.5 * BASE_L, 0.0, 0.5 * BASE_H));
       floatingJoint.addGroundContactPointDefinition(gc18);
+
+      // Visualization of the ground contact points on the brick
+      for (GroundContactPointDefinition contactPoint : floatingJoint.getGroundContactPointDefinitions())
+      {
+         brick.addVisualDefinition(new VisualDefinition(contactPoint.getTransformToParent().getTranslation(),
+                                                        new Sphere3DDefinition(0.005),
+                                                        new MaterialDefinition(ColorDefinitions.Aqua())));
+      }
    }
 
    private final RigidBodyDefinition createBrickRigidBody()
