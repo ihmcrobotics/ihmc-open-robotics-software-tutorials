@@ -77,8 +77,8 @@ public class RobotArmThreeSimulation
       scs.addYoGraphic(robotArmController.getYoGraphicDefinition());
 
       // Camera settings
-      scs.setCameraFocusPosition(0.0, 0.0, 1.0);
-      scs.setCameraPosition(0.0, 5.0, 2.0);
+      scs.setCameraFocusPosition(0.0, 0.0, 0.5);
+      scs.setCameraPosition(0.0, 5.0, 1.0);
 
       // Make sure to initialize the controller.
       robotArmController.initialize();
@@ -90,13 +90,13 @@ public class RobotArmThreeSimulation
       scs.addTerrainObject(new FlatGroundDefinition());
 
       // As this example simulation is rather simple, let's prevent SCS from simulating faster than real-time.
-      scs.setRealTimeRateSimulation(false);
+      scs.setRealTimeRateSimulation(true);
 
       // Defining the buffer size to ensure a minimum simulation duration before filling the graphs in the simulator.
       scs.changeBufferSize(65536);
 
       // Launch the simulator
-      scs.start(false, false, false);
+      scs.start(true, false, false);
    }
 
    public static void main(String[] args)

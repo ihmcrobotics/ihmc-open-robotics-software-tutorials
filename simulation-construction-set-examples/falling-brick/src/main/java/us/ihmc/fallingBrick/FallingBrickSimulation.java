@@ -36,14 +36,23 @@ public class FallingBrickSimulation
       contact.setKz(500.0);
       contact.setBz(250.0);
 
+      // Setup the simulation
       SimulationConstructionSet2 scs = new SimulationConstructionSet2(SimulationConstructionSet2.contactPointBasedPhysicsEngineFactory(contact));
 
       // Add the brick robot to the simulation
       scs.addRobot(fallingBrick);
 
-      // Sets location and orientation of the camera
+      // Set the location and orientation for the camera
       scs.setCameraPosition(0.0, 5.0, 3.5);
       scs.setCameraFocusPosition(0.0, 0.0, 0.8);
+
+      // Track the brick with the camera
+      scs.requestCameraRigidBodyTracking(scs.getRobots().get(0).getName(), scs.getRobots().get(0).getAllJoints().get(0).getSuccessor().getName());
+
+      // Add an entry box for these existing YoVariables
+      scs.addYoEntry("time[sec]");
+      scs.addYoEntry("gravityZ");
+      scs.addYoEntry("q_rootJoint_z");
 
       // Add a terrain
       scs.addTerrainObject(new ClutteredGroundDefinition());

@@ -63,7 +63,7 @@ public class RobotWalkerFourSimulation
       scs.changeBufferSize(65536);
 
       // Camera settings
-      scs.setCameraFocusPosition(0.0, 0.0, 1.0);
+      scs.setCameraFocusPosition(0.0, 0.0, 0.8);
       scs.setCameraPosition(0.0, 5.0, 2.0);
       
       // Launch the simulator.

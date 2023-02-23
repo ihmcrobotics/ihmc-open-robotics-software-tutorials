@@ -65,7 +65,7 @@ public class RobotArmOneController implements Controller
    {
 
       this.controllerInput = controllerInput;
- 
+
       /*
        * YoDoubles need to be created first with a given name that is to represent the variable in the
        * Simulation Construction Set, and the registry so the simulation can find them.

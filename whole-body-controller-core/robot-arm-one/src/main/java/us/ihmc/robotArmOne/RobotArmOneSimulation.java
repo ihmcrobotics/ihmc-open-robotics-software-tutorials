@@ -37,18 +37,18 @@ public class RobotArmOneSimulation
       scs.addTerrainObject(new FlatGroundDefinition());
 
       // As this example simulation is rather simple, let's prevent SCS from simulating faster than real-time
-      scs.setRealTimeRateSimulation(false);
+      scs.setRealTimeRateSimulation(true);
 
       // Defining the simulation DT 
       scs.setDT(1.0e-4);
 
       // Defining the buffer size to ensure a minimum simulation duration before
       scs.changeBufferSize(100000);
-      
+
       // Camera settings
       scs.setCameraFocusPosition(0.0, 0.0, 0.4);
       scs.setCameraPosition(0.0, 4.0, 0.5);
-      
+
       // Launch the simulator
       scs.start(false, false, false);
    }

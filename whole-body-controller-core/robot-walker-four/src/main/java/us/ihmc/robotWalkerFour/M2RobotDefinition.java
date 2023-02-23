@@ -275,7 +275,7 @@ public class M2RobotDefinition extends RobotDefinition
       GeometryDefinition cylinder = new Cylinder3DDefinition(BODY_CYLINDER_HEIGHT, BODY_R);
       RigidBodyTransform cylinderPose = new RigidBodyTransform();
 
-      MaterialDefinition materialDefinition = new MaterialDefinition(ColorDefinitions.Red());
+      MaterialDefinition materialDefinition = new MaterialDefinition(ColorDefinitions.DarkCyan());
       MaterialDefinition materialDefinitionCylinder = new MaterialDefinition(ColorDefinitions.Black());
 
       ret.addVisualDefinition(new VisualDefinition(hemiEllipsoidPose, hemiEllipsoid, materialDefinition));
@@ -383,7 +383,7 @@ public class M2RobotDefinition extends RobotDefinition
       RigidBodyTransform geometryPose = new RigidBodyTransform();
       geometryPose.appendTranslation(FOOT_FORWARD - 0.5 * FOOT_LENGTH, 0.0, -0.5 * FOOT_HEIGHT);
 
-      MaterialDefinition materialDefinition = new MaterialDefinition(ColorDefinitions.Red());
+      MaterialDefinition materialDefinition = new MaterialDefinition(ColorDefinitions.DarkCyan());
 
       ret.addVisualDefinition(new VisualDefinition(geometryPose, geometryDefinition, materialDefinition));
 
