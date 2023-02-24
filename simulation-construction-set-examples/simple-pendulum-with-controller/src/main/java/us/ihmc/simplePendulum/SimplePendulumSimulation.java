@@ -10,20 +10,20 @@ public class SimplePendulumSimulation
    public SimplePendulumSimulation()
    {
       // Setup the definition of our pendulum
-      SimplePendulumDefinition pendulumDef = new SimplePendulumDefinition();
+      SimplePendulumDefinition pendulumDefinition = new SimplePendulumDefinition();
 
       // Instantiate a SCS object
       SimulationConstructionSet2 scs = new SimulationConstructionSet2(SimulationConstructionSet2.contactPointBasedPhysicsEngineFactory());
 
       // Generate a pendulum robot object according to our definition
-      Robot pendulumRobot = new Robot(pendulumDef, scs.getInertialFrame());
+      Robot pendulumRobot = new Robot(pendulumDefinition, scs.getInertialFrame());
 
       // Add the pendulum robot to the simulation
-      pendulumRobot = scs.addRobot(pendulumDef);
+      pendulumRobot = scs.addRobot(pendulumDefinition);
 
       // Add a controller to the pendulum robot
       SimplePendulumController penulumController = new SimplePendulumController(pendulumRobot.getControllerInput(), pendulumRobot.getControllerOutput());
-      // pendulumRobot.addController(penulumController);
+       pendulumRobot.addController(penulumController);
 
       // The simulation time step.
       scs.setDT(DT);

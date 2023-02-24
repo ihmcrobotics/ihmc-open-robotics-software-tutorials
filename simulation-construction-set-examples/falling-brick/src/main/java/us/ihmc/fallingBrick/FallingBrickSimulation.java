@@ -51,8 +51,8 @@ public class FallingBrickSimulation
 
       // Add an entry box for these existing YoVariables
       scs.addYoEntry("time[sec]");
-      scs.addYoEntry("gravityZ");
-      scs.addYoEntry("q_rootJoint_z");
+      scs.addYoEntry("qd_rootJoint_world_x");
+      scs.addYoEntry("qd_rootJoint_world_z");
 
       // Add a terrain
       scs.addTerrainObject(new ClutteredGroundDefinition());
