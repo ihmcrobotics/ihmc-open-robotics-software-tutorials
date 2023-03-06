@@ -40,6 +40,7 @@ import us.ihmc.mecano.multiBodySystem.interfaces.RigidBodyBasics;
 import us.ihmc.mecano.tools.MultiBodySystemFactories;
 import us.ihmc.mecano.tools.MultiBodySystemTools;
 import us.ihmc.robotics.contactable.ContactablePlaneBody;
+import us.ihmc.robotics.controllers.pidGains.GainCalculator;
 import us.ihmc.robotics.controllers.pidGains.GainCoupling;
 import us.ihmc.robotics.controllers.pidGains.implementations.DefaultYoPIDSE3Gains;
 import us.ihmc.robotics.math.trajectories.yoVariables.YoPolynomial;
@@ -253,7 +254,7 @@ public class RobotWalkerFiveController implements Controller
       graphicsGroup.addChild(YoGraphicDefinitionFactory.newYoGraphicPoint3D("desiredCapturePoint", desiredCapturePointPosition, 0.02, ColorDefinitions.Red()));
       graphicsGroup.addChild(YoGraphicDefinitionFactory.newYoGraphicPoint3D("measuredCapturePoint", measuredCapturePointPosition, 0.02, ColorDefinitions.Blue()));
       graphicsGroup.addChild(YoGraphicDefinitionFactory.newYoGraphicPoint3D("measuredCenterOfMass", measuredCenterOfMass, 0.02, ColorDefinitions.Black()));
-      graphicsGroup.addChild(YoGraphicDefinitionFactory.newYoGraphicPoint3D("desiredCentroidalMomentPivotPoint", desiredCentroidalMomentPivotPosition, 0.02, ColorDefinitions.Black()));
+      graphicsGroup.addChild(YoGraphicDefinitionFactory.newYoGraphicPoint3D("desiredCentroidalMomentPivotPoint", desiredCentroidalMomentPivotPosition, 0.02, ColorDefinitions.Green()));
       return graphicsGroup;
    }
 
@@ -456,15 +457,16 @@ public class RobotWalkerFiveController implements Controller
                                                              FrameVector3D desiredCapturePointVelocity,
                                                              FramePoint3D measuredCapturePointPosition)
    {
-      double gain_p = 10;
+      double gain_p = 1.0;
       FramePoint3D errorCapturePointPosition = new FramePoint3D(WORLD_FRAME);
       errorCapturePointPosition.sub(measuredCapturePointPosition, desiredCapturePointPosition);
-      FramePoint3D desCentroidalMomentPivot = new FramePoint3D(WORLD_FRAME, measuredCapturePointPosition);
-      desCentroidalMomentPivot.scaleAdd(gain_p, errorCapturePointPosition);
-      desCentroidalMomentPivot.scaleAdd(-1.0 / this.omega0, desiredCapturePointVelocity);
+      FramePoint3D desCentroidalMomentPivot = new FramePoint3D(WORLD_FRAME);
+      desCentroidalMomentPivot.scaleAdd(gain_p, errorCapturePointPosition, measuredCapturePointPosition);
+      desCentroidalMomentPivot.scaleAdd(-1.0 / omega0, desiredCapturePointVelocity,desCentroidalMomentPivot);
 
       return desCentroidalMomentPivot;
    }
+   
 
    /**
     * A {@code sendCenterOfMassCommand} is created using the new calculated {@code centerOfMassPosition}
@@ -502,14 +504,17 @@ public class RobotWalkerFiveController implements Controller
       {
          
          FrameVector3D desiredCoMAcceleration = calculateDesiredCoMAcceleration(measuredCoMPosition, desCentroidalMomentPivot);
-         desiredCoMAcceleration.scale(-1.0);
+//         desiredCoMAcceleration.scale(-1.0);
 
          FrameVector3D desiredLinearAcceleration = new FrameVector3D(WORLD_FRAME, desiredCoMAcceleration);
          double errorCoMHeight = CENTER_OF_MASS_HEIGHT - measuredCoMPosition.getZ();
          errorCoMz.set(errorCoMHeight);
          // Drifting height z
-         double gain_p = 10.0;
-         double gain_d = 10.0;
+         //TODO tune
+         double gain_p = 100.0;
+//         double gain_d = 10.0;
+         double gain_d = GainCalculator.computeDerivativeGain(gain_p, 1.0);
+         
          desiredLinearAcceleration.setZ(gain_p * errorCoMHeight - gain_d * measuredCoMVelocity.getZ());
          desAccCoM.set(desiredLinearAcceleration);
 
@@ -518,8 +523,9 @@ public class RobotWalkerFiveController implements Controller
          desiredLinMomentumRate.scale(toolbox.getTotalRobotMass());
          MomentumRateCommand momentumRateCommand = new MomentumRateCommand();
          momentumRateCommand.setWeight(1.0);
-         momentumRateCommand.setLinearWeights(new Vector3D(1.0, 1.0, 1.0));
+//         momentumRateCommand.setLinearWeights(new Vector3D(1.0, 1.0, 1.0));
          momentumRateCommand.setLinearMomentumRate(desiredLinMomentumRate);
+         momentumRateCommand.setSelectionMatrixForLinearControl();
          controllerCoreCommand.addInverseDynamicsCommand(momentumRateCommand);
 
 
