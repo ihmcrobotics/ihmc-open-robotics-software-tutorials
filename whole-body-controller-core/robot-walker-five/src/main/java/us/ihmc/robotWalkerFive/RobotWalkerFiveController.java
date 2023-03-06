@@ -3,15 +3,17 @@ package us.ihmc.robotWalkerFive;
 import java.util.Arrays;
 import java.util.List;
 
+import javassist.tools.framedump;
+import us.ihmc.commonWalkingControlModules.bipedSupportPolygons.BipedSupportPolygons;
 import us.ihmc.commonWalkingControlModules.controllerCore.FeedbackControllerTemplate;
 import us.ihmc.commonWalkingControlModules.controllerCore.WholeBodyControlCoreToolbox;
 import us.ihmc.commonWalkingControlModules.controllerCore.WholeBodyControllerCore;
 import us.ihmc.commonWalkingControlModules.controllerCore.WholeBodyControllerCoreMode;
 import us.ihmc.commonWalkingControlModules.controllerCore.command.ControllerCoreCommand;
 import us.ihmc.commonWalkingControlModules.controllerCore.command.feedbackController.CenterOfMassFeedbackControlCommand;
-import us.ihmc.commonWalkingControlModules.controllerCore.command.feedbackController.FeedbackControlCommandList;
 import us.ihmc.commonWalkingControlModules.controllerCore.command.feedbackController.OrientationFeedbackControlCommand;
 import us.ihmc.commonWalkingControlModules.controllerCore.command.feedbackController.SpatialFeedbackControlCommand;
+import us.ihmc.commonWalkingControlModules.controllerCore.command.inverseDynamics.MomentumRateCommand;
 import us.ihmc.commonWalkingControlModules.controllerCore.command.inverseDynamics.PlaneContactStateCommand;
 import us.ihmc.commonWalkingControlModules.controllerCore.command.inverseDynamics.SpatialAccelerationCommand;
 import us.ihmc.commonWalkingControlModules.momentumBasedController.optimization.ControllerCoreOptimizationSettings;
@@ -23,18 +25,27 @@ import us.ihmc.euclid.referenceFrame.FramePose3D;
 import us.ihmc.euclid.referenceFrame.FrameVector3D;
 import us.ihmc.euclid.referenceFrame.ReferenceFrame;
 import us.ihmc.euclid.referenceFrame.interfaces.FramePoint3DReadOnly;
+import us.ihmc.euclid.transform.RigidBodyTransform;
+import us.ihmc.euclid.tuple3D.Vector3D;
 import us.ihmc.graphicsDescription.yoGraphics.YoGraphicsListRegistry;
+import us.ihmc.mecano.frames.CenterOfMassReferenceFrame;
+import us.ihmc.mecano.frames.MovingCenterOfMassReferenceFrame;
 import us.ihmc.mecano.multiBodySystem.OneDoFJoint;
 import us.ihmc.mecano.multiBodySystem.interfaces.FloatingJointBasics;
 import us.ihmc.mecano.multiBodySystem.interfaces.JointBasics;
+import us.ihmc.mecano.multiBodySystem.interfaces.MultiBodySystemBasics;
 import us.ihmc.mecano.multiBodySystem.interfaces.OneDoFJointReadOnly;
 import us.ihmc.mecano.multiBodySystem.interfaces.RigidBodyBasics;
+import us.ihmc.mecano.tools.MultiBodySystemFactories;
 import us.ihmc.mecano.tools.MultiBodySystemTools;
 import us.ihmc.robotics.contactable.ContactablePlaneBody;
 import us.ihmc.robotics.controllers.pidGains.GainCoupling;
 import us.ihmc.robotics.controllers.pidGains.implementations.DefaultYoPIDSE3Gains;
 import us.ihmc.robotics.math.trajectories.yoVariables.YoPolynomial;
+import us.ihmc.robotics.referenceFrames.MidFrameZUpFrame;
+import us.ihmc.robotics.referenceFrames.ZUpFrame;
 import us.ihmc.robotics.robotSide.RobotSide;
+import us.ihmc.robotics.robotSide.SideDependentList;
 import us.ihmc.robotics.stateMachine.core.State;
 import us.ihmc.robotics.stateMachine.core.StateMachine;
 import us.ihmc.robotics.stateMachine.factories.StateMachineFactory;
@@ -42,8 +53,13 @@ import us.ihmc.robotics.trajectories.TrajectoryType;
 import us.ihmc.scs2.definition.controller.ControllerInput;
 import us.ihmc.scs2.definition.controller.ControllerOutput;
 import us.ihmc.scs2.definition.controller.interfaces.Controller;
+import us.ihmc.scs2.definition.visual.ColorDefinitions;
+import us.ihmc.scs2.definition.yoGraphic.YoGraphicDefinition;
+import us.ihmc.scs2.definition.yoGraphic.YoGraphicDefinitionFactory;
+import us.ihmc.scs2.definition.yoGraphic.YoGraphicGroupDefinition;
 import us.ihmc.sensorProcessing.outputData.JointDesiredOutputListReadOnly;
 import us.ihmc.sensorProcessing.outputData.JointDesiredOutputReadOnly;
+import us.ihmc.yoVariables.euclid.YoVector3D;
 import us.ihmc.yoVariables.euclid.referenceFrame.YoFramePoint3D;
 import us.ihmc.yoVariables.euclid.referenceFrame.YoFrameVector3D;
 import us.ihmc.yoVariables.registry.YoRegistry;
@@ -73,7 +89,32 @@ public class RobotWalkerFiveController implements Controller
     * We use this registry to keep track of the controller variables which can then be viewed in
     * Simulation Construction Set.
     */
+
+   private WholeBodyControlCoreToolbox toolbox;
    private final YoRegistry registry = new YoRegistry("Controller");
+   private final MovingCenterOfMassReferenceFrame movingCoMFrame;
+   private final CenterOfMassReferenceFrame centerOfMassFrame;
+   private final YoDouble xCPdes = new YoDouble("xCPdes", registry);
+   private final YoDouble yCPdes = new YoDouble("yCPdes", registry);
+   private final YoDouble zCoMdes = new YoDouble("zCoMdes", registry);
+   private final YoDouble errorCoMz = new YoDouble("errorCoMz", registry);
+   private final YoVector3D desMomRateOfChange = new YoVector3D("desMomRateOfChange", registry);
+   private final YoVector3D desAccCoM = new YoVector3D("desAccCoM", registry);
+   
+   private final YoGraphicDefinition graphicsGroup;
+   
+   private final  YoFramePoint3D measuredCenterOfMass = new YoFramePoint3D("measuredCenterOfMass", WORLD_FRAME, registry);   
+   YoFramePoint3D desiredCapturePointPosition = new YoFramePoint3D("desiredCapturePoint", WORLD_FRAME, registry);
+   private final YoFramePoint3D measuredCapturePointPosition = new YoFramePoint3D("measuredCapturePoint", WORLD_FRAME, registry);
+   private final YoFramePoint3D desiredCentroidalMomentPivotPosition = new YoFramePoint3D("desiredCentroidalMomentPivotPosition", WORLD_FRAME, registry);
+   
+   private double omega0 = Math.sqrt(9.81 / CENTER_OF_MASS_HEIGHT);
+
+   /**
+    * This is the robot the controller uses.
+    */
+   private final MultiBodySystemBasics controllerRobot;
+
    /**
     * This variable triggers the controller to initiate walking.
     */
@@ -154,6 +195,17 @@ public class RobotWalkerFiveController implements Controller
     * enough for this example.
     */
    private final DefaultYoPIDSE3Gains gains = new DefaultYoPIDSE3Gains("gains", GainCoupling.XYZ, false, registry);
+   YoGraphicsListRegistry yoGraphicsListRegistry = new YoGraphicsListRegistry();
+
+   public YoGraphicsListRegistry getYoGraphicsListRegistry()
+   {
+      return yoGraphicsListRegistry;
+   }
+
+   BipedSupportPolygons bipedSupportPolygons;
+   ReferenceFrame midFeetFrame;
+   SideDependentList<ReferenceFrame> soleFrames, soleZUpFrames;
+   SideDependentList<PlaneContactStateCommand> planeContactStateCommands;
 
    public RobotWalkerFiveController(ControllerInput controllerInput,
                                     ControllerOutput controllerOutput,
@@ -164,19 +216,44 @@ public class RobotWalkerFiveController implements Controller
       this.controllerInput = controllerInput;
       this.robotWalkerFive = new RobotWalkerFive(controllerInput, controllerOutput, robotDefinition);
 
-      // Create an empty graphics registry (is needed due to SCS 1)
-      YoGraphicsListRegistry yoGraphicsListRegistry = new YoGraphicsListRegistry();
       wholeBodyControllerCore = createControllerCore(controlDT, gravityZ, yoGraphicsListRegistry);
+      soleFrames = new SideDependentList<>(side -> robotWalkerFive.getFootContactableBody(side).getSoleFrame());
+      soleZUpFrames = new SideDependentList<>(side -> new ZUpFrame(soleFrames.get(side), soleFrames.get(side).getName() + "ZUp"));
+      midFeetFrame = new MidFrameZUpFrame("midFeetZUpFrame", WORLD_FRAME, soleZUpFrames.get(RobotSide.LEFT), soleZUpFrames.get(RobotSide.RIGHT));
+
+      bipedSupportPolygons = new BipedSupportPolygons(midFeetFrame, soleZUpFrames, soleFrames, registry, yoGraphicsListRegistry);
+
       stateMachine = createStateMachine();
 
       transferDuration.set(1.3);
       swingDuration.set(1.0);
       stepLength.set(0.15);
+
+      controllerRobot = MultiBodySystemBasics.toMultiBodySystemBasics(MultiBodySystemFactories.cloneMultiBodySystem(controllerInput.getInput().getRootBody(),
+                                                                                                                    ReferenceFrame.getWorldFrame(),
+                                                                                                                    ""));
+      movingCoMFrame = new MovingCenterOfMassReferenceFrame("movingCenterOfMassFrame", ReferenceFrame.getWorldFrame(), controllerRobot.getRootBody());
+      centerOfMassFrame = new CenterOfMassReferenceFrame("centerOfMassFrame", ReferenceFrame.getWorldFrame(), controllerRobot.getRootBody());
+
+      //  create our graphics here
+      this.graphicsGroup = createVisualization();
+   }
+
+   public YoGraphicDefinition createVisualization()
+   {
+      // define a group of YoGraphic definitions
+      YoGraphicGroupDefinition graphicsGroup = new YoGraphicGroupDefinition("Controller");
+      graphicsGroup.addChild(YoGraphicDefinitionFactory.newYoGraphicPoint3D("desiredCapturePoint", desiredCapturePointPosition, 0.02, ColorDefinitions.Red()));
+      graphicsGroup.addChild(YoGraphicDefinitionFactory.newYoGraphicPoint3D("measuredCapturePoint", measuredCapturePointPosition, 0.02, ColorDefinitions.Blue()));
+      graphicsGroup.addChild(YoGraphicDefinitionFactory.newYoGraphicPoint3D("measuredCenterOfMass", measuredCenterOfMass, 0.02, ColorDefinitions.Black()));
+      graphicsGroup.addChild(YoGraphicDefinitionFactory.newYoGraphicPoint3D("desiredCentroidalMomentPivotPoint", desiredCentroidalMomentPivotPosition, 0.02, ColorDefinitions.Black()));
+      return graphicsGroup;
    }
 
    private WholeBodyControllerCore createControllerCore(double controlDT, double gravityZ, YoGraphicsListRegistry yoGraphicsListRegistry)
    {
       // This time the robot has a floating joint.
+
       FloatingJointBasics rootJoint = robotWalkerFive.getRootJoint();
       RigidBodyBasics elevator = robotWalkerFive.getElevator();
 
@@ -187,14 +264,14 @@ public class RobotWalkerFiveController implements Controller
       // This class contains basic optimization settings required for QP formulation.
       ControllerCoreOptimizationSettings controllerCoreOptimizationSettings = new RobotWalkerFiveOptimizationSettings();
       // This is the toolbox for the controller core with everything it needs to run properly.
-      WholeBodyControlCoreToolbox toolbox = new WholeBodyControlCoreToolbox(controlDT,
-                                                                            gravityZ,
-                                                                            rootJoint,
-                                                                            controlledJoints,
-                                                                            robotWalkerFive.getCenterOfMassFrame(),
-                                                                            controllerCoreOptimizationSettings,
-                                                                            yoGraphicsListRegistry,
-                                                                            registry);
+      toolbox = new WholeBodyControlCoreToolbox(controlDT,
+                                                gravityZ,
+                                                rootJoint,
+                                                controlledJoints,
+                                                robotWalkerFive.getCenterOfMassFrame(),
+                                                controllerCoreOptimizationSettings,
+                                                yoGraphicsListRegistry,
+                                                registry);
 
       // The controller core needs all the possibly contacting bodies of the robot to create all the modules needed for later.
       toolbox.setupForInverseDynamicsSolver(Arrays.asList(robotWalkerFive.getFootContactableBody(RobotSide.LEFT),
@@ -205,27 +282,20 @@ public class RobotWalkerFiveController implements Controller
        * we'll for the swing, an orientation command for the pelvis to keep it level to the ground, and
        * the command for controlling the center of mass.
        */
-      FeedbackControlCommandList allPossibleCommands = new FeedbackControlCommandList();
+      FeedbackControllerTemplate template = new FeedbackControllerTemplate();
+
       for (RobotSide robotSide : RobotSide.values)
       {
-         SpatialFeedbackControlCommand footCommand = new SpatialFeedbackControlCommand();
-         footCommand.setControlMode(WholeBodyControllerCoreMode.INVERSE_DYNAMICS); // sets control mode to inverse dynamics
          RigidBodyBasics foot = robotWalkerFive.getFoot(robotSide);
-         footCommand.set(elevator, foot);
-         allPossibleCommands.addCommand(footCommand);
+         template.enableSpatialFeedbackController(foot);
       }
 
-      OrientationFeedbackControlCommand pelvisOrientationCommand = new OrientationFeedbackControlCommand();
-      pelvisOrientationCommand.setControlMode(WholeBodyControllerCoreMode.INVERSE_DYNAMICS); // sets control mode to inverse dynamics
-      pelvisOrientationCommand.set(elevator, robotWalkerFive.getPelvis());
-      allPossibleCommands.addCommand(pelvisOrientationCommand);
-
-      CenterOfMassFeedbackControlCommand centerOfMassCommand = new CenterOfMassFeedbackControlCommand();
-      centerOfMassCommand.setControlMode(WholeBodyControllerCoreMode.INVERSE_DYNAMICS); // sets control mode to inverse dynamics
-      allPossibleCommands.addCommand(centerOfMassCommand);
+      template.enableOrientationFeedbackController(robotWalkerFive.getPelvis());
+      template.enableCenterOfMassFeedbackController();
 
       // Finally we can create the controller core.
-      return new WholeBodyControllerCore(toolbox, new FeedbackControllerTemplate(allPossibleCommands), registry);
+      //      return new WholeBodyControllerCore(toolbox, new FeedbackControllerTemplate(allPossibleCommands), registry);
+      return new WholeBodyControllerCore(toolbox, template, registry);
    }
 
    private StateMachine<WalkingStateEnum, State> createStateMachine()
@@ -277,7 +347,9 @@ public class RobotWalkerFiveController implements Controller
    {
       // We update the configuration state of our inverse dynamics robot model from the latest state of the simulated robot.
       robotWalkerFive.updateInverseDynamicsRobotState();
-
+      soleZUpFrames.forEach(frame -> frame.update());
+      midFeetFrame.update();
+     
       /*
        * Here we request the state machine to call the doAction() method of the active state and to check
        * if the transition to the next state should be engaged. See further below for the implementation
@@ -313,7 +385,44 @@ public class RobotWalkerFiveController implements Controller
    }
 
    /**
-    * A {@code CenterOfMassCommand} is created using the new calculated {@code centerOfMassPosition}
+    * A {@code calculateDesiredCoMAcceleration} 
+    * 
+    * @param measuredCoMPosition refers to the current center of motion
+    * @param desCentroidalMomentPivot refers to the desired CMP
+    */
+   public FrameVector3D calculateDesiredCoMAcceleration(FramePoint3D measuredCoMPosition, FramePoint3D desCentroidalMomentPivot)
+   {
+
+      FrameVector3D desiredCoMAcceleration = new FrameVector3D(WORLD_FRAME);
+      desiredCoMAcceleration.sub(measuredCoMPosition, desCentroidalMomentPivot);
+      desiredCoMAcceleration.scale(this.omega0 * this.omega0);
+
+      return desiredCoMAcceleration;
+   }
+
+   /**
+    * The {@code calculateDesiredCentroidalMomentPivot} calculated the deisred CMP based on a desired capture point poisition and the current capture point position
+    * 
+    * @param desiredCapturePointPosition refers to the desired capture point position
+    * @param desiredCapturePointVelocity refers to the desired capture point velocity
+    * @param measuredCapturePointPosition refers to the current capture point position 
+    */
+   public FramePoint3D calculateDesiredCentroidalMomentPivot(FramePoint3D desiredCapturePointPosition,
+                                                             FrameVector3D desiredCapturePointVelocity,
+                                                             FramePoint3D measuredCapturePointPosition)
+   {
+      double gain_p = 10;
+      FramePoint3D errorCapturePointPosition = new FramePoint3D(WORLD_FRAME);
+      errorCapturePointPosition.sub(measuredCapturePointPosition, desiredCapturePointPosition);
+      FramePoint3D desCentroidalMomentPivot = new FramePoint3D(WORLD_FRAME, measuredCapturePointPosition);
+      desCentroidalMomentPivot.scaleAdd(gain_p, errorCapturePointPosition);
+      desCentroidalMomentPivot.scaleAdd(-1.0 / this.omega0, desiredCapturePointVelocity);
+
+      return desCentroidalMomentPivot;
+   }
+
+   /**
+    * A {@code sendCenterOfMassCommand} is created using the new calculated {@code centerOfMassPosition}
     * and adds the command to the controller core.
     * 
     * @param centerOfMassPosition refers to newly calculated position of the center of mass of the
@@ -357,8 +466,50 @@ public class RobotWalkerFiveController implements Controller
          // We set the desired height.
          centerOfMassPosition.setZ(CENTER_OF_MASS_HEIGHT);
 
-         // So now, we just have pack the command for the controller core.
-         sendCenterOfMassCommand(centerOfMassPosition);
+         FrameVector3D desiredCapturePointVelocity = new FrameVector3D(WORLD_FRAME, 0.0, 0.0, 0.0);
+         FramePoint3D desiredCPPosition = new FramePoint3D(WORLD_FRAME);
+         desiredCPPosition.set(desiredCapturePointPosition);
+
+         RigidBodyTransform centerOfMassTransform = new RigidBodyTransform();
+         movingCoMFrame.getTransformToDesiredFrame(centerOfMassTransform, WORLD_FRAME);
+
+         FramePoint3D measuredCoMPosition = new FramePoint3D(WORLD_FRAME, toolbox.getCenterOfMassFrame().getTransformToWorldFrame().getTranslation());
+         FrameVector3D measuredCoMVelocity = new FrameVector3D(WORLD_FRAME, toolbox.getCentroidalMomentumRateCalculator().getCenterOfMassVelocity());
+
+         FramePoint3D measuredCPPosition = new FramePoint3D(WORLD_FRAME);
+         measuredCPPosition.scaleAdd(1.0 / omega0, measuredCoMVelocity, measuredCoMPosition);
+
+         measuredCapturePointPosition.set(measuredCPPosition);
+         measuredCapturePointPosition.setZ(0.0);
+         measuredCenterOfMass.set(measuredCoMPosition);
+         
+         FramePoint3D desCentroidalMomentPivot = calculateDesiredCentroidalMomentPivot(desiredCPPosition, desiredCapturePointVelocity, measuredCPPosition);
+         desiredCentroidalMomentPivotPosition.set(desCentroidalMomentPivot);
+         
+         FrameVector3D desiredCoMAcceleration = calculateDesiredCoMAcceleration(measuredCoMPosition, desCentroidalMomentPivot);
+         desiredCoMAcceleration.scale(-1.0);
+
+         FrameVector3D desiredLinearAcceleration = new FrameVector3D(WORLD_FRAME, desiredCoMAcceleration);
+         double errorCoMHeight = CENTER_OF_MASS_HEIGHT - measuredCoMPosition.getZ();
+         errorCoMz.set(errorCoMHeight);
+         // Drifting height z
+         double gain_p = 10.0;
+         double gain_d = 10.0;
+         desiredLinearAcceleration.setZ(gain_p * errorCoMHeight - gain_d * measuredCoMVelocity.getZ());
+         desAccCoM.set(desiredLinearAcceleration);
+
+         // send the desired linear momentum rate change as a command to the controller
+         FrameVector3D desiredLinMomentumRate = new FrameVector3D(WORLD_FRAME, desiredLinearAcceleration);
+         desiredLinMomentumRate.scale(toolbox.getTotalRobotMass());
+         MomentumRateCommand momentumRateCommand = new MomentumRateCommand();
+         momentumRateCommand.setWeight(1.0);
+         momentumRateCommand.setLinearWeights(new Vector3D(1.0, 1.0, 1.0));
+         momentumRateCommand.setLinearMomentumRate(desiredLinMomentumRate);
+         controllerCoreCommand.addInverseDynamicsCommand(momentumRateCommand);
+
+
+         // As for the standing state, we request both feet to be in support.
+         planeContactStateCommands = new SideDependentList<>(side -> createPlaneContactStateCommand(side, true));
 
          // Now it is the turn of the feet.
          for (RobotSide robotSide : RobotSide.values)
@@ -367,9 +518,13 @@ public class RobotWalkerFiveController implements Controller
             SpatialAccelerationCommand footZeroAcceleration = createFootZeroAccelerationCommand(robotSide);
             controllerCoreCommand.addInverseDynamicsCommand(footZeroAcceleration);
             // This is the command that we can use to request a contactable body to be used for support or not.
-            PlaneContactStateCommand planeContactStateCommand = createPlaneContactStateCommand(robotSide, true);
-            controllerCoreCommand.addInverseDynamicsCommand(planeContactStateCommand);
+//            PlaneContactStateCommand planeContactStateCommand = createPlaneContactStateCommand(robotSide, true);
+//            controllerCoreCommand.addInverseDynamicsCommand(planeContactStateCommand);
+            controllerCoreCommand.addInverseDynamicsCommand(planeContactStateCommands.get(robotSide));
+
          }
+         
+         bipedSupportPolygons.updateUsingContactStateCommand(planeContactStateCommands);
       }
 
       @Override
@@ -393,7 +548,7 @@ public class RobotWalkerFiveController implements Controller
     * moving to be above the leading foot.
     */
    private class TransferState implements State
-   {
+   { 
       private final RobotSide transferToSide;
       private final FramePoint3D initialCenterOfMassPosition = new FramePoint3D();
       private final FramePoint3D finalCenterOfMassPosition = new FramePoint3D();
@@ -441,14 +596,18 @@ public class RobotWalkerFiveController implements Controller
          sendCenterOfMassCommand(centerOfMassPosition);
 
          // As for the standing state, we request both feet to be in support.
+         planeContactStateCommands = new SideDependentList<>(side -> createPlaneContactStateCommand(side, true));
+
          for (RobotSide robotSide : RobotSide.values)
          {
             SpatialAccelerationCommand footZeroAcceleration = createFootZeroAccelerationCommand(robotSide);
             controllerCoreCommand.addInverseDynamicsCommand(footZeroAcceleration);
 
-            PlaneContactStateCommand planeContactStateCommand = createPlaneContactStateCommand(robotSide, true);
-            controllerCoreCommand.addInverseDynamicsCommand(planeContactStateCommand);
+            controllerCoreCommand.addInverseDynamicsCommand(planeContactStateCommands.get(robotSide));
          }
+
+         bipedSupportPolygons.updateUsingContactStateCommand(planeContactStateCommands);
+
       }
 
       @Override
@@ -534,10 +693,14 @@ public class RobotWalkerFiveController implements Controller
          // command and zero acceleration command.
          SpatialAccelerationCommand footZeroAcceleration = createFootZeroAccelerationCommand(supportSide);
          controllerCoreCommand.addInverseDynamicsCommand(footZeroAcceleration);
-         controllerCoreCommand.addInverseDynamicsCommand(createPlaneContactStateCommand(supportSide, true));
-
-         // We need to specify that the swing foot is not in contact anymore.
-         controllerCoreCommand.addInverseDynamicsCommand(createPlaneContactStateCommand(swingSide, false));
+         
+         // We need to specify the contact states for swing and support foot
+         planeContactStateCommands = new SideDependentList<>();
+         planeContactStateCommands.put(supportSide, createPlaneContactStateCommand(supportSide, true));
+         planeContactStateCommands.put(swingSide, createPlaneContactStateCommand(swingSide, false));
+         
+         controllerCoreCommand.addInverseDynamicsCommand(planeContactStateCommands.get(swingSide));
+         controllerCoreCommand.addInverseDynamicsCommand(planeContactStateCommands.get(supportSide));
 
          /*
           * Using the swing trajectory generator, we can compute the current desired position, velocity and
@@ -559,6 +722,11 @@ public class RobotWalkerFiveController implements Controller
          swingFootCommand.setGains(gains);
          swingFootCommand.setWeightForSolver(1.0);
          controllerCoreCommand.addFeedbackControlCommand(swingFootCommand);
+         
+            
+         bipedSupportPolygons.updateUsingContactStateCommand(planeContactStateCommands);
+         
+         
       }
 
       @Override
@@ -621,13 +789,18 @@ public class RobotWalkerFiveController implements Controller
    @Override
    public String getName()
    {
-      return "RobotWalkerFourController";
+      return "RobotWalkerFiveController";
    }
 
    @Override
    public YoRegistry getYoRegistry()
    {
       return registry;
+   }
+
+   public YoGraphicDefinition getYoGraphicDefinition()
+   {
+      return graphicsGroup;
    }
 
 }

@@ -96,7 +96,7 @@ public class M2RobotDefinition extends RobotDefinition
       SixDoFJointDefinition floatingJoint = new SixDoFJointDefinition(getRootJointName());
 
       //The robot needs to start standing on the ground because the controller will start in the "standing"-state and will expect ground contact
-      floatingJoint.setInitialJointState(new SixDoFJointState(null, new Vector3D(0.0, 0.0, 0.96)));
+      floatingJoint.setInitialJointState(new SixDoFJointState(null, new Vector3D(0.0, 0.0, 0.965)));
       elevator.addChildJoint(floatingJoint);
 
       // Define main body and attach it to the floating joint

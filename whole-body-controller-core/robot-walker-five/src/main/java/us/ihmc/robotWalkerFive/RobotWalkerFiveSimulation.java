@@ -1,6 +1,7 @@
 package us.ihmc.robotWalkerFive;
 
 import us.ihmc.scs2.SimulationConstructionSet2;
+import us.ihmc.scs2.session.tools.SCS1GraphicConversionTools;
 import us.ihmc.scs2.simulation.parameters.ContactPointBasedContactParameters;
 import us.ihmc.scs2.simulation.robot.Robot;
 
@@ -53,8 +54,23 @@ public class RobotWalkerFiveSimulation
                                                                                  controllerDT,
                                                                                  gravityMagnitude,
                                                                                  walkerDef);
+      
+      scs.addYoGraphics(SCS1GraphicConversionTools.toYoGraphicDefinitions(walkerController.getYoGraphicsListRegistry()));
+      
       // Make sure to initialize the controller.
       walkerController.initialize();
+      scs.addYoEntry("desiredCapturePointX");
+      scs.addYoEntry("desiredCapturePointY");
+      scs.addYoEntry("desiredCapturePointZ");
+      scs.addYoEntry("measuredCapturePointX");
+      scs.addYoEntry("measuredCapturePointY");
+      scs.addYoEntry("measuredCapturePointZ");
+      scs.addYoEntry("desAccCoMX");
+      scs.addYoEntry("desAccCoMY");
+      scs.addYoEntry("desAccCoMZ");
+      
+      // Add the YoGraphics to the simulation
+      scs.addYoGraphic(walkerController.getYoGraphicDefinition());
 
       // Attach the controller to the robot.
       walker.addController(walkerController);
