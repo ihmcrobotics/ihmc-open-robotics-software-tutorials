@@ -5,6 +5,7 @@ import us.ihmc.euclid.transform.RigidBodyTransform;
 import us.ihmc.euclid.tuple3D.Vector3D;
 import us.ihmc.euclid.tuple3D.interfaces.Tuple3DReadOnly;
 import us.ihmc.euclid.tuple3D.interfaces.Vector3DReadOnly;
+import us.ihmc.graphicsDescription.appearance.YoAppearanceTransparent;
 import us.ihmc.robotics.robotSide.RobotSide;
 import us.ihmc.robotics.robotSide.SideDependentList;
 import us.ihmc.scs2.definition.collision.CollisionShapeDefinition;
@@ -305,7 +306,7 @@ public class M2RobotDefinition extends RobotDefinition
       ret.setMass(THIGH_MASS);
       ret.setCenterOfMassOffset(new Vector3D(L_THIGH_COM));
       ret.getMomentOfInertia().setToDiagonal(THIGH_I.getX(), THIGH_I.getY(), THIGH_I.getZ());
-
+      
       GeometryDefinition cylinder = new Cylinder3DDefinition(THIGH_LENGTH, THIGH_R);
       RigidBodyTransform cylinderPose = new RigidBodyTransform();
       cylinderPose.appendTranslation(0.0, HIP_TO_THIGH_OFF, -0.5 * THIGH_LENGTH);
