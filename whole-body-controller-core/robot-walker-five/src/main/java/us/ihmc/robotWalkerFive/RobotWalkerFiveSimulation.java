@@ -61,6 +61,9 @@ public class RobotWalkerFiveSimulation
       walkerController.initialize();
       scs.addYoEntry("walk");
       scs.addYoEntry("useCapturePoint");
+      scs.addYoEntry("feedForwardLinearVelocityX");
+      scs.addYoEntry("feedForwardLinearVelocityY");
+      scs.addYoEntry("feedForwardLinearVelocityZ");
       scs.addYoEntry("transferDuration");
       scs.addYoEntry("swingDuration");
       scs.addYoEntry("stepLength");
@@ -68,9 +71,7 @@ public class RobotWalkerFiveSimulation
       scs.addYoEntry("desiredCapturePointY");
       scs.addYoEntry("desiredCapturePointZ");
 
-      // Track the robot with the camera
-      scs.requestCameraRigidBodyTracking(scs.getRobots().get(0).getName(), scs.getRobots().get(0).getAllJoints().get(0).getSuccessor().getName());
-
+    
       // Add the YoGraphics to the simulation
       scs.addYoGraphic(walkerController.getYoGraphicDefinition());
 
@@ -83,6 +84,9 @@ public class RobotWalkerFiveSimulation
       // Camera settings
       scs.setCameraFocusPosition(0.0, 0.0, 0.8);
       scs.setCameraPosition(0.0, 5.0, 2.0);
+
+      // Track the robot with the camera
+      scs.requestCameraRigidBodyTracking(scs.getRobots().get(0).getName(), scs.getRobots().get(0).getAllJoints().get(0).getSuccessor().getName());
 
       // Launch the simulator.
       scs.start(false, false, false);

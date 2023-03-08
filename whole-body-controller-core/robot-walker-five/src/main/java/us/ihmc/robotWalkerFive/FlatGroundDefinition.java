@@ -19,7 +19,7 @@ public class FlatGroundDefinition extends TerrainObjectDefinition
       groundPose.getRotation();
       groundPose.appendTranslation(0.0, 0.0, -0.05);
 
-      GeometryDefinition groundGeometryDefinition = new Box3DDefinition(10.0, 10.0, 0.1);
+      GeometryDefinition groundGeometryDefinition = new Box3DDefinition(100.0, 100.0, 0.1);
       addVisualDefinition(new VisualDefinition(groundPose, groundGeometryDefinition, new MaterialDefinition(ColorDefinitions.DarkGray())));
       addCollisionShapeDefinition(new CollisionShapeDefinition(groundPose, groundGeometryDefinition));
    }
