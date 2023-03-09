@@ -23,7 +23,6 @@ import us.ihmc.euclid.referenceFrame.FramePoint3D;
 import us.ihmc.euclid.referenceFrame.FramePose3D;
 import us.ihmc.euclid.referenceFrame.FrameVector3D;
 import us.ihmc.euclid.referenceFrame.ReferenceFrame;
-import us.ihmc.euclid.referenceFrame.interfaces.FramePoint2DReadOnly;
 import us.ihmc.euclid.referenceFrame.interfaces.FramePoint3DReadOnly;
 import us.ihmc.graphicsDescription.yoGraphics.YoGraphicsListRegistry;
 import us.ihmc.mecano.frames.CenterOfMassReferenceFrame;
@@ -860,8 +859,8 @@ public class RobotWalkerFiveController implements Controller
 
          if (addTakeOffVelocity.getBooleanValue())
          {
-            FrameVector3D takeOffVelocity = new FrameVector3D(WORLD_FRAME, 0.0, 0.0, 1.0);
-            if (timeInState <= swingDuration.getValue() * 0.3)
+            FrameVector3D takeOffVelocity = new FrameVector3D(WORLD_FRAME, 0.0, 0.0, 10.0);
+            if (timeInState < swingDuration.getValue() * 0.1)
             {
                velocity.add(takeOffVelocity);
             }
@@ -876,6 +875,7 @@ public class RobotWalkerFiveController implements Controller
          swingFootCommand.setControlFrameFixedInEndEffector(swingControlFramePose);
          swingFootCommand.setGains(gains);
          swingFootCommand.setWeightForSolver(1.0);
+        
          controllerCoreCommand.addFeedbackControlCommand(swingFootCommand);
 
          desiredCurrentFootPosition.set(position);

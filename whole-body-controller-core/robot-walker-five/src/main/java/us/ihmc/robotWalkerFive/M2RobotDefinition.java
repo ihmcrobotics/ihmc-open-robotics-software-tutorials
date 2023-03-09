@@ -307,7 +307,7 @@ public class M2RobotDefinition extends RobotDefinition
       ret.setMass(THIGH_MASS);
       ret.setCenterOfMassOffset(new Vector3D(L_THIGH_COM));
       ret.getMomentOfInertia().setToDiagonal(THIGH_I.getX(), THIGH_I.getY(), THIGH_I.getZ());
-      
+
       GeometryDefinition cylinder = new Cylinder3DDefinition(THIGH_LENGTH, THIGH_R);
       RigidBodyTransform cylinderPose = new RigidBodyTransform();
       cylinderPose.appendTranslation(0.0, HIP_TO_THIGH_OFF, -0.5 * THIGH_LENGTH);
@@ -388,19 +388,16 @@ public class M2RobotDefinition extends RobotDefinition
       MaterialDefinition materialDefinition = new MaterialDefinition(ColorDefinitions.DarkCyan());
 
       ret.addVisualDefinition(new VisualDefinition(geometryPose, geometryDefinition, materialDefinition));
+      ret.addCollisionShapeDefinition(new CollisionShapeDefinition(geometryPose, geometryDefinition));
 
       STPBox3DDefinition geometryDefinition2 = new STPBox3DDefinition(FOOT_LENGTH, FOOT_WIDTH, FOOT_HEIGHT);
-      //TODO
-      geometryDefinition2.setMaximumMargin(0.01);
-      geometryDefinition2.setMinimumMargin(0.0005);
+      geometryDefinition2.setMaximumMargin(0.0005);
+      geometryDefinition2.setMinimumMargin(0.00025);
 
-      MaterialDefinition materialDefinition2 = new MaterialDefinition(ColorDefinitions.Orange());
-
-      
       ret.addCollisionShapeDefinition(new CollisionShapeDefinition(geometryPose, geometryDefinition2));
-      
-      ret.addVisualDefinition(new VisualDefinition(geometryPose, geometryDefinition2, materialDefinition2));
-
+      // cannot be visualized yet - visualize using graphic properties -> collisions
+      //   MaterialDefinition materialDefinition2 = new MaterialDefinition(ColorDefinitions.Orange());
+      //      ret.addVisualDefinition(new VisualDefinition(geometryPose, geometryDefinition2, materialDefinition2));
 
       return ret;
    }

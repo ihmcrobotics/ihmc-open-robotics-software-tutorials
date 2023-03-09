@@ -23,14 +23,22 @@ public class RobotWalkerFiveSimulation
       contact.setBxy(100.0);
       contact.setKz(500.0);
       contact.setBz(250.0);
-   
 
       // Instantiate a SCS object
       SimulationConstructionSet2 scs = new SimulationConstructionSet2(SimulationConstructionSet2.contactPointBasedPhysicsEngineFactory(contact));
 
-      // Define ground contact parameters
-      //      ContactParametersReadOnly contact = ContactParameters.defaultIneslasticContactParameters(true);
-      //      SimulationConstructionSet2 scs = new SimulationConstructionSet2(SimulationConstructionSet2.impulseBasedPhysicsEngineFactory(contact));
+//      // Define ground contact parameters
+//      ContactParameters contact = new ContactParameters();
+//      contact.setMinimumPenetration(5.0e-5);
+//      contact.setCoefficientOfFriction(0.8);
+//      contact.setCoefficientOfRestitution(0.0);
+//      contact.setRestitutionThreshold(0.0);
+//      contact.setErrorReductionParameter(0.0);
+//      contact.setComputeFrictionMoment(true);
+//      contact.setCoulombMomentFrictionRatio(0.9);
+
+//      SimulationConstructionSet2 scs = new SimulationConstructionSet2(SimulationConstructionSet2.impulseBasedPhysicsEngineFactory(contact));
+      // use simulation time DT = 1.0e-3;
 
       // The gravity has to be explicitly defined for the controller core (maybe a robot on the Moon someday...?)
       double gravityMagnitude = 9.81;
@@ -39,7 +47,7 @@ public class RobotWalkerFiveSimulation
       scs.getGravity().set(0.0, 0.0, -gravityMagnitude);
 
       // This time, we will make the controller run at a slower frequency than the simulation.
-      double controllerDT = 1.0e-2;
+      double controllerDT = 2.5e-3;
 
       // The simulation time step.
       double simulateDT = 4.0e-4;
