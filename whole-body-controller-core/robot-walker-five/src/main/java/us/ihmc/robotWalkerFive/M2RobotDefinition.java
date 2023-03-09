@@ -13,6 +13,7 @@ import us.ihmc.scs2.definition.geometry.Box3DDefinition;
 import us.ihmc.scs2.definition.geometry.Cylinder3DDefinition;
 import us.ihmc.scs2.definition.geometry.GeometryDefinition;
 import us.ihmc.scs2.definition.geometry.HemiEllipsoid3DDefinition;
+import us.ihmc.scs2.definition.geometry.STPBox3DDefinition;
 import us.ihmc.scs2.definition.geometry.Sphere3DDefinition;
 import us.ihmc.scs2.definition.robot.GroundContactPointDefinition;
 import us.ihmc.scs2.definition.robot.OneDoFJointDefinition;
@@ -387,6 +388,19 @@ public class M2RobotDefinition extends RobotDefinition
       MaterialDefinition materialDefinition = new MaterialDefinition(ColorDefinitions.DarkCyan());
 
       ret.addVisualDefinition(new VisualDefinition(geometryPose, geometryDefinition, materialDefinition));
+
+      STPBox3DDefinition geometryDefinition2 = new STPBox3DDefinition(FOOT_LENGTH, FOOT_WIDTH, FOOT_HEIGHT);
+      //TODO
+      geometryDefinition2.setMaximumMargin(0.01);
+      geometryDefinition2.setMinimumMargin(0.0005);
+
+      MaterialDefinition materialDefinition2 = new MaterialDefinition(ColorDefinitions.Orange());
+
+      
+      ret.addCollisionShapeDefinition(new CollisionShapeDefinition(geometryPose, geometryDefinition2));
+      
+      ret.addVisualDefinition(new VisualDefinition(geometryPose, geometryDefinition2, materialDefinition2));
+
 
       return ret;
    }

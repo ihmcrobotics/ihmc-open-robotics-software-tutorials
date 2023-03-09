@@ -23,9 +23,14 @@ public class RobotWalkerFiveSimulation
       contact.setBxy(100.0);
       contact.setKz(500.0);
       contact.setBz(250.0);
+   
 
       // Instantiate a SCS object
       SimulationConstructionSet2 scs = new SimulationConstructionSet2(SimulationConstructionSet2.contactPointBasedPhysicsEngineFactory(contact));
+
+      // Define ground contact parameters
+      //      ContactParametersReadOnly contact = ContactParameters.defaultIneslasticContactParameters(true);
+      //      SimulationConstructionSet2 scs = new SimulationConstructionSet2(SimulationConstructionSet2.impulseBasedPhysicsEngineFactory(contact));
 
       // The gravity has to be explicitly defined for the controller core (maybe a robot on the Moon someday...?)
       double gravityMagnitude = 9.81;
@@ -54,12 +59,16 @@ public class RobotWalkerFiveSimulation
                                                                                  controllerDT,
                                                                                  gravityMagnitude,
                                                                                  walkerDef);
-      
+
       scs.addYoGraphics(SCS1GraphicConversionTools.toYoGraphicDefinitions(walkerController.getYoGraphicsListRegistry()));
-      
+
       // Make sure to initialize the controller.
       walkerController.initialize();
+
+      // Add some variables
       scs.addYoEntry("walk");
+      scs.addYoEntry("addTakeOffVelocity");
+      scs.addYoEntry("walkerWillFreakOut");
       scs.addYoEntry("useCapturePoint");
       scs.addYoEntry("feedForwardLinearVelocityX");
       scs.addYoEntry("feedForwardLinearVelocityY");
@@ -71,7 +80,6 @@ public class RobotWalkerFiveSimulation
       scs.addYoEntry("desiredCapturePointY");
       scs.addYoEntry("desiredCapturePointZ");
 
-    
       // Add the YoGraphics to the simulation
       scs.addYoGraphic(walkerController.getYoGraphicDefinition());
 
@@ -87,6 +95,8 @@ public class RobotWalkerFiveSimulation
 
       // Track the robot with the camera
       scs.requestCameraRigidBodyTracking(scs.getRobots().get(0).getName(), scs.getRobots().get(0).getAllJoints().get(0).getSuccessor().getName());
+      scs.requestPlotter2DCoordinateTracking("measuredCapturePointX", "measuredCapturePointY", "worldFrame");
+      scs.showOverheadPlotter2D(true);
 
       // Launch the simulator.
       scs.start(false, false, false);
