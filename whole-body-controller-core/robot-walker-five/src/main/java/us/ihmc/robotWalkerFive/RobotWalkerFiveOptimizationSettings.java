@@ -19,7 +19,7 @@ public class RobotWalkerFiveOptimizationSettings implements ControllerCoreOptimi
    @Override
    public double getJointAccelerationWeight()
    {
-      return 0.000;
+      return 0.005;
    }
 
    /** {@inheritDoc} */

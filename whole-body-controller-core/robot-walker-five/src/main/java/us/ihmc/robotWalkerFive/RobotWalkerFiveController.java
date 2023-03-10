@@ -38,7 +38,9 @@ import us.ihmc.mecano.tools.MultiBodySystemTools;
 import us.ihmc.robotics.contactable.ContactablePlaneBody;
 import us.ihmc.robotics.controllers.pidGains.GainCalculator;
 import us.ihmc.robotics.controllers.pidGains.GainCoupling;
+import us.ihmc.robotics.controllers.pidGains.PIDSE3GainsReadOnly;
 import us.ihmc.robotics.controllers.pidGains.implementations.DefaultYoPIDSE3Gains;
+import us.ihmc.robotics.controllers.pidGains.implementations.YoPIDGains;
 import us.ihmc.robotics.math.trajectories.yoVariables.YoPolynomial;
 import us.ihmc.robotics.referenceFrames.MidFrameZUpFrame;
 import us.ihmc.robotics.referenceFrames.ZUpFrame;
@@ -103,7 +105,7 @@ public class RobotWalkerFiveController implements Controller
    private final YoBoolean walkerWillFreakOut = new YoBoolean("walkerWillFreakOut", registry);
    private final YoBoolean useCapturePoint = new YoBoolean("useCapturePoint", registry);
    private final YoBoolean addTakeOffVelocity = new YoBoolean("addTakeOffVelocity", registry);
-   
+   private final YoBoolean addTouchDownVelocity = new YoBoolean("addTouchDownVelocity", registry);
    private final YoFramePoint3D feedForwardLinearVelocity = new YoFramePoint3D("feedForwardLinearVelocity", WORLD_FRAME, registry);
 
    private FramePoint3D measuredCPPosition = new FramePoint3D(WORLD_FRAME);
@@ -212,6 +214,8 @@ public class RobotWalkerFiveController implements Controller
     * enough for this example.
     */
    private final DefaultYoPIDSE3Gains gains = new DefaultYoPIDSE3Gains("gains", GainCoupling.XYZ, false, registry);
+   private final DefaultYoPIDSE3Gains gainsSwingFoot = new DefaultYoPIDSE3Gains("gainsSwingFoot", GainCoupling.XYZ, false, registry);
+//   private final DefaultYoPIDSE3Gains swingFootGains = new DefaultYoPIDSE3Gains("swingFoot",
    YoGraphicsListRegistry yoGraphicsListRegistry = new YoGraphicsListRegistry();
 
    public YoGraphicsListRegistry getYoGraphicsListRegistry()
@@ -247,7 +251,7 @@ public class RobotWalkerFiveController implements Controller
       if (useCapturePoint.getBooleanValue())
       {
          transferDuration.set(1.2);
-         swingDuration.set(0.9);
+         swingDuration.set(0.4);
          stepLength.set(0.15);
       }
       else
@@ -370,10 +374,12 @@ public class RobotWalkerFiveController implements Controller
    public void initialize()
    {
       // We initialize the gains. As in the previous examples, the values here are rather arbitrary.
-      gains.setPositionProportionalGains(100.0);
-      gains.setPositionDerivativeGains(10.0);
-      gains.setOrientationProportionalGains(100.0);
-      gains.setOrientationDerivativeGains(10.0);
+      double p_gains = 800.0;
+      double d_gains = GainCalculator.computeDerivativeGain(p_gains, 1.0);
+      gains.setPositionProportionalGains(p_gains);
+      gains.setPositionDerivativeGains(d_gains);
+      gains.setOrientationProportionalGains(p_gains);
+      gains.setOrientationDerivativeGains(d_gains);
       walkerWillFreakOut.set(false);
 
    }
@@ -489,7 +495,7 @@ public class RobotWalkerFiveController implements Controller
                                                              FrameVector3D desiredCapturePointVelocity,
                                                              FramePoint3D measuredCapturePointPosition)
    {
-      double gain_p = 1.0;
+      double gain_p = 2.0;
       FramePoint3D errorCapturePointPosition = new FramePoint3D(WORLD_FRAME);
       errorCapturePointPosition.sub(measuredCapturePointPosition, desiredCapturePointPosition);
       errorCapturePoint.set(Math.sqrt(errorCapturePointPosition.getX() * errorCapturePointPosition.getX()
@@ -534,15 +540,10 @@ public class RobotWalkerFiveController implements Controller
       measuredCoMPosition = new FramePoint3D(WORLD_FRAME, toolbox.getCenterOfMassFrame().getTransformToWorldFrame().getTranslation());
       measuredCoMVelocity = new FrameVector3D(WORLD_FRAME, toolbox.getCentroidalMomentumRateCalculator().getCenterOfMassVelocity());
       measuredCPPosition = calculateMeasuredCapturePointPosition(measuredCoMVelocity, measuredCoMPosition);
-
-      //      measuredCPVelocity  = new FrameVector3D(WORLD_FRAME);
-      //  TODO
-      ////      measuredCPVelocity.sub(measuredCPPosition, meas);
-
       desCentroidalMomentPivot = calculateDesiredCentroidalMomentPivot(desiredCapturePointPosition, desiredCapturePointVelocity, measuredCPPosition);
 
       FrameVector3D desiredCoMAcceleration = calculateDesiredCoMAcceleration(measuredCoMPosition, desCentroidalMomentPivot);
-      double gain_p = 200.0;
+      double gain_p = 1000.0;
       double gain_d = GainCalculator.computeDerivativeGain(gain_p, 1.0);
       desiredCoMAcceleration.setZ(gain_p * (CENTER_OF_MASS_HEIGHT - measuredCoMPosition.getZ()) - gain_d * measuredCoMVelocity.getZ());
 
@@ -781,7 +782,7 @@ public class RobotWalkerFiveController implements Controller
          touchdownVelocity = new YoFrameVector3D(swingSide.getCamelCaseName() + "TouchdownVelocity", WORLD_FRAME, registry);
          touchdownVelocity.set(0.0, 0.0, -0.1);
 
-         double groundClearance = 0.10;
+         double groundClearance = 0.0;
          // The trajectory generator such that the swing starts from the current foot position and ends at the given footstepPosition.
          swingPositionTrajectory = new TwoWaypointSwingGenerator(swingSide.getCamelCaseName() + "Swing", 0.05, 0.15, groundClearance, 0.0, registry, null);
          // Here we define the control frame pose that is needed to specify the point on
@@ -859,10 +860,19 @@ public class RobotWalkerFiveController implements Controller
 
          if (addTakeOffVelocity.getBooleanValue())
          {
-            FrameVector3D takeOffVelocity = new FrameVector3D(WORLD_FRAME, 0.0, 0.0, 10.0);
+            FrameVector3D takeOffVelocity = new FrameVector3D(WORLD_FRAME, 0.0, 0.0, 1.0);
             if (timeInState < swingDuration.getValue() * 0.1)
             {
                velocity.add(takeOffVelocity);
+            }
+         }
+         
+         if (addTouchDownVelocity.getBooleanValue())
+         {
+            FrameVector3D additionalTouchDownVelocity = new FrameVector3D(WORLD_FRAME, 0.0, 0.0, -1.0);
+            if (timeInState > swingDuration.getValue() * 0.9)
+            {
+               velocity.add(additionalTouchDownVelocity);
             }
          }
 
@@ -873,9 +883,22 @@ public class RobotWalkerFiveController implements Controller
          swingFootCommand.set(robotWalkerFive.getElevator(), robotWalkerFive.getFoot(swingSide));
          swingFootCommand.setInverseDynamics(position, velocity, acceleration);
          swingFootCommand.setControlFrameFixedInEndEffector(swingControlFramePose);
-         swingFootCommand.setGains(gains);
+
+//         swingFootCommand.setGains(gains);
+         
+         gainsSwingFoot.setPositionProportionalGains(300.0);
+         gainsSwingFoot.setPositionDerivativeGains(GainCalculator.computeDerivativeGain(gainsSwingFoot.getPositionGains().getProportionalGains()[0], 1.0));
+         gainsSwingFoot.setOrientationProportionalGains(300.0);
+         gainsSwingFoot.setOrientationDerivativeGains(GainCalculator.computeDerivativeGain(gainsSwingFoot.getOrientationGains().getProportionalGains()[0], 1.0));
+         swingFootCommand.setGains(gainsSwingFoot);
+         
+//         swingFootGains.setKp(100.0);
+//         swingFootGains.setZeta(1.0);
+//         swingFootGains.setMaximumFeedbackRate(0.8);
+         
+//        swingFootCommand.setPositionGains(null);
          swingFootCommand.setWeightForSolver(1.0);
-        
+
          controllerCoreCommand.addFeedbackControlCommand(swingFootCommand);
 
          desiredCurrentFootPosition.set(position);
