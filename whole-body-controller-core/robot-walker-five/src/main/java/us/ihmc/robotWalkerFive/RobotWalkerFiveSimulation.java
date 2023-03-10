@@ -73,20 +73,20 @@ public class RobotWalkerFiveSimulation
       walkerController.initialize();
 
       // Add some variables
-      scs.addYoEntry("walk");
-      scs.addYoEntry("addTakeOffVelocity");
-      scs.addYoEntry("addTouchDownVelocity");
-      scs.addYoEntry("transferDuration");
-      scs.addYoEntry("swingDuration");
-      scs.addYoEntry("stepLength");
-      scs.addYoEntry("walkerWillFreakOut");
-      scs.addYoEntry("useCapturePoint");
-      scs.addYoEntry("desiredCapturePointX");
-      scs.addYoEntry("desiredCapturePointY");
-      scs.addYoEntry("desiredCapturePointZ");
-      scs.addYoEntry("feedForwardLinearVelocityX");
-      scs.addYoEntry("feedForwardLinearVelocityY");
-      scs.addYoEntry("feedForwardLinearVelocityZ");
+//      scs.addYoEntry("walk");
+//      scs.addYoEntry("addTakeOffVelocity");
+//      scs.addYoEntry("addTouchDownVelocity");
+//      scs.addYoEntry("transferDuration");
+//      scs.addYoEntry("swingDuration");
+//      scs.addYoEntry("stepLength");
+//      scs.addYoEntry("walkerWillFreakOut");
+//      scs.addYoEntry("useCapturePoint");
+//      scs.addYoEntry("desiredCapturePointX");
+//      scs.addYoEntry("desiredCapturePointY");
+//      scs.addYoEntry("desiredCapturePointZ");
+//      scs.addYoEntry("feedForwardLinearVelocityX");
+//      scs.addYoEntry("feedForwardLinearVelocityY");
+//      scs.addYoEntry("feedForwardLinearVelocityZ");
 
       // Add the YoGraphics to the simulation
       scs.addYoGraphic(walkerController.getYoGraphicDefinition());

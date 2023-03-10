@@ -45,6 +45,9 @@ public class M2RobotDefinition extends RobotDefinition
    public static final double FOOT_WIDTH = FOOT_WIDTH_SCALE_FACTOR * 0.0889;
    public static final double FOOT_HEIGHT = 0.051;
 
+   private double maxLegLength = SHIN_LENGTH+THIGH_LENGTH;
+   
+   
    public static final double BODY_CYLINDER_HEIGHT = 0.0381;
    public static final double BODY_R = 0.203;
    public static final double BODY_ELLIPSE_HEIGHT = 0.381;
