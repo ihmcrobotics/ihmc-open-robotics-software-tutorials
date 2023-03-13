@@ -30,7 +30,7 @@ public class RobotWalkerFiveSimulation
       double controllerDT = 1.0e-4;
       double simulateDT = 4.0e-4;
 
-//      // Define ground contact parameters
+      // Define ground contact parameters
 //      ContactParameters contact = new ContactParameters();
 //      contact.setMinimumPenetration(5.0e-5);
 //      contact.setCoefficientOfFriction(0.8);
@@ -38,11 +38,11 @@ public class RobotWalkerFiveSimulation
 //      contact.setRestitutionThreshold(0.0);
 //      contact.setErrorReductionParameter(0.0);
 //      contact.setComputeFrictionMoment(true);
-//      contact.setCoulombMomentFrictionRatio(0.9);
+//      contact.setCoulombMomentFrictionRatio(1.2);
 //
 //      SimulationConstructionSet2 scs = new SimulationConstructionSet2(SimulationConstructionSet2.impulseBasedPhysicsEngineFactory(contact));
-//      double controllerDT = 2.5e-3;
-//      double simulateDT = 1.0e-3;
+//      double controllerDT = 1e-3;
+//      double simulateDT = 1.0e-4;
 
       // The gravity has to be explicitly defined for the controller core (maybe a robot on the Moon someday...?)
       double gravityMagnitude = 9.81;
@@ -74,6 +74,8 @@ public class RobotWalkerFiveSimulation
 
       // Add some variables
 //      scs.addYoEntry("walk");
+//      scs.addYoEntry("walkCircle");
+//      scs.addYoEntry("rotationPerStep");
 //      scs.addYoEntry("addTakeOffVelocity");
 //      scs.addYoEntry("addTouchDownVelocity");
 //      scs.addYoEntry("transferDuration");
@@ -99,7 +101,7 @@ public class RobotWalkerFiveSimulation
 
       // Camera settings
       scs.setCameraFocusPosition(0.0, 0.0, 0.8);
-      scs.setCameraPosition(0.0, 5.0, 2.0);
+      scs.setCameraPosition(0.0, -5.0, 2.0);
 
       // Track the robot with the camera
       scs.requestCameraRigidBodyTracking(scs.getRobots().get(0).getName(), scs.getRobots().get(0).getAllJoints().get(0).getSuccessor().getName());

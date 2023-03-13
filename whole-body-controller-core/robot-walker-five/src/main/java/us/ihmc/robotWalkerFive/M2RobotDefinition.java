@@ -22,6 +22,7 @@ import us.ihmc.scs2.definition.robot.RigidBodyDefinition;
 import us.ihmc.scs2.definition.robot.RobotDefinition;
 import us.ihmc.scs2.definition.robot.SixDoFJointDefinition;
 import us.ihmc.scs2.definition.state.SixDoFJointState;
+import us.ihmc.scs2.definition.visual.ColorDefinition;
 import us.ihmc.scs2.definition.visual.ColorDefinitions;
 import us.ihmc.scs2.definition.visual.MaterialDefinition;
 import us.ihmc.scs2.definition.visual.VisualDefinition;
@@ -43,10 +44,7 @@ public class M2RobotDefinition extends RobotDefinition
    public static final double FOOT_BACK = 0.051;
    public static final double FOOT_LENGTH = FOOT_BACK + FOOT_FORWARD;
    public static final double FOOT_WIDTH = FOOT_WIDTH_SCALE_FACTOR * 0.0889;
-   public static final double FOOT_HEIGHT = 0.051;
-
-   private double maxLegLength = SHIN_LENGTH+THIGH_LENGTH;
-   
+   public static final double FOOT_HEIGHT = 0.051;  
    
    public static final double BODY_CYLINDER_HEIGHT = 0.0381;
    public static final double BODY_R = 0.203;
@@ -76,7 +74,7 @@ public class M2RobotDefinition extends RobotDefinition
    public static final Vector3DReadOnly RETINACULUM_COM = new Vector3D(0.0, 0.0, 0.0);
    public static final Vector3DReadOnly RETINACULUM_I = new Vector3D(0.000260143, 0.000260143, 0.000260143);
 
-   public static final double FOOT_MASS = 0.414988;
+   public static final double FOOT_MASS =0.414988;
    public static final Vector3DReadOnly FOOT_COM = new Vector3D(0.050700, 0.0, -0.025500);
    public static final Vector3DReadOnly FOOT_I = new Vector3D(0.00036326, 0.00152067, 0.00170404);
 
@@ -277,14 +275,42 @@ public class M2RobotDefinition extends RobotDefinition
       RigidBodyTransform hemiEllipsoidPose = new RigidBodyTransform();
       hemiEllipsoidPose.appendTranslation(0.0, 0.0, 0.5 * BODY_CYLINDER_HEIGHT);
 
+      GeometryDefinition box = new Box3DDefinition(BODY_R, 1.5*BODY_R, BODY_ELLIPSE_HEIGHT);
+      RigidBodyTransform boxPose = new RigidBodyTransform();
+      boxPose.appendTranslation(0.0,0.0,0.75 * BODY_ELLIPSE_HEIGHT);
+      
+      GeometryDefinition sphere = new Sphere3DDefinition(0.05);
+      RigidBodyTransform spherePose = new RigidBodyTransform();
+      spherePose.appendTranslation(0.5*BODY_R,0.25*BODY_R,1.2 * BODY_ELLIPSE_HEIGHT);
+   
+      GeometryDefinition sphere2 = new Sphere3DDefinition(0.05);
+      RigidBodyTransform spherePose2 = new RigidBodyTransform();
+      spherePose2.appendTranslation(0.5*BODY_R,-0.25*BODY_R,1.2 * BODY_ELLIPSE_HEIGHT);
+    
+      GeometryDefinition sphere3 = new Sphere3DDefinition(0.02);
+      RigidBodyTransform spherePose3 = new RigidBodyTransform();
+      spherePose3.appendTranslation(0.65*BODY_R,0.25*BODY_R,1.15 * BODY_ELLIPSE_HEIGHT);
+
+      GeometryDefinition sphere4 = new Sphere3DDefinition(0.02);
+      RigidBodyTransform spherePose4 = new RigidBodyTransform();
+      spherePose4.appendTranslation(0.65*BODY_R,-0.25*BODY_R,1.15 * BODY_ELLIPSE_HEIGHT);
+
       GeometryDefinition cylinder = new Cylinder3DDefinition(BODY_CYLINDER_HEIGHT, BODY_R);
       RigidBodyTransform cylinderPose = new RigidBodyTransform();
 
       MaterialDefinition materialDefinition = new MaterialDefinition(ColorDefinitions.DarkCyan());
       MaterialDefinition materialDefinitionCylinder = new MaterialDefinition(ColorDefinitions.Black());
-
+      MaterialDefinition materialDefinitionBox = new MaterialDefinition(ColorDefinitions.LightCyan());
+      MaterialDefinition materialDefinitionSphere = new MaterialDefinition(ColorDefinitions.Black());
+      MaterialDefinition materialDefinitionSphere3 = new MaterialDefinition(ColorDefinitions.White());
+      
       ret.addVisualDefinition(new VisualDefinition(hemiEllipsoidPose, hemiEllipsoid, materialDefinition));
       ret.addVisualDefinition(new VisualDefinition(cylinderPose, cylinder, materialDefinitionCylinder));
+      ret.addVisualDefinition(new VisualDefinition(boxPose, box, materialDefinitionBox));
+      ret.addVisualDefinition(new VisualDefinition(spherePose, sphere, materialDefinitionSphere));
+      ret.addVisualDefinition(new VisualDefinition(spherePose2, sphere2, materialDefinitionSphere));
+      ret.addVisualDefinition(new VisualDefinition(spherePose3, sphere3, materialDefinitionSphere3));
+      ret.addVisualDefinition(new VisualDefinition(spherePose4, sphere4, materialDefinitionSphere3));
 
       return ret;
    }
@@ -391,7 +417,7 @@ public class M2RobotDefinition extends RobotDefinition
       MaterialDefinition materialDefinition = new MaterialDefinition(ColorDefinitions.DarkCyan());
 
       ret.addVisualDefinition(new VisualDefinition(geometryPose, geometryDefinition, materialDefinition));
-      ret.addCollisionShapeDefinition(new CollisionShapeDefinition(geometryPose, geometryDefinition));
+//      ret.addCollisionShapeDefinition(new CollisionShapeDefinition(geometryPose, geometryDefinition));
 
       STPBox3DDefinition geometryDefinition2 = new STPBox3DDefinition(FOOT_LENGTH, FOOT_WIDTH, FOOT_HEIGHT);
       geometryDefinition2.setMaximumMargin(0.0005);
