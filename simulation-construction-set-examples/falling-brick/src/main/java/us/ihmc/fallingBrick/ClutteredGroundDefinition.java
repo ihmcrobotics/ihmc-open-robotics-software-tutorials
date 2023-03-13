@@ -12,19 +12,16 @@ import us.ihmc.scs2.definition.visual.ColorDefinitions;
 import us.ihmc.scs2.definition.visual.MaterialDefinition;
 import us.ihmc.scs2.definition.visual.VisualDefinition;
 
+/**
+ * The terrain object definition is used to visualize a static environment and to define its
+ * collision model. The collision model is used to resolve contact between the robots and the
+ * environment.
+ */
 public class ClutteredGroundDefinition extends TerrainObjectDefinition
 {
    // Defining the terrain
-   /*
-    * The terrain object definition is used to visualize a static environment and to define its
-    * collision model. The collision model is used to resolve contact between the robots and the
-    * environment.
-    */
-   //
    public ClutteredGroundDefinition()
    {
-      super();
-
       // flat ground
       GeometryDefinition groundGeometryDefinition = new Box3DDefinition(10.0, 10.0, 0.1);
       addVisualDefinition(new VisualDefinition(new RigidBodyTransform(), groundGeometryDefinition, new MaterialDefinition(ColorDefinitions.DarkGray())));

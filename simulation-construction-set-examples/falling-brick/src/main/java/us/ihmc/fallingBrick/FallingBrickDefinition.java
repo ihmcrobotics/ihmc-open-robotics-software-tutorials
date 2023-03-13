@@ -13,9 +13,22 @@ import us.ihmc.scs2.definition.visual.ColorDefinitions;
 import us.ihmc.scs2.definition.visual.MaterialDefinition;
 import us.ihmc.scs2.definition.visual.VisualDefinition;
 
+/**
+ * The falling brick definition is used to define the various properties of the robot. It is
+ * considered a robot as it is a dynamic object that can interact with the environment. The
+ * properties defined here are:
+ * <ul>
+ * <li>the visual properties: how the robot will appear in the 3D view,
+ * <li>the kinematics properties: the type of joints and how they are connected,
+ * <li>the mass properties: the mass and inertia for each rigid body,
+ * <li>the collision properties: the shapes to consider when the robot interacts with the
+ * environment.
+ * </ul>
+ */
 public class FallingBrickDefinition extends RobotDefinition
 {
-   private static final String FALLINGBRICK = "fallingBrick";
+   public static final String FALLING_BRICK = "fallingBrick";
+   public static final String BRICK_BODY = "Brick";
 
    // Define the parameters of the brick
    private static final double BASE_H = 0.1, BASE_W = 0.2, BASE_L = 0.3;
@@ -27,23 +40,34 @@ public class FallingBrickDefinition extends RobotDefinition
    public FallingBrickDefinition()
    {
       // Call parent class "Robot" constructor. The string "FallingBrick" will be the name of the robot.
-      super(FALLINGBRICK); // creates an instance of the class Robot named "FallingBrick" in the SCS system.
+      super(FALLING_BRICK); // creates an instance of the class Robot named "FallingBrick" in the SCS system.
 
       // Create the top (fixed) link that serves as the base of the brick
-      // Define this link as the root body of our robot
-      RigidBodyDefinition elevator = new RigidBodyDefinition("elevator");
-      setRootBodyDefinition(elevator);
-
-      // Setup the brick body
-      RigidBodyDefinition brick = createBrickRigidBody();
+      // Define this link as the root body of our robot. It is fixed in the world.
+      RigidBodyDefinition rootBody = new RigidBodyDefinition("rootBody");
+      setRootBodyDefinition(rootBody);
+      /*
+       * This method returns a brick as a rigid object.
+       */
+      // Define rigid body 
+      // Create the brick body
+      RigidBodyDefinition brick = new RigidBodyDefinition(BRICK_BODY);
+      // Define brick geometry
+      GeometryDefinition geometryDefinition = new Box3DDefinition(BASE_L, BASE_W, BASE_H);
+      // Define material and visuals
+      brick.addVisualDefinition(new VisualDefinition(geometryDefinition, new MaterialDefinition(ColorDefinitions.Purple())));
+      // Setup collision properties based on defined geometry. We re-use the same geometry as for the visual such that the collisions will be consistent with what we see.
+      // This is only needed in case we use impulse based physics engine.
+      brick.addCollisionShapeDefinition(new CollisionShapeDefinition(geometryDefinition));
+      // Finally setting the mass properties of the brick.
       brick.setMass(M1);
       brick.getMomentOfInertia().setToDiagonal(Ixx1, Iyy1, Izz1);
       brick.setCenterOfMassOffset(0.0, 0.0, 0.0);
 
-      // Define and add a floating joint to the brick
+      // Define and add a floating joint to the brick. This is how the brick will move freely in the world.
       SixDoFJointDefinition floatingJoint = new SixDoFJointDefinition(getRootJointName());
       // Connect this joint to the robot base
-      elevator.addChildJoint(floatingJoint);
+      rootBody.addChildJoint(floatingJoint);
       floatingJoint.setSuccessor(brick);
 
       // Add ground contact points to the brick
@@ -105,31 +129,8 @@ public class FallingBrickDefinition extends RobotDefinition
       }
    }
 
-   private final RigidBodyDefinition createBrickRigidBody()
-   {
-      /*
-       * This method returns a brick as a rigid object.
-       */
-      // Define rigid body 
-      RigidBodyDefinition brick = new RigidBodyDefinition("Brick");
-
-      // Define brick geometry
-      GeometryDefinition geometryDefinition = new Box3DDefinition(BASE_L, BASE_W, BASE_H);
-
-      // Define material and visuals
-      MaterialDefinition materialDefinition = new MaterialDefinition(ColorDefinitions.Purple());
-      brick.addVisualDefinition(new VisualDefinition(geometryDefinition, materialDefinition));
-
-      // Setup collision properties based on defined geometry
-      // This is only needed in case we use impulse based physics engine
-      brick.addCollisionShapeDefinition(new CollisionShapeDefinition(geometryDefinition));
-
-      return brick;
-   }
-
    public String getRootJointName()
    {
       return "rootJoint";
    }
-
 }
