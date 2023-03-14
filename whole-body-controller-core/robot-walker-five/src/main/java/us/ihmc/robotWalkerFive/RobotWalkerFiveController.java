@@ -112,8 +112,7 @@ public class RobotWalkerFiveController implements Controller
    //   private final YoFramePoint3D desiredNextCenterPosition = new YoFramePoint3D("desiredNextCenterPosition", WORLD_FRAME, registry);
 
    private FramePoint3D measuredCPPosition = new FramePoint3D(WORLD_FRAME);
-   private final YoDouble legReachableRadius = new YoDouble("legReachableRadius", registry);
-
+  
    FrameQuaternion desiredPelvisOrientation = new FrameQuaternion();
 
    private FramePoint3D measuredCoMPosition;
@@ -283,7 +282,6 @@ public class RobotWalkerFiveController implements Controller
       controllerRobot = MultiBodySystemBasics.toMultiBodySystemBasics(MultiBodySystemFactories.cloneMultiBodySystem(controllerInput.getInput().getRootBody(),
                                                                                                                     ReferenceFrame.getWorldFrame(),
                                                                                                                     ""));
-
       //  create our graphics here
       this.graphicsGroup = createVisualization();
    }
@@ -397,6 +395,7 @@ public class RobotWalkerFiveController implements Controller
       gains.setOrientationProportionalGains(p_gains);
       gains.setOrientationDerivativeGains(d_gains);
       walkerWillFreakOut.set(false);
+      desiredPelvisOrientation.setToZero();
 
    }
 
@@ -412,17 +411,6 @@ public class RobotWalkerFiveController implements Controller
       soleZUpFrames.forEach(frame -> frame.update());
       midFeetFrame.update();
       walkerWillFreakOut.set(false);
-
-      FramePoint3D leftHipCenterPos = new FramePoint3D(WORLD_FRAME);
-      FramePoint3D rightHipCenterPos = new FramePoint3D(WORLD_FRAME);
-
-      rightHipCenterPos.setToZero(robotWalkerFive.getRootJoint().getSuccessor().getChildrenJoints().get(0).getFrameBeforeJoint());
-      rightHipCenterPos.changeFrame(WORLD_FRAME);
-      leftHipCenterPos.setToZero(robotWalkerFive.getRootJoint().getSuccessor().getChildrenJoints().get(1).getFrameBeforeJoint());
-      leftHipCenterPos.changeFrame(WORLD_FRAME);
-
-      leftHipCenterPosition.set(leftHipCenterPos);
-      rightHipCenterPosition.set(rightHipCenterPos);
 
       if (!bipedSupportPolygons.getSupportPolygonInWorld().isPointInside(new FramePoint2D(WORLD_FRAME, desCMP.getX(), desCMP.getY())))
       {
@@ -441,22 +429,12 @@ public class RobotWalkerFiveController implements Controller
        * setup the command here.
        */
       OrientationFeedbackControlCommand pelvisOrientationCommand = new OrientationFeedbackControlCommand();
-      pelvisOrientationCommand.setControlMode(WholeBodyControllerCoreMode.INVERSE_DYNAMICS); // sets control mode to
-      // inverse dynamics
-
+      // sets control mode to inverse dynamics
+      pelvisOrientationCommand.setControlMode(WholeBodyControllerCoreMode.INVERSE_DYNAMICS);
       pelvisOrientationCommand.set(robotWalkerFive.getElevator(), robotWalkerFive.getPelvis());
-
       // Turn pelivs only every second step
       //      desiredPelvisOrientation.setToYawOrientation(robotWalkerFive.getSoleFrame(RobotSide.LEFT).getTransformToWorldFrame().getRotation().getYaw());      
-
-      // Turn pelvis every step (get current pelvis orientation and append rotation per setp)
-      // get curernt heading direction
-
-      //      desiredPelvisOrientation.setToYawOrientation(robotWalkerFive.getPelvis().getBodyFixedFrame().getTransformToWorldFrame().getRotation().getYaw());      
-      //      desiredPelvisOrientation.appendYawRotation(rotationPerStep.getDoubleValue());
-      //     
       pelvisOrientationCommand.setInverseDynamics(desiredPelvisOrientation, measuredCoMVelocity, measuredCPVelocity);
-
       pelvisOrientationCommand.setGains(gains.getOrientationGains());
       pelvisOrientationCommand.setWeightForSolver(1.0);
       controllerCoreCommand.addFeedbackControlCommand(pelvisOrientationCommand);
@@ -842,7 +820,6 @@ public class RobotWalkerFiveController implements Controller
       private final YoFramePoint3D initialFootPosition;
       private final YoFramePoint3D desiredNextFootStepPosition;
       private final YoFrameVector3D footHeadingDirection;
-      //      private final YoGraphicCoordinateSystem headingFrame;
       private final YoFrameVector3D touchdownVelocity;
       private final FramePose3D swingControlFramePose = new FramePose3D();
       FrameQuaternion finalFootOrienation = new FrameQuaternion();
@@ -944,24 +921,6 @@ public class RobotWalkerFiveController implements Controller
       @Override
       public void doAction(double timeInState)
       {
-         // FrameVector3D feedForwardLinearVelocity = new FrameVector3D(WORLD_FRAME, 0.0, 0.0, 0.0);
-
-         FramePoint3D leftHipCenterPos = new FramePoint3D(WORLD_FRAME);
-         FramePoint3D rightHipCenterPos = new FramePoint3D(WORLD_FRAME);
-
-         rightHipCenterPos.setToZero(robotWalkerFive.getRootJoint().getSuccessor().getChildrenJoints().get(0).getFrameBeforeJoint());
-         rightHipCenterPos.changeFrame(WORLD_FRAME);
-         leftHipCenterPos.setToZero(robotWalkerFive.getRootJoint().getSuccessor().getChildrenJoints().get(1).getFrameBeforeJoint());
-         leftHipCenterPos.changeFrame(WORLD_FRAME);
-
-         leftHipCenterPosition.set(leftHipCenterPos);
-         rightHipCenterPosition.set(rightHipCenterPos);
-
-         double hipHeigth = leftHipCenterPos.getZ();
-         double maxLegLength = 0.964; //TODO get from robot definition
-         double rmax = Math.sqrt(maxLegLength * maxLegLength - hipHeigth * hipHeigth);
-         legReachableRadius.set(rmax);
-
          // During this state, the center of mass is kept right above the support foot.
          if (useCapturePoint.getBooleanValue())
          {

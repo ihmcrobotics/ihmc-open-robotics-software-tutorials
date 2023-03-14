@@ -321,7 +321,7 @@ public class M2RobotDefinition extends RobotDefinition
       ret.addVisualDefinition(new VisualDefinition(spherePose2, sphere2, materialDefinitionSphere));
       ret.addVisualDefinition(new VisualDefinition(spherePose3, sphere3, materialDefinitionSphere3));
       ret.addVisualDefinition(new VisualDefinition(spherePose4, sphere4, materialDefinitionSphere3));
-      ret.addVisualDefinition(new VisualDefinition(spherePose5, sphere5, materialDefinitionSphere));
+//      ret.addVisualDefinition(new VisualDefinition(spherePose5, sphere5, materialDefinitionSphere));
       ret.addVisualDefinition(new VisualDefinition(nosePose, nose, materialDefinition));
 
       return ret;

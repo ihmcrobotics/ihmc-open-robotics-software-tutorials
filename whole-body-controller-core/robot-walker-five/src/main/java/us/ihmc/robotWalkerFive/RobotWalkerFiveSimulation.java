@@ -20,7 +20,7 @@ public class RobotWalkerFiveSimulation
       // Define ground contact parameters
       ContactPointBasedContactParameters contact = ContactPointBasedContactParameters.defaultParameters();
       contact.setKxy(40000.0);
-      contact.setBxy(100.0);
+      contact.setBxy(200.0);
       contact.setKz(500.0);
       contact.setBz(250.0);
 
