@@ -2,7 +2,6 @@ package us.ihmc.robotWalkerFive;
 
 import us.ihmc.scs2.SimulationConstructionSet2;
 import us.ihmc.scs2.session.tools.SCS1GraphicConversionTools;
-import us.ihmc.scs2.simulation.parameters.ContactParameters;
 import us.ihmc.scs2.simulation.parameters.ContactPointBasedContactParameters;
 import us.ihmc.scs2.simulation.robot.Robot;
 
@@ -31,18 +30,18 @@ public class RobotWalkerFiveSimulation
       double simulateDT = 4.0e-4;
 
       // Define ground contact parameters
-//      ContactParameters contact = new ContactParameters();
-//      contact.setMinimumPenetration(5.0e-5);
-//      contact.setCoefficientOfFriction(0.8);
-//      contact.setCoefficientOfRestitution(0.0);
-//      contact.setRestitutionThreshold(0.0);
-//      contact.setErrorReductionParameter(0.0);
-//      contact.setComputeFrictionMoment(true);
-//      contact.setCoulombMomentFrictionRatio(1.2);
-//
-//      SimulationConstructionSet2 scs = new SimulationConstructionSet2(SimulationConstructionSet2.impulseBasedPhysicsEngineFactory(contact));
-//      double controllerDT = 1e-3;
-//      double simulateDT = 1.0e-4;
+      //      ContactParameters contact = new ContactParameters();
+      //      contact.setMinimumPenetration(5.0e-5);
+      //      contact.setCoefficientOfFriction(0.8);
+      //      contact.setCoefficientOfRestitution(0.0);
+      //      contact.setRestitutionThreshold(0.0);
+      //      contact.setErrorReductionParameter(0.0);
+      //      contact.setComputeFrictionMoment(true);
+      //      contact.setCoulombMomentFrictionRatio(1.2);
+      //
+      //      SimulationConstructionSet2 scs = new SimulationConstructionSet2(SimulationConstructionSet2.impulseBasedPhysicsEngineFactory(contact));
+      //      double controllerDT = 1e-3;
+      //      double simulateDT = 1.0e-4;
 
       // The gravity has to be explicitly defined for the controller core (maybe a robot on the Moon someday...?)
       double gravityMagnitude = 9.81;
@@ -73,22 +72,22 @@ public class RobotWalkerFiveSimulation
       walkerController.initialize();
 
       // Add some variables
-//      scs.addYoEntry("walk");
-//      scs.addYoEntry("walkCircle");
-//      scs.addYoEntry("rotationPerStep");
-//      scs.addYoEntry("addTakeOffVelocity");
-//      scs.addYoEntry("addTouchDownVelocity");
-//      scs.addYoEntry("transferDuration");
-//      scs.addYoEntry("swingDuration");
-//      scs.addYoEntry("stepLength");
-//      scs.addYoEntry("walkerWillFreakOut");
-//      scs.addYoEntry("useCapturePoint");
-//      scs.addYoEntry("desiredCapturePointX");
-//      scs.addYoEntry("desiredCapturePointY");
-//      scs.addYoEntry("desiredCapturePointZ");
-//      scs.addYoEntry("feedForwardLinearVelocityX");
-//      scs.addYoEntry("feedForwardLinearVelocityY");
-//      scs.addYoEntry("feedForwardLinearVelocityZ");
+      //      scs.addYoEntry("walk");
+      //      scs.addYoEntry("walkCircle");
+      //      scs.addYoEntry("rotationPerStep");
+      //      scs.addYoEntry("addTakeOffVelocity");
+      //      scs.addYoEntry("addTouchDownVelocity");
+      //      scs.addYoEntry("transferDuration");
+      //      scs.addYoEntry("swingDuration");
+      //      scs.addYoEntry("stepLength");
+      //      scs.addYoEntry("walkerWillFreakOut");
+      //      scs.addYoEntry("useCapturePoint");
+      //      scs.addYoEntry("desiredCapturePointX");
+      //      scs.addYoEntry("desiredCapturePointY");
+      //      scs.addYoEntry("desiredCapturePointZ");
+      //      scs.addYoEntry("feedForwardLinearVelocityX");
+      //      scs.addYoEntry("feedForwardLinearVelocityY");
+      //      scs.addYoEntry("feedForwardLinearVelocityZ");
 
       // Add the YoGraphics to the simulation
       scs.addYoGraphic(walkerController.getYoGraphicDefinition());
