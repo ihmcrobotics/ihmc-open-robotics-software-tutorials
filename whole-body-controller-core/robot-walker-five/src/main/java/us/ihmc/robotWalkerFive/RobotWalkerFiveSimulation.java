@@ -20,7 +20,7 @@ public class RobotWalkerFiveSimulation
       // Define ground contact parameters
       ContactPointBasedContactParameters contact = ContactPointBasedContactParameters.defaultParameters();
       contact.setKxy(40000.0);
-      contact.setBxy(200.0);
+      contact.setBxy(100.0);
       contact.setKz(500.0);
       contact.setBz(250.0);
 
@@ -72,22 +72,20 @@ public class RobotWalkerFiveSimulation
       walkerController.initialize();
 
       // Add some variables
-      //      scs.addYoEntry("walk");
-      //      scs.addYoEntry("walkCircle");
-      //      scs.addYoEntry("rotationPerStep");
-      //      scs.addYoEntry("addTakeOffVelocity");
-      //      scs.addYoEntry("addTouchDownVelocity");
-      //      scs.addYoEntry("transferDuration");
-      //      scs.addYoEntry("swingDuration");
-      //      scs.addYoEntry("stepLength");
-      //      scs.addYoEntry("walkerWillFreakOut");
-      //      scs.addYoEntry("useCapturePoint");
-      //      scs.addYoEntry("desiredCapturePointX");
-      //      scs.addYoEntry("desiredCapturePointY");
-      //      scs.addYoEntry("desiredCapturePointZ");
-      //      scs.addYoEntry("feedForwardLinearVelocityX");
-      //      scs.addYoEntry("feedForwardLinearVelocityY");
-      //      scs.addYoEntry("feedForwardLinearVelocityZ");
+      scs.addYoEntry("walk");
+      scs.addYoEntry("useCapturePoint");
+      scs.addYoEntry("walkCircle");
+      scs.addYoEntry("rotationPerStep");
+      scs.addYoEntry("transferDuration");
+      scs.addYoEntry("swingDuration");
+      scs.addYoEntry("stepLength");
+      scs.addYoEntry("stepWidth");
+      scs.addYoEntry("addTakeOffVelocity");
+      scs.addYoEntry("addTouchDownVelocity");
+      scs.addYoEntry("walkerWillFreakOut");
+      scs.addYoEntry("desiredCapturePointX");
+      scs.addYoEntry("desiredCapturePointY");
+      scs.addYoEntry("desiredCapturePointZ");
 
       // Add the YoGraphics to the simulation
       scs.addYoGraphic(walkerController.getYoGraphicDefinition());

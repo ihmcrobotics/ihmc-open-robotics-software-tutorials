@@ -291,22 +291,17 @@ public class M2RobotDefinition extends RobotDefinition
 
       GeometryDefinition sphere3 = new Sphere3DDefinition(0.02);
       RigidBodyTransform spherePose3 = new RigidBodyTransform();
-      spherePose3.appendTranslation(0.7 * BODY_R, 0.25 * BODY_R, 1.15 * BODY_ELLIPSE_HEIGHT);
+      spherePose3.appendTranslation(0.7 * BODY_R, 0.21 * BODY_R, 1.18 * BODY_ELLIPSE_HEIGHT);
 
       GeometryDefinition sphere4 = new Sphere3DDefinition(0.02);
       RigidBodyTransform spherePose4 = new RigidBodyTransform();
-      spherePose4.appendTranslation(0.7 * BODY_R, -0.25 * BODY_R, 1.15 * BODY_ELLIPSE_HEIGHT);
+      spherePose4.appendTranslation(0.7 * BODY_R, -0.21 * BODY_R, 1.18 * BODY_ELLIPSE_HEIGHT);
 
       // nose
       GeometryDefinition nose = new Cylinder3DDefinition(0.2, 0.02);
       RigidBodyTransform nosePose = new RigidBodyTransform();
       nosePose.appendTranslation(0.7 * BODY_R, 0.0, 1.1 * BODY_ELLIPSE_HEIGHT);
       nosePose.appendPitchRotation(1.57);
-
-      //mouth
-      GeometryDefinition sphere5 = new Sphere3DDefinition(0.05);
-      RigidBodyTransform spherePose5 = new RigidBodyTransform();
-      spherePose5.appendTranslation(0.8 * BODY_R, 0.0, 0.8 * BODY_ELLIPSE_HEIGHT);
 
       MaterialDefinition materialDefinition = new MaterialDefinition(ColorDefinitions.DarkCyan());
       MaterialDefinition materialDefinitionCylinder = new MaterialDefinition(ColorDefinitions.Black());
@@ -321,7 +316,6 @@ public class M2RobotDefinition extends RobotDefinition
       ret.addVisualDefinition(new VisualDefinition(spherePose2, sphere2, materialDefinitionSphere));
       ret.addVisualDefinition(new VisualDefinition(spherePose3, sphere3, materialDefinitionSphere3));
       ret.addVisualDefinition(new VisualDefinition(spherePose4, sphere4, materialDefinitionSphere3));
-//      ret.addVisualDefinition(new VisualDefinition(spherePose5, sphere5, materialDefinitionSphere));
       ret.addVisualDefinition(new VisualDefinition(nosePose, nose, materialDefinition));
 
       return ret;
