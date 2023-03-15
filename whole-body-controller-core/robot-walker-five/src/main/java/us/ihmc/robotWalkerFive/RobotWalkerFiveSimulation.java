@@ -71,21 +71,21 @@ public class RobotWalkerFiveSimulation
       // Make sure to initialize the controller.
       walkerController.initialize();
 
-      // Add some variables
-      scs.addYoEntry("walk");
-      scs.addYoEntry("useCapturePoint");
-      scs.addYoEntry("walkCircle");
-      scs.addYoEntry("rotationPerStep");
-      scs.addYoEntry("transferDuration");
-      scs.addYoEntry("swingDuration");
-      scs.addYoEntry("stepLength");
-      scs.addYoEntry("stepWidth");
-      scs.addYoEntry("addTakeOffVelocity");
-      scs.addYoEntry("addTouchDownVelocity");
-      scs.addYoEntry("walkerWillFreakOut");
-      scs.addYoEntry("desiredCapturePointX");
-      scs.addYoEntry("desiredCapturePointY");
-      scs.addYoEntry("desiredCapturePointZ");
+      // Add some variables - add it once, save scs2 simulation when closing it, and then comment out
+      //      scs.addYoEntry("walk");
+      //      scs.addYoEntry("useCapturePoint");
+      //      scs.addYoEntry("walkCircle");
+      //      scs.addYoEntry("rotationPerStep");
+      //      scs.addYoEntry("transferDuration");
+      //      scs.addYoEntry("swingDuration");
+      //      scs.addYoEntry("stepLength");
+      //      scs.addYoEntry("stepWidth");
+      //      scs.addYoEntry("addTakeOffVelocity");
+      //      scs.addYoEntry("addTouchDownVelocity");
+      //      scs.addYoEntry("walkerWillFreakOut");
+      //      scs.addYoEntry("desiredCapturePointX");
+      //      scs.addYoEntry("desiredCapturePointY");
+      //      scs.addYoEntry("desiredCapturePointZ");
 
       // Add the YoGraphics to the simulation
       scs.addYoGraphic(walkerController.getYoGraphicDefinition());

@@ -117,7 +117,7 @@ public class RobotWalkerFiveController implements Controller
    private final YoFramePoint3D measuredCenterOfMass = new YoFramePoint3D("measuredCenterOfMass", WORLD_FRAME, registry);
    private final YoFramePoint3D measuredCapturePointPosition = new YoFramePoint3D("measuredCapturePoint", WORLD_FRAME, registry);
 
-   private final YoFramePoint3D desCMP = new YoFramePoint3D("desiredCentroidalMomentPivotPosition", WORLD_FRAME, registry);
+   private final YoFramePoint3D desiredCMP = new YoFramePoint3D("desiredCentroidalMomentPivotPosition", WORLD_FRAME, registry);
    private final YoFramePoint3D correctedCMP = new YoFramePoint3D("correctedCentroidalMomentPivotPosition", WORLD_FRAME, registry);
    private final YoFramePoint3D originalCMP = new YoFramePoint3D("originalCentroidalMomentPivotPosition", WORLD_FRAME, registry);
 
@@ -216,7 +216,7 @@ public class RobotWalkerFiveController implements Controller
     * We will define only one set of gains for controlling the whole robot. This is not ideal but is
     * enough for this example.
     */
-   private final DefaultYoPIDSE3Gains gains = new DefaultYoPIDSE3Gains("gains", GainCoupling.XYZ, false, registry);
+   private final DefaultYoPIDSE3Gains gainsCoMandPelvis = new DefaultYoPIDSE3Gains("gainsCoMControl", GainCoupling.XYZ, false, registry);
    private final DefaultYoPIDSE3Gains gainsSwingFoot = new DefaultYoPIDSE3Gains("gainsSwingFoot", GainCoupling.XYZ, false, registry);
    YoGraphicsListRegistry yoGraphicsListRegistry = new YoGraphicsListRegistry();
 
@@ -247,7 +247,7 @@ public class RobotWalkerFiveController implements Controller
       bipedSupportPolygons = new BipedSupportPolygons(midFeetFrame, soleZUpFrames, soleFrames, registry, yoGraphicsListRegistry);
 
       stateMachine = createStateMachine();
-      
+
       useCapturePoint.set(true);
       stepWidth.set(0.2);
 
@@ -256,6 +256,7 @@ public class RobotWalkerFiveController implements Controller
          transferDuration.set(1.2);
          swingDuration.set(0.9);
          stepLength.set(0.15);
+         // more challenging settings:
          //         transferDuration.set(0.85);
          //         swingDuration.set(0.4);
          //         stepLength.set(0.15);
@@ -284,7 +285,7 @@ public class RobotWalkerFiveController implements Controller
                                                                             0.02,
                                                                             ColorDefinitions.Blue()));
       graphicsGroup.addChild(YoGraphicDefinitionFactory.newYoGraphicPoint3D("measuredCenterOfMass", measuredCenterOfMass, 0.02, ColorDefinitions.Black()));
-      graphicsGroup.addChild(YoGraphicDefinitionFactory.newYoGraphicPoint3D("desiredCentroidalMomentPivotPoint", desCMP, 0.02, ColorDefinitions.Green()));
+      graphicsGroup.addChild(YoGraphicDefinitionFactory.newYoGraphicPoint3D("desiredCentroidalMomentPivotPoint", desiredCMP, 0.02, ColorDefinitions.Green()));
       graphicsGroup.addChild(YoGraphicDefinitionFactory.newYoGraphicPoint3D("desiredCurrentFootPosition",
                                                                             desiredCurrentFootPosition,
                                                                             0.03,
@@ -372,13 +373,14 @@ public class RobotWalkerFiveController implements Controller
    @Override
    public void initialize()
    {
-      // We initialize the gains. As in the previous examples, the values here are rather arbitrary.
-      double p_gains = 800.0;
+      // We initialize the gains. As in the previous examples, the values here are rather arbitrary.      
+      double p_gains = 50.0;
       double d_gains = GainCalculator.computeDerivativeGain(p_gains, 1.0);
-      gains.setPositionProportionalGains(p_gains);
-      gains.setPositionDerivativeGains(d_gains);
-      gains.setOrientationProportionalGains(p_gains);
-      gains.setOrientationDerivativeGains(d_gains);
+      gainsCoMandPelvis.setPositionProportionalGains(p_gains);
+      gainsCoMandPelvis.setPositionDerivativeGains(d_gains);
+      gainsCoMandPelvis.setOrientationProportionalGains(p_gains);
+      gainsCoMandPelvis.setOrientationDerivativeGains(d_gains);
+
       walkerWillFreakOut.set(false);
       desiredPelvisOrientation.setToZero();
 
@@ -397,7 +399,7 @@ public class RobotWalkerFiveController implements Controller
       midFeetFrame.update();
       walkerWillFreakOut.set(false);
 
-      if (!bipedSupportPolygons.getSupportPolygonInWorld().isPointInside(new FramePoint2D(WORLD_FRAME, desCMP.getX(), desCMP.getY())))
+      if (!bipedSupportPolygons.getSupportPolygonInWorld().isPointInside(new FramePoint2D(WORLD_FRAME, desiredCMP.getX(), desiredCMP.getY())))
       {
          // CMP should not be outside support polygon
          walkerWillFreakOut.set(true);
@@ -420,7 +422,7 @@ public class RobotWalkerFiveController implements Controller
       pelvisOrientationCommand.setInverseDynamics(desiredPelvisOrientation,
                                                   new FrameVector3D(WORLD_FRAME, 0.0, 0.0, 0.0),
                                                   new FrameVector3D(WORLD_FRAME, 0.0, 0.0, 0.0));
-      pelvisOrientationCommand.setGains(gains.getOrientationGains());
+      pelvisOrientationCommand.setGains(gainsCoMandPelvis.getOrientationGains());
       pelvisOrientationCommand.setWeightForSolver(1.0);
       controllerCoreCommand.addFeedbackControlCommand(pelvisOrientationCommand);
 
@@ -521,7 +523,7 @@ public class RobotWalkerFiveController implements Controller
       centerOfMassCommand.setControlMode(WholeBodyControllerCoreMode.INVERSE_DYNAMICS); // sets control mode to inverse dynamics
       FrameVector3D feedForwardLinearAcceleration = new FrameVector3D(WORLD_FRAME, 0.0, 0.0, 0.0);
       centerOfMassCommand.setInverseDynamics(centerOfMassPosition, feedForwardLinearVelocity, feedForwardLinearAcceleration);
-      centerOfMassCommand.setGains(gains.getPositionGains());
+      centerOfMassCommand.setGains(gainsCoMandPelvis.getPositionGains());
       centerOfMassCommand.setWeightForSolver(1.0);
       controllerCoreCommand.addFeedbackControlCommand(centerOfMassCommand);
 
@@ -557,7 +559,7 @@ public class RobotWalkerFiveController implements Controller
 
       // update visualization variables
       desiredCapturePoint.set(desiredCapturePointPosition);
-      desCMP.set(desCentroidalMomentPivot);
+      desiredCMP.set(desCentroidalMomentPivot);
       originalCMP.set(desCentroidalMomentPivot);
 
       correctedCMP.set(new Point2D(0.0, 0.0));
@@ -581,7 +583,7 @@ public class RobotWalkerFiveController implements Controller
          desCentroidalMomentPivot.setY(corrCMP2D.getY());
       }
 
-      desCMP.set(desCentroidalMomentPivot);
+      desiredCMP.set(desCentroidalMomentPivot);
 
       measuredCenterOfMass.set(measuredCoMPosition);
       FramePoint3D measuredCPPosition = new FramePoint3D(WORLD_FRAME);
