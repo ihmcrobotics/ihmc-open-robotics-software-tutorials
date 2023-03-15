@@ -790,8 +790,7 @@ public class RobotWalkerFiveController implements Controller
       private final YoFramePoint3D initialFootPosition;
       private final YoFrameVector3D touchdownVelocity;
       private final FramePose3D swingControlFramePose = new FramePose3D();
-      FrameQuaternion finalFootOrienation = new FrameQuaternion();
-      FrameQuaternion initialFootOrienation = new FrameQuaternion();
+      private final FrameQuaternion finalFootOrienation = new FrameQuaternion();
 
       public SingleSupportState(RobotSide supportSide)
       {
@@ -861,11 +860,12 @@ public class RobotWalkerFiveController implements Controller
          // The desired next foot position based on the calculated heading direction and the current middle point between the feet
          desiredNextSwingFootPosition.add(currentMiddlePosition, footStepToTake);
 
-         // Update graphics in simulation
+         // Update desired heading direction
          headingDirection.set(pelvisHeadingDirection);
+
+         // Update desired position and orientation for swingfoot
          initialFootPosition.set(swingFootPosition);
          nextFootstepPosition.set(desiredNextSwingFootPosition);
-         initialFootOrienation.set(swingFootOrientation);
          finalFootOrienation.set(walkingDirection);
 
          // Setup swing foot orientation trajectory
