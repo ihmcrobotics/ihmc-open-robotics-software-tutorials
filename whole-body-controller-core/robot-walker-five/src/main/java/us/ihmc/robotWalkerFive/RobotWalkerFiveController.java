@@ -1,5 +1,6 @@
 package us.ihmc.robotWalkerFive;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
@@ -27,10 +28,10 @@ import us.ihmc.euclid.referenceFrame.FrameVector3D;
 import us.ihmc.euclid.referenceFrame.ReferenceFrame;
 import us.ihmc.euclid.referenceFrame.interfaces.FrameLine2DReadOnly;
 import us.ihmc.euclid.referenceFrame.interfaces.FramePoint3DReadOnly;
-import us.ihmc.euclid.transform.RigidBodyTransform;
 import us.ihmc.euclid.tuple2D.Point2D;
 import us.ihmc.euclid.tuple3D.Vector3D;
 import us.ihmc.graphicsDescription.yoGraphics.YoGraphicsListRegistry;
+import us.ihmc.humanoidRobotics.footstep.Footstep;
 import us.ihmc.mecano.multiBodySystem.OneDoFJoint;
 import us.ihmc.mecano.multiBodySystem.interfaces.FloatingJointBasics;
 import us.ihmc.mecano.multiBodySystem.interfaces.JointBasics;
@@ -63,6 +64,7 @@ import us.ihmc.scs2.definition.yoGraphic.YoGraphicGroupDefinition;
 import us.ihmc.sensorProcessing.outputData.JointDesiredOutputListReadOnly;
 import us.ihmc.sensorProcessing.outputData.JointDesiredOutputReadOnly;
 import us.ihmc.yoVariables.euclid.referenceFrame.YoFramePoint3D;
+import us.ihmc.yoVariables.euclid.referenceFrame.YoFramePose3D;
 import us.ihmc.yoVariables.euclid.referenceFrame.YoFrameVector3D;
 import us.ihmc.yoVariables.registry.YoRegistry;
 import us.ihmc.yoVariables.variable.YoBoolean;
@@ -117,15 +119,21 @@ public class RobotWalkerFiveController implements Controller
    private final YoFramePoint3D measuredCenterOfMass = new YoFramePoint3D("measuredCenterOfMass", WORLD_FRAME, registry);
    private final YoFramePoint3D measuredCapturePointPosition = new YoFramePoint3D("measuredCapturePoint", WORLD_FRAME, registry);
 
+   private final YoFramePose3D desiredNextPoseOnPath = new YoFramePose3D("desiredNextPoseOnPath", WORLD_FRAME, registry);
+   private final YoFramePose3D currentPoseOnPath = new YoFramePose3D("currentPoseOnPath", WORLD_FRAME, registry);
+
    private final YoFramePoint3D desiredCMP = new YoFramePoint3D("desiredCentroidalMomentPivotPosition", WORLD_FRAME, registry);
    private final YoFramePoint3D correctedCMP = new YoFramePoint3D("correctedCentroidalMomentPivotPosition", WORLD_FRAME, registry);
    private final YoFramePoint3D originalCMP = new YoFramePoint3D("originalCentroidalMomentPivotPosition", WORLD_FRAME, registry);
 
    private final YoDouble rotationPerStep = new YoDouble("rotationPerStep", registry);
 
+   private NFootstepListVisualizer visualizerPlannedFootSteps;
+
    private final YoFramePoint3D desiredCapturePoint = new YoFramePoint3D("desiredCapturePoint", WORLD_FRAME, registry);
 
    private double omega0 = Math.sqrt(9.81 / CENTER_OF_MASS_HEIGHT);
+   int numberOfStepsToPlan = 10;
 
    /**
     * This is the robot the controller uses.
@@ -227,8 +235,10 @@ public class RobotWalkerFiveController implements Controller
 
    BipedSupportPolygons bipedSupportPolygons;
    ReferenceFrame midFeetFrame;
+   SideDependentList<ContactablePlaneBody> contactableFeet;
    SideDependentList<ReferenceFrame> soleFrames, soleZUpFrames;
    SideDependentList<PlaneContactStateCommand> planeContactStateCommands;
+   SideDependentList<RigidBodyBasics> feet;
 
    public RobotWalkerFiveController(ControllerInput controllerInput,
                                     ControllerOutput controllerOutput,
@@ -240,12 +250,14 @@ public class RobotWalkerFiveController implements Controller
       this.robotWalkerFive = new RobotWalkerFive(controllerInput, controllerOutput, robotDefinition);
 
       wholeBodyControllerCore = createControllerCore(controlDT, gravityZ, yoGraphicsListRegistry);
+      feet = new SideDependentList<>(side -> robotWalkerFive.getFoot(side));
       soleFrames = new SideDependentList<>(side -> robotWalkerFive.getFootContactableBody(side).getSoleFrame());
       soleZUpFrames = new SideDependentList<>(side -> new ZUpFrame(soleFrames.get(side), soleFrames.get(side).getName() + "ZUp"));
       midFeetFrame = new MidFrameZUpFrame("midFeetZUpFrame", WORLD_FRAME, soleZUpFrames.get(RobotSide.LEFT), soleZUpFrames.get(RobotSide.RIGHT));
 
-      bipedSupportPolygons = new BipedSupportPolygons(midFeetFrame, soleZUpFrames, soleFrames, registry, yoGraphicsListRegistry);
+      contactableFeet = new SideDependentList<>(side -> robotWalkerFive.getFootContactableBody(side));
 
+      bipedSupportPolygons = new BipedSupportPolygons(midFeetFrame, soleZUpFrames, soleFrames, registry, yoGraphicsListRegistry);
       stateMachine = createStateMachine();
 
       useCapturePoint.set(true);
@@ -271,6 +283,7 @@ public class RobotWalkerFiveController implements Controller
       controllerRobot = MultiBodySystemBasics.toMultiBodySystemBasics(MultiBodySystemFactories.cloneMultiBodySystem(controllerInput.getInput().getRootBody(),
                                                                                                                     ReferenceFrame.getWorldFrame(),
                                                                                                                     ""));
+      visualizerPlannedFootSteps = new NFootstepListVisualizer(contactableFeet, yoGraphicsListRegistry, registry);
       //  create our graphics here
       this.graphicsGroup = createVisualization();
    }
@@ -787,10 +800,12 @@ public class RobotWalkerFiveController implements Controller
        * Generate some YoVariables that we can monitor during the simulation.
        */
       private final YoFramePoint3D nextFootstepPosition;
+      //      private final YoFramePoint2D next2DFootstepPosition;
       private final YoFramePoint3D initialFootPosition;
       private final YoFrameVector3D touchdownVelocity;
       private final FramePose3D swingControlFramePose = new FramePose3D();
       private final FrameQuaternion finalFootOrienation = new FrameQuaternion();
+      private RobotWalkerFootStepPlanner footStepPlanner;
 
       public SingleSupportState(RobotSide supportSide)
       {
@@ -810,63 +825,39 @@ public class RobotWalkerFiveController implements Controller
          // Here we define the control frame pose that is needed to specify the point on the foot we want to control to the controller core.
          swingControlFramePose.setToZero(robotWalkerFive.getSoleFrame(swingSide));
          swingControlFramePose.changeFrame(robotWalkerFive.getFoot(swingSide).getBodyFixedFrame());
+
+         footStepPlanner = new RobotWalkerFootStepPlanner(feet, soleFrames, numberOfStepsToPlan);
+
       }
 
       @Override
       public void onEntry()
       {
-         // Here we compute the position for the next footstep.
-         FramePoint3D desiredNextSwingFootPosition = new FramePoint3D(WORLD_FRAME, 0.0, 0.0, 0.0);
-
-         // Here we get the position of both feet to compute the middle.
-         FramePoint3D leftSolePosition = new FramePoint3D(robotWalkerFive.getSoleFrame(RobotSide.LEFT));
-         leftSolePosition.changeFrame(WORLD_FRAME);
-         FramePoint3D rightSolePosition = new FramePoint3D(robotWalkerFive.getSoleFrame(RobotSide.RIGHT));
-         rightSolePosition.changeFrame(WORLD_FRAME);
-         currentMiddlePosition.interpolate(leftSolePosition, rightSolePosition, 0.5);
-
-         // Add distance between foot and middle point such that we get the desired step length
-         rightSolePosition.changeFrame(robotWalkerFive.getSoleFrame(RobotSide.LEFT));
-         double footDistanceX = rightSolePosition.getX();
-
-         // We calculate the heading direction for the pelvis and for the foot
-         FrameVector3D footStepToTake = new FrameVector3D(WORLD_FRAME, stepLength.getValue() + 0.5 * Math.abs(footDistanceX), 0.0, 0.0);
-         FrameVector3D pelvisHeadingDirection = new FrameVector3D(WORLD_FRAME, stepLength.getValue() + 0.5 * Math.abs(footDistanceX), 0.0, 0.0);
-
-         // We want to place the feet on their respective sides next to the next heading position.
-         if (supportSide.equals(RobotSide.LEFT))
-            footStepToTake.setY(-0.5 * stepWidth.getValue());
-         else
-            footStepToTake.setY(0.5 * stepWidth.getValue());
-
          // Get current state of swing-foot
          FramePoint3D swingFootPosition = new FramePoint3D(robotWalkerFive.getSoleFrame(swingSide));
          swingFootPosition.changeFrame(WORLD_FRAME);
          FrameQuaternion swingFootOrientation = new FrameQuaternion(robotWalkerFive.getSoleFrame(swingSide));
          swingFootOrientation.changeFrame(WORLD_FRAME);
-
-         // Get current pelvis orientation
-         FrameQuaternion pelvisOrientation = new FrameQuaternion(robotWalkerFive.getPelvis().getBodyFixedFrame());
-         pelvisOrientation.changeFrame(WORLD_FRAME);
-
-         // We calculate the walking direction based on the current orientation of the pelivs and we add some yaw rotation
-         FrameQuaternion walkingDirection = new FrameQuaternion(pelvisOrientation);
-         walkingDirection.appendYawRotation(rotationPerStep.getDoubleValue());
-         RigidBodyTransform walkingDirectionTransform = new RigidBodyTransform();
-         walkingDirectionTransform.appendOrientation(walkingDirection);
-         footStepToTake.applyTransform(walkingDirectionTransform);
-         pelvisHeadingDirection.applyTransform(walkingDirectionTransform);
-
-         // The desired next foot position based on the calculated heading direction and the current middle point between the feet
-         desiredNextSwingFootPosition.add(currentMiddlePosition, footStepToTake);
-
-         // Update desired heading direction
-         headingDirection.set(pelvisHeadingDirection);
-
-         // Update desired position and orientation for swingfoot
          initialFootPosition.set(swingFootPosition);
-         nextFootstepPosition.set(desiredNextSwingFootPosition);
-         finalFootOrienation.set(walkingDirection);
+
+         // Generate a set of planned footsteps and select the next one as desired footstep
+         // init planner
+         footStepPlanner.initialize(swingSide, stepLength.getDoubleValue(), stepWidth.getDoubleValue(), rotationPerStep.getValue());
+         ArrayList<Footstep> currentPlannedFootStepList = new ArrayList<Footstep>();
+         currentPlannedFootStepList = footStepPlanner.generateDesiredFootstepList();
+         footStepPlanner.generateFootsteps(currentPlannedFootStepList);
+
+         // update visuals
+         desiredNextPoseOnPath.set(footStepPlanner.getDesiredNextPoseOnPath());
+         currentPoseOnPath.set(footStepPlanner.getCurrentPoseOnPath());
+         visualizerPlannedFootSteps.update(currentPlannedFootStepList);
+
+         // Grab the first planned foot step as next desired footstep
+         Footstep nextFootStep = currentPlannedFootStepList.get(0);
+         nextFootStep.getOrientation(finalFootOrienation);
+         FramePoint3D nextFootstepPosition3D = new FramePoint3D();
+         nextFootStep.getPosition(nextFootstepPosition3D);
+         nextFootstepPosition.set(nextFootstepPosition3D);
 
          // Setup swing foot orientation trajectory
          swingOrientationTrajectory.clear();
