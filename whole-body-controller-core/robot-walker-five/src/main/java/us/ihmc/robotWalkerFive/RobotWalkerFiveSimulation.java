@@ -79,6 +79,7 @@ public class RobotWalkerFiveSimulation
 //      scs.addYoEntry("transferDuration");
 //      scs.addYoEntry("swingDuration");
 //      scs.addYoEntry("stepLength");
+//      scs.addYoEntry("sideWayStepLength");
 //      scs.addYoEntry("stepWidth");
 //      scs.addYoEntry("addTakeOffVelocity");
 //      scs.addYoEntry("addTouchDownVelocity");

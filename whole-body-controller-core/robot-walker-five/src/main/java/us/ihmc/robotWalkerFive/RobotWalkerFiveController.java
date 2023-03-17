@@ -133,7 +133,7 @@ public class RobotWalkerFiveController implements Controller
    private final YoFramePoint3D desiredCapturePoint = new YoFramePoint3D("desiredCapturePoint", WORLD_FRAME, registry);
 
    private double omega0 = Math.sqrt(9.81 / CENTER_OF_MASS_HEIGHT);
-   int numberOfStepsToPlan = 10;
+   int numberOfStepsToPlan = 5;
 
    /**
     * This is the robot the controller uses.
@@ -156,6 +156,10 @@ public class RobotWalkerFiveController implements Controller
     * The desired step length with respect to the support foot.
     */
    private final YoDouble stepLength = new YoDouble("stepLength", registry);
+   /**
+    * The desired step length with respect to the support foot.
+    */
+   private final YoDouble sideWayStepLength = new YoDouble("sideWayStepLength", registry);
 
    /**
     * The desired distance between the two feet.
@@ -268,6 +272,7 @@ public class RobotWalkerFiveController implements Controller
          transferDuration.set(1.2);
          swingDuration.set(0.9);
          stepLength.set(0.15);
+         sideWayStepLength.set(0.0);
          // more challenging settings:
          //         transferDuration.set(0.85);
          //         swingDuration.set(0.4);
@@ -278,6 +283,7 @@ public class RobotWalkerFiveController implements Controller
          transferDuration.set(1.2);
          swingDuration.set(0.9);
          stepLength.set(0.15);
+         sideWayStepLength.set(0.0);
       }
 
       controllerRobot = MultiBodySystemBasics.toMultiBodySystemBasics(MultiBodySystemFactories.cloneMultiBodySystem(controllerInput.getInput().getRootBody(),
@@ -842,7 +848,13 @@ public class RobotWalkerFiveController implements Controller
 
          // Generate a set of planned footsteps and select the next one as desired footstep
          // init planner
-         footStepPlanner.initialize(swingSide, stepLength.getDoubleValue(), stepWidth.getDoubleValue(), rotationPerStep.getValue());
+         footStepPlanner.initialize(swingSide,
+                                    stepLength.getDoubleValue(),
+                                    stepWidth.getDoubleValue(),
+                                    rotationPerStep.getValue(),
+                                    sideWayStepLength.getValue());
+         footStepPlanner.updateCurrentPelvisPose(robotWalkerFive.getPelvis());
+         
          ArrayList<Footstep> currentPlannedFootStepList = new ArrayList<Footstep>();
          currentPlannedFootStepList = footStepPlanner.generateDesiredFootstepList();
          footStepPlanner.generateFootsteps(currentPlannedFootStepList);

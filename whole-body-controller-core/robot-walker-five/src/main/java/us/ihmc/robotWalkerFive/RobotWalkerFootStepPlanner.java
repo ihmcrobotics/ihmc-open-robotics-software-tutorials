@@ -5,7 +5,6 @@ import java.util.ArrayList;
 import us.ihmc.euclid.referenceFrame.FramePose3D;
 import us.ihmc.euclid.referenceFrame.FrameVector3D;
 import us.ihmc.euclid.referenceFrame.ReferenceFrame;
-import us.ihmc.euclid.transform.RigidBodyTransform;
 import us.ihmc.humanoidRobotics.footstep.Footstep;
 import us.ihmc.mecano.multiBodySystem.interfaces.RigidBodyBasics;
 import us.ihmc.robotics.robotSide.RobotSide;
@@ -22,11 +21,16 @@ public class RobotWalkerFootStepPlanner
    final YoRegistry registry = new YoRegistry(getClass().getSimpleName());
 
    private double walkingStepWidth;
-   private double walkingStepLength;
+   private double walkingStrideLength;
+   private double sideWayStepLength;
 
+   boolean isFirstStep = true;
+   
+   private FramePose3D currentPelvisPose = new FramePose3D(WORLD_FRAME);
    private FramePose3D currentPoseOnTrajectory = new FramePose3D(WORLD_FRAME);
    private FramePose3D desiredNextPoseOnTrajectory = new FramePose3D(WORLD_FRAME);
-   private RigidBodyTransform tranformPerStep = new RigidBodyTransform();
+   private FrameVector3D desiredWalkingPositionOffset = new FrameVector3D(WORLD_FRAME);
+
    private double yawPerStep;
    private double footDistanceX;
    private double footDistanceY;
@@ -41,52 +45,69 @@ public class RobotWalkerFootStepPlanner
       this.currentSolePose = new SideDependentList<>(side -> new FramePose3D(soleFrames.get(side)));
    }
 
-   protected void initialize(RobotSide swingFootSide, double walkingStepLength, double walkingStepWidth, double rotationPerStep)
+   protected void initialize(RobotSide swingFootSide, double walkingStrideLength, double walkingStepWidth, double rotationPerStep, double sideWayStepLength)
    {
       this.currentFootstepSide = swingFootSide;
       this.walkingStepWidth = walkingStepWidth;
-      this.walkingStepLength = walkingStepLength;
+      this.walkingStrideLength = walkingStrideLength;
+      this.sideWayStepLength = sideWayStepLength;
       this.yawPerStep = rotationPerStep;
    }
 
    protected void generateFootsteps(ArrayList<Footstep> footStepList)
    {
 
-      // get current feet position
+      // get current feet position 
       initializeFeetPose();
+      updateFeetDistance();
+      updateStepTranslation();
 
       for (int i = 0; i <= nStepsToPlan; i++)
       {
+
          updateCurrentPoseOnTrajectory();
+
          // calculate next middle foot point on trajectory
          updateDesiredNextPoseOnTrajectory();
 
          // add footsetp for position on the trajectory
          addFootStep(footStepList);
 
+         // pretent to take this step and plan next
+         updateTheoreticalFootStep(footStepList.get(i).getFootstepPose());
+       
       }
    }
 
-   protected void updatePerStepTransform()
+   protected void updatecurrentPoseUsingPelvis()
+   {
+      this.currentPoseOnTrajectory.set(currentPelvisPose);
+
+   }
+
+   protected void updateCurrentPelvisPose(RigidBodyBasics pelvis)
+   {
+      FramePose3D pelvisPose = new FramePose3D(pelvis.getBodyFixedFrame());
+      pelvisPose.changeFrame(WORLD_FRAME);
+
+      this.currentPelvisPose = pelvisPose;
+   }
+
+   protected void updateStepTranslation()
    {
       // TODO: correct foot for distance between feet
-      double stepLength = walkingStepLength; // + 0.5 * Math.abs(footDistanceX);
-      double stepWidth = 0.0;
-      FrameVector3D desiredWalkingPositionOffset = new FrameVector3D(WORLD_FRAME, stepLength, stepWidth, 0.0);
+      double stepLength = walkingStrideLength;
+      double stepWidth = sideWayStepLength;
+      this.desiredWalkingPositionOffset = new FrameVector3D(WORLD_FRAME, stepLength, stepWidth, 0.0);
 
-      RigidBodyTransform walkingDirectionTransform = new RigidBodyTransform();
-      walkingDirectionTransform.appendTranslation(desiredWalkingPositionOffset);
-      walkingDirectionTransform.appendYawRotation(yawPerStep);
-
-      this.tranformPerStep = walkingDirectionTransform;
    }
 
    protected void updateDesiredNextPoseOnTrajectory()
    {
-      updatePerStepTransform();
       FramePose3D desiredNextWalkingPose = new FramePose3D(WORLD_FRAME);
       desiredNextWalkingPose.set(currentPoseOnTrajectory);
-      desiredNextWalkingPose.applyTransform(this.tranformPerStep);
+      desiredNextWalkingPose.appendYawRotation(yawPerStep);
+      desiredNextWalkingPose.appendTranslation(this.desiredWalkingPositionOffset);
       this.desiredNextPoseOnTrajectory.set(desiredNextWalkingPose);
    }
 
@@ -110,17 +131,16 @@ public class RobotWalkerFootStepPlanner
       currentTrajectoryPose.interpolate(currentSolePose.get(currentFootstepSide), currentSolePose.get(currentFootstepSide.getOppositeSide()), 0.5);
       this.currentPoseOnTrajectory = currentTrajectoryPose;
 
-      updateFeetDistance();
    }
 
    protected void updateFeetDistance()
    {
-      FramePose3D rightSolePose = new FramePose3D(currentSolePose.get(RobotSide.RIGHT));
+      FramePose3D solePose = new FramePose3D(currentSolePose.get(currentFootstepSide));
 
       // calculate distance between feet
-      rightSolePose.changeFrame(currentSolePose.get(RobotSide.LEFT).getReferenceFrame());
-      footDistanceX = rightSolePose.getX();
-      footDistanceY = rightSolePose.getY();
+      solePose.changeFrame(soleFrames.get(currentFootstepSide.getOppositeSide()));
+      footDistanceX = Math.abs(solePose.getX());
+      footDistanceY =  Math.abs(solePose.getY());
    }
 
    // TODO check if this is ok
@@ -144,9 +164,9 @@ public class RobotWalkerFootStepPlanner
       this.walkingStepWidth = stepWidth;
    }
 
-   public void updateStepLength(double stepLength)
+   public void updateStrideLength(double length)
    {
-      this.walkingStepLength = stepLength;
+      this.walkingStrideLength = length;
    }
 
    public ArrayList<Footstep> generateDesiredFootstepList()
@@ -164,16 +184,20 @@ public class RobotWalkerFootStepPlanner
 
    private void addFootStep(ArrayList<Footstep> footStepList)
    {
-      FrameVector3D offset = getFootOffsetFromPath(currentFootstepSide);
+
       FramePose3D nextFootPose = new FramePose3D(WORLD_FRAME, this.desiredNextPoseOnTrajectory);
+      FrameVector3D offset = getFootOffsetFromPath(currentFootstepSide);
       nextFootPose.appendTranslation(offset);
 
       Footstep footstep = new Footstep(currentFootstepSide, nextFootPose);
       footStepList.add(footstep);
 
+   }
+
+   private void updateTheoreticalFootStep(FramePose3D nextFootPose)
+   {
       currentSolePose.set(currentFootstepSide, nextFootPose);
       currentFootstepSide = currentFootstepSide.getOppositeSide();
-
    }
 
    protected FrameVector3D getFootOffsetFromPath(RobotSide currentStepSide)
@@ -189,9 +213,6 @@ public class RobotWalkerFootStepPlanner
          offset.setY(0.5 * walkingStepWidth);
       }
 
-      RigidBodyTransform footOffsetTransform = new RigidBodyTransform();
-      footOffsetTransform.appendOrientation(tranformPerStep.getRotation());
-      offset.applyTransform(footOffsetTransform);
       return offset;
    }
 
