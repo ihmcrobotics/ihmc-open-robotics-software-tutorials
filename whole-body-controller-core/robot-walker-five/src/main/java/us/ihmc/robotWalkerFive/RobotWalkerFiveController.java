@@ -69,6 +69,7 @@ import us.ihmc.yoVariables.euclid.referenceFrame.YoFrameVector3D;
 import us.ihmc.yoVariables.registry.YoRegistry;
 import us.ihmc.yoVariables.variable.YoBoolean;
 import us.ihmc.yoVariables.variable.YoDouble;
+import us.ihmc.yoVariables.variable.YoInteger;
 
 /**
  * The objective here is to implement small controller that uses the IHMC whole-body controller to
@@ -102,6 +103,8 @@ public class RobotWalkerFiveController implements Controller
    private final YoBoolean walkerIsFalling = new YoBoolean("walkerIsFalling", registry);
    private final YoBoolean walkerWillFreakOut = new YoBoolean("walkerWillFreakOut", registry);
    private final YoBoolean useCapturePoint = new YoBoolean("useCapturePoint", registry);
+   private final YoBoolean useCapturePointTrajectory = new YoBoolean("useCapturePointTrajectory", registry);
+
    private final YoBoolean addTakeOffVelocity = new YoBoolean("addTakeOffVelocity", registry);
    private final YoBoolean addTouchDownVelocity = new YoBoolean("addTouchDownVelocity", registry);
    private final YoFramePoint3D feedForwardLinearVelocity = new YoFramePoint3D("feedForwardLinearVelocity", WORLD_FRAME, registry);
@@ -114,6 +117,12 @@ public class RobotWalkerFiveController implements Controller
    private FramePoint3D desCentroidalMomentPivot;
 
    private final YoGraphicDefinition graphicsGroup;
+   private final ArrayList<YoFramePoint3D> yoGraphicPositions = new ArrayList<>();
+   private final YoInteger numberOfControlTicksPerVizUpdate = new YoInteger("numberOfControlTicksPerVizUpdate", registry);
+   private int index;
+   private int tickCount = 0;
+
+   
    private final YoFramePoint3D desiredCurrentFootPosition = new YoFramePoint3D("desiredCurrentFootPosition", WORLD_FRAME, registry);
    private final YoFrameVector3D headingDirection = new YoFrameVector3D("headingDirection", WORLD_FRAME, registry);
    private final YoFramePoint3D measuredCenterOfMass = new YoFramePoint3D("measuredCenterOfMass", WORLD_FRAME, registry);
@@ -128,12 +137,13 @@ public class RobotWalkerFiveController implements Controller
 
    private final YoDouble rotationPerStep = new YoDouble("rotationPerStep", registry);
 
+   private final YoBoolean isFirstStep = new YoBoolean("isFirstStep", registry);
    private NFootstepListVisualizer visualizerPlannedFootSteps;
 
    private final YoFramePoint3D desiredCapturePoint = new YoFramePoint3D("desiredCapturePoint", WORLD_FRAME, registry);
 
    private double omega0 = Math.sqrt(9.81 / CENTER_OF_MASS_HEIGHT);
-   int numberOfStepsToPlan = 5;
+   int numberOfStepsToPlan = 3;
 
    /**
     * This is the robot the controller uses.
@@ -266,11 +276,12 @@ public class RobotWalkerFiveController implements Controller
 
       useCapturePoint.set(true);
       stepWidth.set(0.2);
-
+      isFirstStep.set(true);
+      
       if (useCapturePoint.getBooleanValue())
       {
          transferDuration.set(1.2);
-         swingDuration.set(0.9);
+         swingDuration.set(0.5);
          stepLength.set(0.15);
          sideWayStepLength.set(0.0);
          // more challenging settings:
@@ -291,6 +302,8 @@ public class RobotWalkerFiveController implements Controller
                                                                                                                     ""));
       visualizerPlannedFootSteps = new NFootstepListVisualizer(contactableFeet, yoGraphicsListRegistry, registry);
       //  create our graphics here
+      index = 0;
+      numberOfControlTicksPerVizUpdate.set(100);
       this.graphicsGroup = createVisualization();
    }
 
@@ -311,6 +324,26 @@ public class RobotWalkerFiveController implements Controller
                                                                             ColorDefinitions.Blue()));
       graphicsGroup.addChild(YoGraphicDefinitionFactory.newYoGraphicPoint3D("currentMiddlePosition", currentMiddlePosition, 0.02, ColorDefinitions.Black()));
 
+      
+      // this defines how many balls we can display at once
+      String name = "cpTrajectory";
+      YoRegistry ballregistry = new YoRegistry("CPBalls");
+
+      int numberOfBalls = 300;
+      // this defines the radius for each ball
+      double ballSize = 0.004;
+      for (int i = 0; i <= numberOfBalls; i++)
+      {
+         YoFramePoint3D yoFramePoint = new YoFramePoint3D(name + i, "", WORLD_FRAME, ballregistry);
+         yoFramePoint.setToNaN();
+         yoGraphicPositions.add(yoFramePoint);
+
+         graphicsGroup.addChild(YoGraphicDefinitionFactory.newYoGraphicPoint3D(name + i, yoFramePoint, ballSize, ColorDefinitions.Yellow()));
+      }
+      registry.addChild(ballregistry);
+
+
+      
       return graphicsGroup;
    }
 
@@ -405,6 +438,7 @@ public class RobotWalkerFiveController implements Controller
 
    }
 
+
    /**
     * This time, the {@code doControl} method is rather empty as most of the controller is actually
     * implemented in the different states declared further down.
@@ -430,6 +464,8 @@ public class RobotWalkerFiveController implements Controller
        */
       stateMachine.doActionAndTransition();
 
+      
+   
       /*
        * As the pelvis is to kept level to the ground independently to the active state, we can simply
        * setup the command here.
@@ -564,7 +600,7 @@ public class RobotWalkerFiveController implements Controller
       desCentroidalMomentPivot = calculateDesiredCentroidalMomentPivot(desiredCapturePointPosition, desiredCapturePointVelocity, measuredCPPosition);
 
       FrameVector3D desiredCoMAcceleration = calculateDesiredCoMAcceleration(measuredCoMPosition, desCentroidalMomentPivot);
-      double gain_p = 500.0;
+      double gain_p = 10.0;
       double gain_d = GainCalculator.computeDerivativeGain(gain_p, 1.0);
       desiredCoMAcceleration.setZ(gain_p * (CENTER_OF_MASS_HEIGHT - measuredCoMPosition.getZ()) - gain_d * measuredCoMVelocity.getZ());
 
@@ -582,6 +618,8 @@ public class RobotWalkerFiveController implements Controller
       originalCMP.set(desCentroidalMomentPivot);
 
       correctedCMP.set(new Point2D(0.0, 0.0));
+      
+      // TODO fix CMP correction
       // correct desired centroidal moment pivot to stay within support polygon
       if (!bipedSupportPolygons.getSupportPolygonInWorld()
                                .isPointInside(new FramePoint2D(WORLD_FRAME, desCentroidalMomentPivot.getX(), desCentroidalMomentPivot.getY()))
@@ -801,7 +839,7 @@ public class RobotWalkerFiveController implements Controller
       /** We will use a trajectory generator for the swing. */
       private final TwoWaypointSwingGenerator swingPositionTrajectory;
       private final MultipleWaypointsOrientationTrajectoryGenerator swingOrientationTrajectory;
-
+      private final CapturePointTrajectory capturePointTrajectory;
       /**
        * Generate some YoVariables that we can monitor during the simulation.
        */
@@ -832,8 +870,9 @@ public class RobotWalkerFiveController implements Controller
          swingControlFramePose.setToZero(robotWalkerFive.getSoleFrame(swingSide));
          swingControlFramePose.changeFrame(robotWalkerFive.getFoot(swingSide).getBodyFixedFrame());
 
+         // Setup capture point trajectory planner
          footStepPlanner = new RobotWalkerFootStepPlanner(feet, soleFrames, numberOfStepsToPlan);
-
+         capturePointTrajectory = new CapturePointTrajectory(null, swingDuration.getDoubleValue());
       }
 
       @Override
@@ -871,6 +910,18 @@ public class RobotWalkerFiveController implements Controller
          nextFootStep.getPosition(nextFootstepPosition3D);
          nextFootstepPosition.set(nextFootstepPosition3D);
 
+         // Setup trajectory for capture point
+//         if(isFirstStep.getBooleanValue())
+//         {
+         Footstep currentFootStep = new Footstep(supportSide);
+         FramePose3D footPose = new FramePose3D(soleFrames.get(supportSide));
+         footPose.changeFrame(WORLD_FRAME);
+         currentFootStep.setPose(footPose);
+         currentPlannedFootStepList.add(0, currentFootStep); 
+//         isFirstStep.set(false);
+//         }
+         capturePointTrajectory.initialize(currentPlannedFootStepList,swingDuration.getDoubleValue());
+         
          // Setup swing foot orientation trajectory
          swingOrientationTrajectory.clear();
          swingOrientationTrajectory.appendWaypoint(swingDuration.getValue(), finalFootOrienation, new Vector3D(0.0, 0.0, 0.0));
@@ -890,15 +941,40 @@ public class RobotWalkerFiveController implements Controller
       public void doAction(double timeInState)
       {
          // During this state, the center of mass is kept right above the support foot.
-         if (useCapturePoint.getBooleanValue())
+         if(useCapturePointTrajectory.getBooleanValue())
          {
-            FramePoint3D capturePointPosition = new FramePoint3D(robotWalkerFive.getSoleFrame(supportSide));
-            capturePointPosition.changeFrame(WORLD_FRAME);
-            capturePointPosition.setZ(CENTER_OF_MASS_HEIGHT);
+            FramePoint3D capturePointPosition = new FramePoint3D();
+            FrameVector3D capturePointVelocity = new FrameVector3D();
+            capturePointTrajectory.compute(timeInState,capturePointPosition,capturePointVelocity);
 
             // And now we pack the command for the controller core.
-            sendCapturePointCommand(capturePointPosition, new FrameVector3D(WORLD_FRAME, 0.0, 0.0, 0.0));
+            sendCapturePointCommand(capturePointPosition, new FrameVector3D(WORLD_FRAME, capturePointVelocity));
+            
+            tickCount++;
+
+            if (tickCount >= numberOfControlTicksPerVizUpdate.getValue())
+            {
+               tickCount = 0;
+               if (index >= yoGraphicPositions.size())
+               {
+                  index = 0;
+               }
+               yoGraphicPositions.get(index).set(capturePointPosition);
+               index++;
+            }
+            
+            
          }
+         //TODO fix selection of mode
+//         else if(useCapturePoint.getBooleanValue())
+//         {
+//            FramePoint3D capturePointPosition = new FramePoint3D(robotWalkerFive.getSoleFrame(supportSide));
+//            capturePointPosition.changeFrame(WORLD_FRAME);
+//            capturePointPosition.setZ(CENTER_OF_MASS_HEIGHT);
+//
+//            // And now we pack the command for the controller core.
+//            sendCapturePointCommand(capturePointPosition, new FrameVector3D(WORLD_FRAME, 0.0, 0.0, 0.0));
+//         }
          else
          {
             FramePoint3D centerOfMassPosition = new FramePoint3D(robotWalkerFive.getSoleFrame(supportSide));
@@ -998,7 +1074,7 @@ public class RobotWalkerFiveController implements Controller
          return timeInState >= swingDuration.getValue();
       }
    }
-
+   
    /**
     * Creates a spatial acceleration command to request a zero acceleration of the right or left foot.
     * 

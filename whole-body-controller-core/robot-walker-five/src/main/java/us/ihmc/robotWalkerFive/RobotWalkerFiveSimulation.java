@@ -74,6 +74,7 @@ public class RobotWalkerFiveSimulation
 
       // Add some variables - add it once, save scs2 simulation when closing it, and then comment out
 //      scs.addYoEntry("walk");
+//      scs.addYoEntry("useCapturePointTrajectory");
 //      scs.addYoEntry("useCapturePoint");
 //      scs.addYoEntry("rotationPerStep");
 //      scs.addYoEntry("transferDuration");
@@ -108,6 +109,7 @@ public class RobotWalkerFiveSimulation
       scs.requestPlotter2DCoordinateTracking("measuredCapturePointX", "measuredCapturePointY", "worldFrame");
       scs.showOverheadPlotter2D(true);
 
+      
       // Launch the simulator.
       scs.start(false, false, false);
    }
