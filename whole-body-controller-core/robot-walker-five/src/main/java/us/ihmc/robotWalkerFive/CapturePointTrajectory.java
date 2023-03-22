@@ -34,11 +34,11 @@ public class CapturePointTrajectory
 
    boolean isfirststep = true;
 
-   public CapturePointTrajectory(ArrayList<Footstep> plannedFootSteps, double swingDuration)
+   public CapturePointTrajectory(ArrayList<Footstep> plannedFootSteps, int nStepsToPlan, double swingDuration)
    {
       //      this.plannedFootSteps = plannedFootSteps;
       this.swingDuration = swingDuration;
-      this.nStepsToPlan = 3;
+      this.nStepsToPlan = nStepsToPlan;
 
    }
 
@@ -50,54 +50,53 @@ public class CapturePointTrajectory
       this.virtualRepellentPoints = plannedFootSteps; //.forEach(t -> t.addOffset(new FrameVector3D(0.0,0.0,CENTER_OF_MASS_HEIGHT)));
    }
 
-   void compute(double time, FramePoint3D desiredCapturePointPositionToPack, FrameVector3D desiredCaptureVelocityToPack)
+   void computeSingleSupport(double time, FramePoint3D desiredCapturePointPositionToPack, FrameVector3D desiredCaptureVelocityToPack)
    {
-
+      
+      // we are in single leg swing
       FramePoint3D capturePointIniDS = new FramePoint3D();
       FramePoint3D capturePointEoDSTprevious = new FramePoint3D();
-      FrameVector3D capturePointIniDSVelocity = new FrameVector3D();
-      FrameVector3D capturePointEoDSVelocity = new FrameVector3D();
 
-      calculateEndOfStepCPDoubleSupport(0, alphaDSini, capturePointEoDSTprevious, capturePointEoDSVelocity);
-      calculateInitialCPDoubleSupport(1, alphaDSini, capturePointIniDS, capturePointIniDSVelocity);
+      // end of DS  this step - start
+      calculateEndOfStepCPDoubleSupport(0, capturePointEoDSTprevious);
+      // start of DS for next step - end
+      calculateInitialCPDoubleSupport(1, capturePointIniDS);
 
-      calculateDesiredCPPositionDS(time, 1, capturePointIniDS, capturePointEoDSTprevious, desiredCapturePointPositionToPack);
-      calculateDesiredCPVelocityDS(time, 1, capturePointIniDS, capturePointEoDSTprevious, desiredCaptureVelocityToPack);
+      // calculate time dependendt position and velocity of CP
+      calculateDesiredCPPositionSS(time, capturePointEoDSTprevious, capturePointIniDS, desiredCapturePointPositionToPack);
+      calculateDesiredCPVelocitySS(time, capturePointEoDSTprevious, capturePointIniDS, desiredCaptureVelocityToPack);
 
       this.capturePointEoDST.set(capturePointEoDSTprevious);
       this.capturePointIniDS.set(capturePointIniDS);
 
    }
 
-   void calculateDesiredCPPositionDS(double time,
-                                     int stepNumber,
-                                     FramePoint3D capturePointIniDS,
-                                     FramePoint3D capturePointEoDSTpreviousStep,
+   void calculateDesiredCPPositionSS(double time,
+                                     FramePoint3D capturePointStart,
+                                     FramePoint3D capturePointEnd,
                                      FramePoint3D desiredCPPositiontoPack)
    {
 
       FrameVector3D offset = new FrameVector3D();
       double deltaT = time - swingDuration;
-      offset.sub(capturePointIniDS, capturePointEoDSTpreviousStep);
-      desiredCPPositiontoPack.scaleAdd(Math.exp(deltaT * omega0), offset, capturePointEoDSTpreviousStep);
+      offset.sub(capturePointEnd, capturePointStart);
+      desiredCPPositiontoPack.scaleAdd(Math.exp(deltaT * omega0), offset, capturePointStart);
 
    }
-   
-   void calculateDesiredCPVelocityDS(double time,
-                                     int stepNumber,
-                                     FramePoint3D capturePointIniDS,
-                                     FramePoint3D capturePointEoDSTpreviousStep,
+
+   void calculateDesiredCPVelocitySS(double time,
+                                     FramePoint3D capturePointStart, 
+                                     FramePoint3D capturePointEnd, 
                                      FrameVector3D desiredCPVelocitytoPack)
    {
       FrameVector3D offset = new FrameVector3D();
       double deltaT = time - swingDuration;
-      offset.sub(capturePointIniDS, capturePointEoDSTpreviousStep);
+      offset.sub(capturePointEnd, capturePointStart);
 
       desiredCPVelocitytoPack.set(offset);
       desiredCPVelocitytoPack.scale(omega0 * Math.exp(deltaT * omega0));
 
    }
-   
 
    void calculateCornerPoint(int stepNumber, FramePoint3D desiredCPPositiontoPack, FrameVector3D desiredCPVelocitytoPack)
    {
@@ -127,7 +126,7 @@ public class CapturePointTrajectory
       desiredCPVelocitytoPack.scale(omega0 * Math.exp(deltaT * omega0));
    }
 
-   void calculateCapturePointDoubleSupportPhase(int stepNumber, double timeIn, FramePoint3D desiredCPPositionTopack, FrameVector3D desiredCPVelocityToPack)
+   void computeDoubleSupport(int stepNumber, double timeIn, FramePoint3D desiredCPPositionTopack, FrameVector3D desiredCPVelocityToPack)
    {
       FrameVector3D a0 = new FrameVector3D();
       FrameVector3D a1 = new FrameVector3D();
@@ -156,27 +155,28 @@ public class CapturePointTrajectory
    void getPolynomParameters(int stepNumber, FrameVector3D a0, FrameVector3D a1, FrameVector3D a2, FrameVector3D a3)
    {
 
-      // polynomial parameter matrix P
       double invertedTs = 1.0 / doubleSupportDuration;
 
       double p11 = (2.0 * invertedTs * invertedTs * invertedTs);
       double p12 = (invertedTs * invertedTs);
       double p13 = (-2.0 * invertedTs * invertedTs * invertedTs);
       double p14 = (invertedTs * invertedTs);
-      
+
       double p21 = (-3.0 * invertedTs * invertedTs);
       double p22 = (-2.0 * invertedTs);
       double p23 = (3.0 * invertedTs * invertedTs);
       double p24 = (-1.0 * invertedTs);
 
-      // coefficents
       FramePoint3D capturePointIniDS = new FramePoint3D();
       FramePoint3D capturePointEoSDS = new FramePoint3D();
       FrameVector3D capturePointIniDSVelocity = new FrameVector3D();
       FrameVector3D capturePointEoDSVelocity = new FrameVector3D();
 
-      calculateInitialCPDoubleSupport(stepNumber, alphaDSini, capturePointIniDS, capturePointIniDSVelocity);
-      calculateEndOfStepCPDoubleSupport(stepNumber, alphaDSini, capturePointEoSDS, capturePointEoDSVelocity);
+      calculateInitialCPDoubleSupport(stepNumber, capturePointIniDS);
+      calculateEndOfStepCPDoubleSupport(stepNumber, capturePointEoSDS);
+
+      calculateInitialCPDoubleSupportVelocity(stepNumber, capturePointIniDSVelocity);
+      calculateEndOfStepCPDoubleSupportVelocity(stepNumber, capturePointEoDSVelocity);
 
       this.capturePointIniDS.set(capturePointIniDS);
       this.capturePointEoDST.set(capturePointEoSDS);
@@ -199,11 +199,11 @@ public class CapturePointTrajectory
 
    }
 
-   void calculateEndOfStepCPDoubleSupport(int stepNumber, double alphaDS, FramePoint3D capturePointEoSDSToPack, FrameVector3D capturePointEoSDSVelocityToPack)
+   void calculateEndOfStepCPDoubleSupport(int stepNumber, FramePoint3D capturePointEoSDSToPack)
    {
       FramePoint3D currentVRPPosition = new FramePoint3D();
       virtualRepellentPoints.get(stepNumber).getPosition(currentVRPPosition);
-      double deltaTDSend = (1.0 - alphaDS);
+      double deltaTDSend = (1.0 - this.alphaDSini);
 
       FramePoint3D startOfStepDesiredCPPosition = new FramePoint3D();
       FrameVector3D startOfStepCPVelocity = new FrameVector3D();
@@ -213,20 +213,25 @@ public class CapturePointTrajectory
       FrameVector3D offset = new FrameVector3D();
       offset.sub(startOfStepDesiredCPPosition, currentVRPPosition);
       capturePointEoSDSToPack.scaleAdd(Math.exp(deltaTDSend * doubleSupportDuration * omega0), offset, currentVRPPosition);
-      
-//      TODO calculateDesiredCPVelocityDS(0.0, stepNumber+1, capturePointIniDS, capturePointEoSDSToPack, capturePointEoSDSVelocityToPack);
+   }
 
-      
-      capturePointEoSDSVelocityToPack.set(offset);
-      capturePointEoSDSVelocityToPack.scale(deltaTDSend * omega0 * Math.exp(deltaTDSend * doubleSupportDuration * omega0));
+   void calculateEndOfStepCPDoubleSupportVelocity(int stepNumber, FrameVector3D capturePointEoSDSVelocityToPack)
+   {
+      FramePoint3D startOfTrajectoryPoint = new FramePoint3D();
+      FramePoint3D endOfTrajectoryPoint = new FramePoint3D();
+
+      calculateEndOfStepCPDoubleSupport(stepNumber + 1, endOfTrajectoryPoint);
+      calculateInitialCPDoubleSupport(stepNumber + 1, startOfTrajectoryPoint);
+
+      calculateDesiredCPVelocitySS(0.0, startOfTrajectoryPoint, endOfTrajectoryPoint, capturePointEoSDSVelocityToPack);
 
    }
 
-   void calculateInitialCPDoubleSupport(int stepNumber, double alphaDS, FramePoint3D capturePointIniDSToPack, FrameVector3D capturePointIniDSVelocityToPack)
+   void calculateInitialCPDoubleSupport(int stepNumber, FramePoint3D capturePointIniDSToPack)
    {
       FramePoint3D previousVRPPosition = new FramePoint3D();
       virtualRepellentPoints.get(stepNumber - 1).getPosition(previousVRPPosition);
-      double deltaTDini = alphaDS;
+      double deltaTDini = this.alphaDSini;
 
       FramePoint3D startOfStepDesiredCPPosition = new FramePoint3D();
       FrameVector3D startOfStepCPVelocity = new FrameVector3D();
@@ -236,8 +241,17 @@ public class CapturePointTrajectory
       FrameVector3D offset = new FrameVector3D();
       offset.sub(startOfStepDesiredCPPosition, previousVRPPosition);
       capturePointIniDSToPack.scaleAdd(Math.exp(-1.0 * deltaTDini * doubleSupportDuration * omega0), offset, previousVRPPosition);
-      capturePointIniDSVelocityToPack.set(offset);
-      capturePointIniDSVelocityToPack.scale(-1.0 * deltaTDini * omega0 * Math.exp(-1.0 * deltaTDini * doubleSupportDuration * omega0));
+   }
+
+   void calculateInitialCPDoubleSupportVelocity(int stepNumber, FrameVector3D capturePointIniDSVelocityToPack)
+   {
+      FramePoint3D startOfTrajectoryPoint = new FramePoint3D();
+      FramePoint3D endOfTrajectoryPoint = new FramePoint3D();
+
+      calculateEndOfStepCPDoubleSupport(stepNumber, endOfTrajectoryPoint);
+      calculateInitialCPDoubleSupport(stepNumber, startOfTrajectoryPoint);
+
+      calculateDesiredCPVelocitySS(swingDuration, startOfTrajectoryPoint, endOfTrajectoryPoint, capturePointIniDSVelocityToPack);
    }
 
    public YoRegistry getYoRegistry()

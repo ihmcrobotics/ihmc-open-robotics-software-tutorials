@@ -452,7 +452,7 @@ public class RobotWalkerFiveController implements Controller
 
       // Setup capture point trajectory planner
       footStepPlanner = new RobotWalkerFootStepPlanner(feet, soleFrames, numberOfStepsToPlan);
-      capturePointTrajectory = new CapturePointTrajectory(null, swingDuration.getDoubleValue());
+      capturePointTrajectory = new CapturePointTrajectory(null, numberOfStepsToPlan, swingDuration.getDoubleValue());
 
    }
 
@@ -571,7 +571,7 @@ public class RobotWalkerFiveController implements Controller
       FramePoint3D errorCapturePointPosition = new FramePoint3D(WORLD_FRAME);
       errorCapturePointPosition.sub(measuredCapturePointPosition, desiredCapturePointPosition);
      
-      //TODO remove visu
+      //TODO remove visualization from here
       errorCapturePoint.set(Math.sqrt(errorCapturePointPosition.getX() * errorCapturePointPosition.getX()
             + errorCapturePointPosition.getY() * errorCapturePointPosition.getY() + errorCapturePointPosition.getZ() * errorCapturePointPosition.getZ()));
 
@@ -821,7 +821,7 @@ public class RobotWalkerFiveController implements Controller
             FramePoint3D capturePointPosition = new FramePoint3D(WORLD_FRAME);
 
             // Get desired position and velocity for capture point based on double support trajectory          
-            capturePointTrajectory.calculateCapturePointDoubleSupportPhase(1,timeInState, capturePointPosition, capturePointVelocity);
+            capturePointTrajectory.computeDoubleSupport(1,timeInState, capturePointPosition, capturePointVelocity);
             
             capturePointIniDS.set(capturePointTrajectory.capturePointIniDS);
             capturePointEoDST.set(capturePointTrajectory.capturePointEoDST);
@@ -997,7 +997,7 @@ public class RobotWalkerFiveController implements Controller
          {
             FramePoint3D capturePointPosition = new FramePoint3D();
             FrameVector3D capturePointVelocity = new FrameVector3D();
-            capturePointTrajectory.compute(timeInState, capturePointPosition, capturePointVelocity);
+            capturePointTrajectory.computeSingleSupport(timeInState, capturePointPosition, capturePointVelocity);
 
             capturePointIniDS.set(capturePointTrajectory.capturePointIniDS);
             capturePointEoDST.set(capturePointTrajectory.capturePointEoDST);
