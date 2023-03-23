@@ -35,10 +35,8 @@ import us.ihmc.humanoidRobotics.footstep.Footstep;
 import us.ihmc.mecano.multiBodySystem.OneDoFJoint;
 import us.ihmc.mecano.multiBodySystem.interfaces.FloatingJointBasics;
 import us.ihmc.mecano.multiBodySystem.interfaces.JointBasics;
-import us.ihmc.mecano.multiBodySystem.interfaces.MultiBodySystemBasics;
 import us.ihmc.mecano.multiBodySystem.interfaces.OneDoFJointReadOnly;
 import us.ihmc.mecano.multiBodySystem.interfaces.RigidBodyBasics;
-import us.ihmc.mecano.tools.MultiBodySystemFactories;
 import us.ihmc.mecano.tools.MultiBodySystemTools;
 import us.ihmc.robotics.contactable.ContactablePlaneBody;
 import us.ihmc.robotics.controllers.pidGains.GainCalculator;
@@ -91,78 +89,57 @@ public class RobotWalkerFiveController implements Controller
 {
    private static final ReferenceFrame WORLD_FRAME = ReferenceFrame.getWorldFrame();
    private static final double CENTER_OF_MASS_HEIGHT = 0.75;
+   private double omega0 = Math.sqrt(9.81 / CENTER_OF_MASS_HEIGHT);
+
    /**
     * We use this registry to keep track of the controller variables which can then be viewed in
     * Simulation Construction Set.
     */
-
-   private WholeBodyControlCoreToolbox toolbox;
    private final YoRegistry registry = new YoRegistry("Controller");
+   private final YoGraphicDefinition graphicsGroup;
+   private WholeBodyControlCoreToolbox toolbox;
 
    private final YoDouble errorCapturePoint = new YoDouble("errorCapturePoint", registry);
-
    private final YoBoolean walkerIsFalling = new YoBoolean("walkerIsFalling", registry);
    private final YoBoolean walkerWillFreakOut = new YoBoolean("walkerWillFreakOut", registry);
    private final YoBoolean useCapturePoint = new YoBoolean("useCapturePoint", registry);
    private final YoBoolean useCapturePointTrajectory = new YoBoolean("useCapturePointTrajectory", registry);
-
    private final YoBoolean addTakeOffVelocity = new YoBoolean("addTakeOffVelocity", registry);
    private final YoBoolean addTouchDownVelocity = new YoBoolean("addTouchDownVelocity", registry);
    private final YoFramePoint3D feedForwardLinearVelocity = new YoFramePoint3D("feedForwardLinearVelocity", WORLD_FRAME, registry);
    private final YoFramePoint3D currentMiddlePosition = new YoFramePoint3D("currentMiddlePosition", WORLD_FRAME, registry);
    private FramePoint3D measuredCPPosition = new FramePoint3D(WORLD_FRAME);
    private final FrameQuaternion desiredPelvisOrientation = new FrameQuaternion();
-   private YoFramePoint3D capturePointIniDS = new YoFramePoint3D("capturePointIniDS", WORLD_FRAME, registry);
-   private YoFramePoint3D capturePointEoDST = new YoFramePoint3D("capturePointEoDST", WORLD_FRAME, registry);
-   private YoFramePoint3D startOfStepDesiredCPPosition = new YoFramePoint3D("startOfStepDesiredCPPosition", WORLD_FRAME, registry);
-   private YoFramePoint3D previousVRPPosition = new YoFramePoint3D("previousVRPPosition", WORLD_FRAME, registry);
-   private YoFramePoint3D currentVRPPosition = new YoFramePoint3D("currentVRPPosition", WORLD_FRAME, registry);
-
    private FramePoint3D measuredCoMPosition;
    private FrameVector3D measuredCoMVelocity;
    private FramePoint3D desCentroidalMomentPivot;
 
    private RobotWalkerFootStepPlanner footStepPlanner;
+   private NFootstepListVisualizer visualizerPlannedFootSteps;
    private CapturePointTrajectory capturePointTrajectory;
+   private final int numberOfStepsToPlan = 3;
+   private final YoDouble rotationPerStep = new YoDouble("rotationPerStep", registry);
+   private final YoBoolean isFirstStep = new YoBoolean("isFirstStep", registry);
 
-   private final YoGraphicDefinition graphicsGroup;
    private final ArrayList<YoFramePoint3D> yoGraphicPositions = new ArrayList<>();
    private final YoInteger numberOfControlTicksPerVizUpdate = new YoInteger("numberOfControlTicksPerVizUpdate", registry);
    private int index;
    private int tickCount = 0;
-
    private final YoFramePoint3D desiredCurrentFootPosition = new YoFramePoint3D("desiredCurrentFootPosition", WORLD_FRAME, registry);
-   private final YoFrameVector3D headingDirection = new YoFrameVector3D("headingDirection", WORLD_FRAME, registry);
    private final YoFramePoint3D measuredCenterOfMass = new YoFramePoint3D("measuredCenterOfMass", WORLD_FRAME, registry);
    private final YoFramePoint3D measuredCapturePointPosition = new YoFramePoint3D("measuredCapturePoint", WORLD_FRAME, registry);
-
    private final YoFramePose3D desiredNextPoseOnPath = new YoFramePose3D("desiredNextPoseOnPath", WORLD_FRAME, registry);
    private final YoFramePose3D currentPoseOnPath = new YoFramePose3D("currentPoseOnPath", WORLD_FRAME, registry);
-
    private final YoFramePoint3D desiredCMP = new YoFramePoint3D("desiredCentroidalMomentPivotPosition", WORLD_FRAME, registry);
    private final YoFramePoint3D correctedCMP = new YoFramePoint3D("correctedCentroidalMomentPivotPosition", WORLD_FRAME, registry);
    private final YoFramePoint3D originalCMP = new YoFramePoint3D("originalCentroidalMomentPivotPosition", WORLD_FRAME, registry);
-
-   private final YoDouble rotationPerStep = new YoDouble("rotationPerStep", registry);
-
-   private final YoBoolean isFirstStep = new YoBoolean("isFirstStep", registry);
-   private final YoBoolean stopWalking = new YoBoolean("stopWalking", registry);
-
-   private NFootstepListVisualizer visualizerPlannedFootSteps;
-
    private final YoFramePoint3D desiredCapturePoint = new YoFramePoint3D("desiredCapturePoint", WORLD_FRAME, registry);
-
-   private double omega0 = Math.sqrt(9.81 / CENTER_OF_MASS_HEIGHT);
-   int numberOfStepsToPlan = 3;
-
-   /**
-    * This is the robot the controller uses.
-    */
-   private final MultiBodySystemBasics controllerRobot;
 
    /**
     * This variable triggers the controller to initiate walking.
     */
+
+   private final YoBoolean stop = new YoBoolean("stop", registry);
    private final YoBoolean walk = new YoBoolean("walk", registry);
    /**
     * The duration for the double support phase.
@@ -229,15 +206,8 @@ public class RobotWalkerFiveController implements Controller
        * swinging to the desired footstep location.
        */
       RIGHT_SUPPORT,
-      /**
-       * This is the ... TODO
-       */
-      STOPPING
    };
 
-   
-//   YoEnum<WalkingStateEnum> requestedState;
-   
    /**
     * The finite state machine to which we register a set of specialized controllers and a set of
     * transitions to go from one controller to another.
@@ -270,7 +240,7 @@ public class RobotWalkerFiveController implements Controller
    SideDependentList<ReferenceFrame> soleFrames, soleZUpFrames;
    SideDependentList<PlaneContactStateCommand> planeContactStateCommands;
    SideDependentList<RigidBodyBasics> feet;
-   private YoEnum<WalkingStateEnum> requestedState = new YoEnum<>("requestedState", registry, WalkingStateEnum.class,true);
+   private YoEnum<WalkingStateEnum> requestedState = new YoEnum<>("requestedState", registry, WalkingStateEnum.class, true);
 
    public RobotWalkerFiveController(ControllerInput controllerInput,
                                     ControllerOutput controllerOutput,
@@ -291,40 +261,43 @@ public class RobotWalkerFiveController implements Controller
 
       bipedSupportPolygons = new BipedSupportPolygons(midFeetFrame, soleZUpFrames, soleFrames, registry, yoGraphicsListRegistry);
       stateMachine = createStateMachine();
+      requestedState.set(null);
 
+      useCapturePointTrajectory.set(true);
       useCapturePoint.set(true);
-      stepWidth.set(0.2);
       isFirstStep.set(true);
 
       if (useCapturePoint.getBooleanValue())
       {
+         stepWidth.set(0.2);
          transferDuration.set(0.5);
          swingDuration.set(1.0);
          stepLength.set(0.15);
          sideWayStepLength.set(0.0);
-         // more challenging settings:
-         //         transferDuration.set(0.85);
-         //         swingDuration.set(0.4);
-         //         stepLength.set(0.15);
       }
       else
       {
+         stepWidth.set(0.2);
          transferDuration.set(1.2);
          swingDuration.set(0.9);
          stepLength.set(0.15);
          sideWayStepLength.set(0.0);
       }
 
-      controllerRobot = MultiBodySystemBasics.toMultiBodySystemBasics(MultiBodySystemFactories.cloneMultiBodySystem(controllerInput.getInput().getRootBody(),
-                                                                                                                    ReferenceFrame.getWorldFrame(),
-                                                                                                                    ""));
+      //      controllerRobot = MultiBodySystemBasics.toMultiBodySystemBasics(MultiBodySystemFactories.cloneMultiBodySystem(controllerInput.getInput().getRootBody(),
+      //                                                                                                                    ReferenceFrame.getWorldFrame(),
+      //                                                                                                                    ""));
+      //
+      // Setup planner for footsteps and capture point trajectory 
+      footStepPlanner = new RobotWalkerFootStepPlanner(feet, soleFrames, numberOfStepsToPlan);
       visualizerPlannedFootSteps = new NFootstepListVisualizer(contactableFeet, yoGraphicsListRegistry, registry);
-      //  create our graphics here
+      capturePointTrajectory = new CapturePointTrajectory(omega0, registry);
+
+      //  create "bag-of-balls" to visualize the capture point trajectory
       index = 0;
       numberOfControlTicksPerVizUpdate.set(100);
-      this.graphicsGroup = createVisualization();
 
-      requestedState.set(null);
+      this.graphicsGroup = createVisualization();
    }
 
    public YoGraphicDefinition createVisualization()
@@ -344,16 +317,6 @@ public class RobotWalkerFiveController implements Controller
                                                                             ColorDefinitions.Blue()));
       graphicsGroup.addChild(YoGraphicDefinitionFactory.newYoGraphicPoint3D("currentMiddlePosition", currentMiddlePosition, 0.02, ColorDefinitions.Black()));
 
-      graphicsGroup.addChild(YoGraphicDefinitionFactory.newYoGraphicPoint3D("capturePointIniDS", capturePointIniDS, 0.008, ColorDefinitions.Green()));
-      graphicsGroup.addChild(YoGraphicDefinitionFactory.newYoGraphicPoint3D("capturePointEoDST", capturePointEoDST, 0.008, ColorDefinitions.Yellow()));
-      graphicsGroup.addChild(YoGraphicDefinitionFactory.newYoGraphicPoint3D("startOfStepDesiredCPPosition",
-                                                                            startOfStepDesiredCPPosition,
-                                                                            0.008,
-                                                                            ColorDefinitions.Crimson()));
-      graphicsGroup.addChild(YoGraphicDefinitionFactory.newYoGraphicPoint3D("previousVRPPosition", previousVRPPosition, 0.008, ColorDefinitions.LightPink()));
-      graphicsGroup.addChild(YoGraphicDefinitionFactory.newYoGraphicPoint3D("currentVRPPosition", currentVRPPosition, 0.008, ColorDefinitions.HotPink()));
-
-      // this defines how many balls we can display at once
       String name = "cpTrajectory";
       YoRegistry ballregistry = new YoRegistry("CPBalls");
 
@@ -444,8 +407,8 @@ public class RobotWalkerFiveController implements Controller
       factory.addStateAndDoneTransition(WalkingStateEnum.TRANSFER_TO_RIGHT, new TransferState(RobotSide.RIGHT), WalkingStateEnum.RIGHT_SUPPORT);
       factory.addStateAndDoneTransition(WalkingStateEnum.RIGHT_SUPPORT, new SingleSupportState(RobotSide.RIGHT), WalkingStateEnum.TRANSFER_TO_LEFT);
 
-    
-      factory.addRequestedTransition(WalkingStateEnum.TRANSFER_TO_LEFT, WalkingStateEnum.STANDING, requestedState );
+      factory.addRequestedTransition(WalkingStateEnum.TRANSFER_TO_LEFT, WalkingStateEnum.STANDING, requestedState);
+      factory.addRequestedTransition(WalkingStateEnum.TRANSFER_TO_RIGHT, WalkingStateEnum.STANDING, requestedState);
 
       // Finally we can build the state machine which will start with the STANDING state.
       return factory.build(WalkingStateEnum.STANDING);
@@ -465,10 +428,6 @@ public class RobotWalkerFiveController implements Controller
       walkerWillFreakOut.set(false);
       desiredPelvisOrientation.setToZero();
 
-      // Setup capture point trajectory planner
-      footStepPlanner = new RobotWalkerFootStepPlanner(feet, soleFrames, numberOfStepsToPlan);
-      capturePointTrajectory = new CapturePointTrajectory(null, swingDuration.getDoubleValue());
-
    }
 
    /**
@@ -478,6 +437,10 @@ public class RobotWalkerFiveController implements Controller
    @Override
    public void doControl()
    {
+
+      if (stop.getBooleanValue())
+         requestedState.set(WalkingStateEnum.STANDING);
+
       // We update the configuration state of our inverse dynamics robot model from the latest state of the simulated robot.
       robotWalkerFive.updateInverseDynamicsRobotState();
       soleZUpFrames.forEach(frame -> frame.update());
@@ -716,9 +679,15 @@ public class RobotWalkerFiveController implements Controller
       {
          if (useCapturePoint.getBooleanValue())
          {
-            // desired capture point from the gui
+            // Desired capture point is set to be in the middle of the support feed
             FramePoint3D capturePointPosition = new FramePoint3D(WORLD_FRAME);
-            capturePointPosition.set(desiredCapturePoint);
+          
+            // Here we get the position of both feet to compute the middle.
+            FramePoint3D leftSolePosition = new FramePoint3D(robotWalkerFive.getSoleFrame(RobotSide.LEFT));
+            leftSolePosition.changeFrame(WORLD_FRAME);
+            FramePoint3D rightSolePosition = new FramePoint3D(robotWalkerFive.getSoleFrame(RobotSide.RIGHT));
+            rightSolePosition.changeFrame(WORLD_FRAME);
+            capturePointPosition.interpolate(leftSolePosition, rightSolePosition, 0.5);
             capturePointPosition.setZ(CENTER_OF_MASS_HEIGHT);
 
             // And now we pack the command for the controller core.        
@@ -850,7 +819,7 @@ public class RobotWalkerFiveController implements Controller
          }
 
          // stop walking
-         if (!walk.getBooleanValue())
+         if (stop.getBooleanValue() || !walk.getBooleanValue())
          {
             footStepPlanner.initialize(transferToSide.getOppositeSide(),
                                        stepLength.getDoubleValue(),
@@ -880,8 +849,10 @@ public class RobotWalkerFiveController implements Controller
             capturePointTrajectory.initialize(currentPlannedFootStepList, swingDuration.getDoubleValue(), transferDuration.getDoubleValue());
 
             isFirstStep.set(true);
-            //         TODO reset state machine to standing
-            requestedState.set(WalkingStateEnum.STANDING);
+
+            // freeze
+            if (stop.getBooleanValue())
+               requestedState.set(WalkingStateEnum.STANDING);
          }
       }
 
@@ -902,13 +873,7 @@ public class RobotWalkerFiveController implements Controller
             FramePoint3D capturePointPosition = new FramePoint3D(WORLD_FRAME);
 
             // Get desired position and velocity for capture point based on double support trajectory          
-            capturePointTrajectory.computeDoubleSupport(1, timeInState, capturePointPosition, capturePointVelocity);
-
-            capturePointIniDS.set(capturePointTrajectory.capturePointIniDS);
-            capturePointEoDST.set(capturePointTrajectory.capturePointEoDST);
-            startOfStepDesiredCPPosition.set(capturePointTrajectory.startOfStepDesiredCPPosition);
-            previousVRPPosition.set(capturePointTrajectory.previousVRPPosition);
-            currentVRPPosition.set(capturePointTrajectory.currentVRPPosition);
+            capturePointTrajectory.computeDesiredCapturePointDoubleSupport(1, timeInState, capturePointPosition, capturePointVelocity);
 
             // And now we pack the command for the controller core.
             sendCapturePointCommand(capturePointPosition, capturePointVelocity);
@@ -1016,7 +981,6 @@ public class RobotWalkerFiveController implements Controller
          initialFootPosition.set(swingFootPosition);
 
          // Generate a set of planned footsteps and select the next one as desired footstep
-
          footStepPlanner.initialize(swingSide,
                                     stepLength.getDoubleValue(),
                                     stepWidth.getDoubleValue(),
@@ -1089,13 +1053,7 @@ public class RobotWalkerFiveController implements Controller
          {
             FramePoint3D capturePointPosition = new FramePoint3D();
             FrameVector3D capturePointVelocity = new FrameVector3D();
-            capturePointTrajectory.computeSingleSupport(timeInState, capturePointPosition, capturePointVelocity);
-
-            capturePointIniDS.set(capturePointTrajectory.capturePointIniDS);
-            capturePointEoDST.set(capturePointTrajectory.capturePointEoDST);
-            startOfStepDesiredCPPosition.set(capturePointTrajectory.startOfStepDesiredCPPosition);
-            previousVRPPosition.set(capturePointTrajectory.previousVRPPosition);
-            currentVRPPosition.set(capturePointTrajectory.currentVRPPosition);
+            capturePointTrajectory.computeDesiredCapturePointSingleSupport(timeInState, capturePointPosition, capturePointVelocity);
 
             // And now we pack the command for the controller core.
             sendCapturePointCommand(capturePointPosition, new FrameVector3D(WORLD_FRAME, capturePointVelocity));
@@ -1198,6 +1156,9 @@ public class RobotWalkerFiveController implements Controller
       @Override
       public void onExit(double timeInState)
       {
+         //         TODO
+         //         if (stop.getBooleanValue())
+         //            requestedState.set(WalkingStateEnum.STANDING);
       }
 
       @Override
