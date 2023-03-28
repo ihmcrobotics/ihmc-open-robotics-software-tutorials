@@ -67,7 +67,6 @@ import us.ihmc.yoVariables.euclid.referenceFrame.YoFrameVector3D;
 import us.ihmc.yoVariables.registry.YoRegistry;
 import us.ihmc.yoVariables.variable.YoBoolean;
 import us.ihmc.yoVariables.variable.YoDouble;
-import us.ihmc.yoVariables.variable.YoEnum;
 import us.ihmc.yoVariables.variable.YoInteger;
 
 /**
@@ -138,9 +137,10 @@ public class RobotWalkerFiveController implements Controller
    /**
     * This variable triggers the controller to initiate walking.
     */
-
-   private final YoBoolean stop = new YoBoolean("stop", registry);
    private final YoBoolean walk = new YoBoolean("walk", registry);
+   private final YoBoolean isStopping = new YoBoolean("isStopping", registry);
+   private final YoBoolean footdown = new YoBoolean("footdown", registry);
+
    /**
     * The duration for the double support phase.
     */
@@ -240,7 +240,6 @@ public class RobotWalkerFiveController implements Controller
    SideDependentList<ReferenceFrame> soleFrames, soleZUpFrames;
    SideDependentList<PlaneContactStateCommand> planeContactStateCommands;
    SideDependentList<RigidBodyBasics> feet;
-   private YoEnum<WalkingStateEnum> requestedState = new YoEnum<>("requestedState", registry, WalkingStateEnum.class, true);
 
    public RobotWalkerFiveController(ControllerInput controllerInput,
                                     ControllerOutput controllerOutput,
@@ -261,33 +260,31 @@ public class RobotWalkerFiveController implements Controller
 
       bipedSupportPolygons = new BipedSupportPolygons(midFeetFrame, soleZUpFrames, soleFrames, registry, yoGraphicsListRegistry);
       stateMachine = createStateMachine();
-      requestedState.set(null);
 
       useCapturePointTrajectory.set(true);
-      useCapturePoint.set(true);
       isFirstStep.set(true);
+      sideWayStepLength.set(0.0);
+      stepWidth.set(0.2);
 
-      if (useCapturePoint.getBooleanValue())
+      if (useCapturePointTrajectory.getBooleanValue())
       {
-         stepWidth.set(0.2);
-         transferDuration.set(0.5);
-         swingDuration.set(1.0);
-         stepLength.set(0.15);
-         sideWayStepLength.set(0.0);
+         transferDuration.set(0.3);
+         swingDuration.set(0.6);
+         stepLength.set(0.25);
+      }
+      else if (useCapturePoint.getBooleanValue())
+      {
+         transferDuration.set(0.8);
+         swingDuration.set(1.2);
+         stepLength.set(0.2);
       }
       else
       {
-         stepWidth.set(0.2);
          transferDuration.set(1.2);
          swingDuration.set(0.9);
          stepLength.set(0.15);
-         sideWayStepLength.set(0.0);
       }
 
-      //      controllerRobot = MultiBodySystemBasics.toMultiBodySystemBasics(MultiBodySystemFactories.cloneMultiBodySystem(controllerInput.getInput().getRootBody(),
-      //                                                                                                                    ReferenceFrame.getWorldFrame(),
-      //                                                                                                                    ""));
-      //
       // Setup planner for footsteps and capture point trajectory 
       footStepPlanner = new RobotWalkerFootStepPlanner(feet, soleFrames, numberOfStepsToPlan);
       visualizerPlannedFootSteps = new NFootstepListVisualizer(contactableFeet, yoGraphicsListRegistry, registry);
@@ -393,22 +390,32 @@ public class RobotWalkerFiveController implements Controller
       // We will need a clock to have access to the time spent in each state for computing trajectories.
       factory.buildYoClock(controllerInput::getTime);
 
-      /*
-       * Then we get to the point where actually create the state and the transitions. In this example, we
-       * will only use what is called here "done transitions". These transitions get triggered as a state
-       * reports that it is done, when triggered the state machine goes to the next state.
-       */
-      // Here we setup the STANDING state. When done, the state machine will transition to the TRANSFER_TO_LEFT state.
-      factory.addStateAndDoneTransition(WalkingStateEnum.STANDING, new StandingState(), WalkingStateEnum.TRANSFER_TO_LEFT);
+      StandingState standingState = new StandingState();
+      TransferState leftTransferState = new TransferState(RobotSide.LEFT);
+      SingleSupportState leftSupportState = new SingleSupportState(RobotSide.LEFT);
+      TransferState rightTransferState = new TransferState(RobotSide.RIGHT);
+      SingleSupportState rightSupportState = new SingleSupportState(RobotSide.RIGHT);
 
-      // Here using the transitions, we create a cycle that will result in having the robot walking indefinitely.
-      factory.addStateAndDoneTransition(WalkingStateEnum.TRANSFER_TO_LEFT, new TransferState(RobotSide.LEFT), WalkingStateEnum.LEFT_SUPPORT);
-      factory.addStateAndDoneTransition(WalkingStateEnum.LEFT_SUPPORT, new SingleSupportState(RobotSide.LEFT), WalkingStateEnum.TRANSFER_TO_RIGHT);
-      factory.addStateAndDoneTransition(WalkingStateEnum.TRANSFER_TO_RIGHT, new TransferState(RobotSide.RIGHT), WalkingStateEnum.RIGHT_SUPPORT);
-      factory.addStateAndDoneTransition(WalkingStateEnum.RIGHT_SUPPORT, new SingleSupportState(RobotSide.RIGHT), WalkingStateEnum.TRANSFER_TO_LEFT);
+      // Add states
+      factory.addState(WalkingStateEnum.STANDING, standingState);
+      factory.addState(WalkingStateEnum.TRANSFER_TO_LEFT, leftTransferState);
+      factory.addState(WalkingStateEnum.LEFT_SUPPORT, leftSupportState);
+      factory.addState(WalkingStateEnum.TRANSFER_TO_RIGHT, rightTransferState);
+      factory.addState(WalkingStateEnum.RIGHT_SUPPORT, rightSupportState);
 
-      factory.addRequestedTransition(WalkingStateEnum.TRANSFER_TO_LEFT, WalkingStateEnum.STANDING, requestedState);
-      factory.addRequestedTransition(WalkingStateEnum.TRANSFER_TO_RIGHT, WalkingStateEnum.STANDING, requestedState);
+      // Add additional transitions
+      // TODO ask 
+      //      factory.addTransition(WalkingStateEnum.LEFT_SUPPORT, WalkingStateEnum.STANDING, leftSupportState.isStopping());
+      //      factory.addTransition(WalkingStateEnum.RIGHT_SUPPORT, WalkingStateEnum.STANDING, rightSupportState.isStopping());
+      factory.addTransition(WalkingStateEnum.LEFT_SUPPORT, WalkingStateEnum.STANDING, timeInCurrentState -> leftSupportState.isStopping(timeInCurrentState));
+      factory.addTransition(WalkingStateEnum.RIGHT_SUPPORT, WalkingStateEnum.STANDING, timeInCurrentState -> rightSupportState.isStopping(timeInCurrentState));
+
+      // Add done transitions
+      factory.addDoneTransition(WalkingStateEnum.STANDING, WalkingStateEnum.TRANSFER_TO_LEFT);
+      factory.addDoneTransition(WalkingStateEnum.TRANSFER_TO_LEFT, WalkingStateEnum.LEFT_SUPPORT);
+      factory.addDoneTransition(WalkingStateEnum.LEFT_SUPPORT, WalkingStateEnum.TRANSFER_TO_RIGHT);
+      factory.addDoneTransition(WalkingStateEnum.TRANSFER_TO_RIGHT, WalkingStateEnum.RIGHT_SUPPORT);
+      factory.addDoneTransition(WalkingStateEnum.RIGHT_SUPPORT, WalkingStateEnum.TRANSFER_TO_LEFT);
 
       // Finally we can build the state machine which will start with the STANDING state.
       return factory.build(WalkingStateEnum.STANDING);
@@ -437,10 +444,6 @@ public class RobotWalkerFiveController implements Controller
    @Override
    public void doControl()
    {
-
-      if (stop.getBooleanValue())
-         requestedState.set(WalkingStateEnum.STANDING);
-
       // We update the configuration state of our inverse dynamics robot model from the latest state of the simulated robot.
       robotWalkerFive.updateInverseDynamicsRobotState();
       soleZUpFrames.forEach(frame -> frame.update());
@@ -548,10 +551,7 @@ public class RobotWalkerFiveController implements Controller
       double gain_p = 2.0;
       FramePoint3D errorCapturePointPosition = new FramePoint3D(WORLD_FRAME);
       errorCapturePointPosition.sub(measuredCapturePointPosition, desiredCapturePointPosition);
-
-      //TODO remove visualization from here
-      errorCapturePoint.set(Math.sqrt(errorCapturePointPosition.getX() * errorCapturePointPosition.getX()
-            + errorCapturePointPosition.getY() * errorCapturePointPosition.getY() + errorCapturePointPosition.getZ() * errorCapturePointPosition.getZ()));
+      errorCapturePoint.set(errorCapturePointPosition.norm());
 
       FramePoint3D desCentroidalMomentPivot = new FramePoint3D(WORLD_FRAME);
       desCentroidalMomentPivot.scaleAdd(gain_p, errorCapturePointPosition, measuredCapturePointPosition);
@@ -614,7 +614,6 @@ public class RobotWalkerFiveController implements Controller
 
       correctedCMP.set(new Point2D(0.0, 0.0));
 
-      // TODO fix CMP correction
       // correct desired centroidal moment pivot to stay within support polygon
       if (!bipedSupportPolygons.getSupportPolygonInWorld()
                                .isPointInside(new FramePoint2D(WORLD_FRAME, desCentroidalMomentPivot.getX(), desCentroidalMomentPivot.getY()))
@@ -660,7 +659,6 @@ public class RobotWalkerFiveController implements Controller
          ;
          index++;
       }
-
    }
 
    /**
@@ -677,11 +675,11 @@ public class RobotWalkerFiveController implements Controller
       @Override
       public void doAction(double timeInState)
       {
-         if (useCapturePoint.getBooleanValue())
+         if (useCapturePoint.getBooleanValue() || useCapturePointTrajectory.getBooleanValue())
          {
             // Desired capture point is set to be in the middle of the support feed
             FramePoint3D capturePointPosition = new FramePoint3D(WORLD_FRAME);
-          
+
             // Here we get the position of both feet to compute the middle.
             FramePoint3D leftSolePosition = new FramePoint3D(robotWalkerFive.getSoleFrame(RobotSide.LEFT));
             leftSolePosition.changeFrame(WORLD_FRAME);
@@ -736,6 +734,10 @@ public class RobotWalkerFiveController implements Controller
       @Override
       public void onExit(double timeInState)
       {
+         isFirstStep.set(true);
+         isStopping.set(false);
+         //         stopWalking.set(false);
+         footdown.set(false);
       }
 
       @Override
@@ -778,6 +780,7 @@ public class RobotWalkerFiveController implements Controller
           * the endpoints for the center of mass. It should start from wherever it is at the start of this
           * state and end above the leading foot.
           */
+
          initialPosition.setToZero(robotWalkerFive.getCenterOfMassFrame());
          initialPosition.changeFrame(WORLD_FRAME);
          finalPosition.setToZero(robotWalkerFive.getSoleFrame(transferToSide));
@@ -818,42 +821,6 @@ public class RobotWalkerFiveController implements Controller
             isFirstStep.set(false);
          }
 
-         // stop walking
-         if (stop.getBooleanValue() || !walk.getBooleanValue())
-         {
-            footStepPlanner.initialize(transferToSide.getOppositeSide(),
-                                       stepLength.getDoubleValue(),
-                                       stepWidth.getDoubleValue(),
-                                       rotationPerStep.getValue(),
-                                       sideWayStepLength.getValue());
-            footStepPlanner.updateCurrentPelvisPose(robotWalkerFive.getPelvis());
-
-            ArrayList<Footstep> currentPlannedFootStepList = new ArrayList<Footstep>();
-            currentPlannedFootStepList = footStepPlanner.generateDesiredFootstepList();
-            footStepPlanner.generateFootsteps(currentPlannedFootStepList);
-
-            // Setup trajectory for capture point
-            Footstep currentFootStep = new Footstep(transferToSide);
-            FramePose3D footPose = new FramePose3D(soleFrames.get(transferToSide));
-            footPose.changeFrame(WORLD_FRAME);
-            currentFootStep.setPose(footPose);
-            currentPlannedFootStepList.add(0, currentFootStep);
-
-            Footstep initialFootStep = new Footstep(transferToSide);
-            FramePose3D midFootPose = new FramePose3D(midFeetFrame);
-            midFootPose.changeFrame(WORLD_FRAME);
-            initialFootStep.setPose(midFootPose);
-            currentPlannedFootStepList.add(0, initialFootStep);
-
-            visualizerPlannedFootSteps.update(currentPlannedFootStepList);
-            capturePointTrajectory.initialize(currentPlannedFootStepList, swingDuration.getDoubleValue(), transferDuration.getDoubleValue());
-
-            isFirstStep.set(true);
-
-            // freeze
-            if (stop.getBooleanValue())
-               requestedState.set(WalkingStateEnum.STANDING);
-         }
       }
 
       @Override
@@ -915,15 +882,12 @@ public class RobotWalkerFiveController implements Controller
       @Override
       public void onExit(double timeInState)
       {
+
       }
 
       @Override
       public boolean isDone(double timeInState)
       {
-         if (timeInState >= transferDuration.getDoubleValue())
-         {
-            isFirstStep.set(false);
-         }
          // As soon as the time reaches the given transferDuration, the state machine will enter the next single support state.
          return timeInState >= transferDuration.getValue();
       }
@@ -1008,6 +972,8 @@ public class RobotWalkerFiveController implements Controller
             footPose.changeFrame(WORLD_FRAME);
             stopFootStep.setPose(footPose);
             currentPlannedFootStepList.add(0, stopFootStep);
+
+            isStopping.set(true);
          }
 
          // update visuals
@@ -1048,6 +1014,7 @@ public class RobotWalkerFiveController implements Controller
       @Override
       public void doAction(double timeInState)
       {
+
          // During this state, the center of mass is kept right above the support foot.
          if (useCapturePointTrajectory.getBooleanValue())
          {
@@ -1151,14 +1118,19 @@ public class RobotWalkerFiveController implements Controller
 
          controllerCoreCommand.addFeedbackControlCommand(swingFootCommand);
          bipedSupportPolygons.updateUsingContactStateCommand(planeContactStateCommands);
+
+         if (!walk.getBooleanValue() && isStopping.getBooleanValue())
+         {
+            if (timeInState > swingDuration.getValue() * 0.95)
+               footdown.set(true);
+         }
+
       }
 
       @Override
       public void onExit(double timeInState)
       {
-         //         TODO
-         //         if (stop.getBooleanValue())
-         //            requestedState.set(WalkingStateEnum.STANDING);
+
       }
 
       @Override
@@ -1166,8 +1138,18 @@ public class RobotWalkerFiveController implements Controller
       {
          // As soon as the time reaches the given swingDuration, the state machine will
          // enter the next transfer state.
+
          return timeInState >= swingDuration.getValue();
       }
+
+      public boolean isStopping(double timeInCurrentState)
+      {
+         // As soon as the time reaches the given swingDuration, the state machine will
+         // enter the next transfer state.
+
+         return footdown.getBooleanValue() == true;
+      }
+
    }
 
    /**

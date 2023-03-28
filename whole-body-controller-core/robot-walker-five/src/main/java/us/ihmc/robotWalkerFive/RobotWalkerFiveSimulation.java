@@ -67,30 +67,27 @@ public class RobotWalkerFiveSimulation
                                                                                  walkerDef);
 
       scs.addYoGraphics(YoGraphicConversionTools.toYoGraphicDefinitions(walkerController.getYoGraphicsListRegistry()));
-      //      scs.addYoGraphics(walkerController.getYoGraphicsListRegistry().getYoGraphicsLists());
 
       // Make sure to initialize the controller.
       walkerController.initialize();
 
       // Add some variables - add it once, save scs2 simulation when closing it, and then comment out
-//      scs.addYoEntry("walk");
-//      scs.addYoEntry("useCapturePointTrajectory");
-//      scs.addYoEntry("useCapturePoint");
-//      scs.addYoEntry("rotationPerStep");
-//      scs.addYoEntry("transferDuration");
-//      scs.addYoEntry("swingDuration");
-//      scs.addYoEntry("stepLength");
-//      scs.addYoEntry("sideWayStepLength");
-//      scs.addYoEntry("stepWidth");
-//      scs.addYoEntry("addTakeOffVelocity");
-//      scs.addYoEntry("addTouchDownVelocity");
-//      scs.addYoEntry("walkerWillFreakOut");
-//      scs.addYoEntry("desiredCapturePointX");
-//      scs.addYoEntry("desiredCapturePointY");
-//      scs.addYoEntry("desiredCapturePointZ");
+      scs.addYoEntry("walk");
+      scs.addYoEntry("useCapturePointTrajectory");
+      scs.addYoEntry("useCapturePoint");
+      scs.addYoEntry("rotationPerStep");
+      scs.addYoEntry("transferDuration");
+      scs.addYoEntry("swingDuration");
+      scs.addYoEntry("stepLength");
+      scs.addYoEntry("sideWayStepLength");
+      scs.addYoEntry("stepWidth");
+      scs.addYoEntry("addTakeOffVelocity");
+      scs.addYoEntry("addTouchDownVelocity");
+      scs.addYoEntry("walkerWillFreakOut");
+      scs.addYoEntry("desiredCapturePointX");
+      scs.addYoEntry("desiredCapturePointY");
+      scs.addYoEntry("desiredCapturePointZ");
 
-      // Add the YoGraphics to the simulation
-      //      scs.addYoGraphic(new YoGraphicGroupDefinition("mygroup"));
 
       scs.addYoGraphic(walkerController.getYoGraphicDefinition());
 
