@@ -9,10 +9,6 @@ import us.ihmc.euclid.referenceFrame.interfaces.FramePoint3DBasics;
 import us.ihmc.euclid.referenceFrame.interfaces.FramePoint3DReadOnly;
 import us.ihmc.euclid.referenceFrame.interfaces.FrameVector3DBasics;
 import us.ihmc.humanoidRobotics.footstep.Footstep;
-import us.ihmc.robotics.stateMachine.core.State;
-import us.ihmc.robotics.stateMachine.extra.EventState;
-import us.ihmc.robotics.stateMachine.factories.EventBasedStateMachineFactory;
-import us.ihmc.robotics.stateMachine.factories.StateMachineFactory;
 import us.ihmc.scs2.definition.visual.ColorDefinitions;
 import us.ihmc.scs2.definition.yoGraphic.YoGraphicDefinition;
 import us.ihmc.scs2.definition.yoGraphic.YoGraphicDefinitionFactory;
@@ -23,21 +19,6 @@ import us.ihmc.yoVariables.registry.YoRegistry;
 /**
  * This class allows to calculate a capture point trajectory based on planned footsteps. The method
  * is based on Englsberger et al. (www.doi.org/10.1109/TRO.2015.2405592)
- * <p>
- * To build a state machine, please use one the factories available:
- * <ul>
- * <li>{@link StateMachineFactory}: factory for simple state implementations.
- * <li>{@link EventBasedStateMachineFactory}: factory for creating a state machine which state
- * transitions are trigger by firing events. States must implement {@link EventState}.
- * </ul>
- * </p>
- * <p>
- * Once created, the states and transitions of a state machine are final, they cannot be modified.
- * </p>
- * 
- * @author Sylvain
- * @param <K> Type of {@link Enum} that lists the potential states.
- * @param <S> Type of {@link State} that is contained in the state machine.
  */
 public class CapturePointTrajectory
 {
@@ -54,7 +35,7 @@ public class CapturePointTrajectory
    private double swingDuration;
    /** Duration of double support. */
    private double doubleSupportDuration;
-   /** List of planned footsteps. */
+   /** List of planned footsteps (= virtual repellent points). */
    private ArrayList<Footstep> virtualRepellentPoints;
 
    private final YoRegistry registry = new YoRegistry(getClass().getSimpleName());
@@ -64,10 +45,6 @@ public class CapturePointTrajectory
    private YoFramePoint3D startOfStepDesiredCPPosition = new YoFramePoint3D("startOfStepDesiredCPPosition", WORLD_FRAME, registry);
    private YoFramePoint3D previousVRPPosition = new YoFramePoint3D("previousVRPPosition", WORLD_FRAME, registry);
    private YoFramePoint3D currentVRPPosition = new YoFramePoint3D("currentVRPPosition", WORLD_FRAME, registry);
-
-   boolean isfirststep = true;
-
-   //   YoPolynomial3D cpTrajctoryDS = new YoPolynomial3D("dsTrajectory", 4, registry);
 
    public CapturePointTrajectory(double omega0, YoRegistry parentRegistry)
    {
@@ -239,7 +216,6 @@ public class CapturePointTrajectory
 
       this.startOfStepDesiredCPPosition.set(startOfStepDesiredCPPosition);
       this.capturePointEoDST.set(capturePointEoSDSToPack);
-
    }
 
    void calculateEndOfStepCPDoubleSupportVelocity(int stepNumber, FrameVector3DBasics capturePointEoSDSVelocityToPack)

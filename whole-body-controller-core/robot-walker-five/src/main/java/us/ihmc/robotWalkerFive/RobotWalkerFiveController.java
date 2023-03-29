@@ -27,7 +27,9 @@ import us.ihmc.euclid.referenceFrame.FrameQuaternion;
 import us.ihmc.euclid.referenceFrame.FrameVector3D;
 import us.ihmc.euclid.referenceFrame.ReferenceFrame;
 import us.ihmc.euclid.referenceFrame.interfaces.FrameLine2DReadOnly;
+import us.ihmc.euclid.referenceFrame.interfaces.FramePoint3DBasics;
 import us.ihmc.euclid.referenceFrame.interfaces.FramePoint3DReadOnly;
+import us.ihmc.euclid.referenceFrame.interfaces.FrameVector3DReadOnly;
 import us.ihmc.euclid.tuple2D.Point2D;
 import us.ihmc.euclid.tuple3D.Vector3D;
 import us.ihmc.graphicsDescription.yoGraphics.YoGraphicsListRegistry;
@@ -98,20 +100,14 @@ public class RobotWalkerFiveController implements Controller
    private final YoGraphicDefinition graphicsGroup;
    private WholeBodyControlCoreToolbox toolbox;
 
-   private final YoDouble errorCapturePoint = new YoDouble("errorCapturePoint", registry);
    private final YoBoolean walkerIsFalling = new YoBoolean("walkerIsFalling", registry);
-   private final YoBoolean walkerWillFreakOut = new YoBoolean("walkerWillFreakOut", registry);
    private final YoBoolean useCapturePoint = new YoBoolean("useCapturePoint", registry);
    private final YoBoolean useCapturePointTrajectory = new YoBoolean("useCapturePointTrajectory", registry);
    private final YoBoolean addTakeOffVelocity = new YoBoolean("addTakeOffVelocity", registry);
    private final YoBoolean addTouchDownVelocity = new YoBoolean("addTouchDownVelocity", registry);
    private final YoFramePoint3D feedForwardLinearVelocity = new YoFramePoint3D("feedForwardLinearVelocity", WORLD_FRAME, registry);
    private final YoFramePoint3D currentMiddlePosition = new YoFramePoint3D("currentMiddlePosition", WORLD_FRAME, registry);
-   private FramePoint3D measuredCPPosition = new FramePoint3D(WORLD_FRAME);
    private final FrameQuaternion desiredPelvisOrientation = new FrameQuaternion();
-   private FramePoint3D measuredCoMPosition;
-   private FrameVector3D measuredCoMVelocity;
-   private FramePoint3D desCentroidalMomentPivot;
 
    private RobotWalkerFootStepPlanner footStepPlanner;
    private NFootstepListVisualizer visualizerPlannedFootSteps;
@@ -138,9 +134,14 @@ public class RobotWalkerFiveController implements Controller
     * This variable triggers the controller to initiate walking.
     */
    private final YoBoolean walk = new YoBoolean("walk", registry);
+   /**
+    * This variable is triggered when the robot started stopping.
+    */
    private final YoBoolean isStopping = new YoBoolean("isStopping", registry);
+   /**
+    * This variable is triggered when the robot put the foot down and stopped.
+    */
    private final YoBoolean footdown = new YoBoolean("footdown", registry);
-
    /**
     * The duration for the double support phase.
     */
@@ -404,11 +405,8 @@ public class RobotWalkerFiveController implements Controller
       factory.addState(WalkingStateEnum.RIGHT_SUPPORT, rightSupportState);
 
       // Add additional transitions
-      // TODO ask 
-      //      factory.addTransition(WalkingStateEnum.LEFT_SUPPORT, WalkingStateEnum.STANDING, leftSupportState.isStopping());
-      //      factory.addTransition(WalkingStateEnum.RIGHT_SUPPORT, WalkingStateEnum.STANDING, rightSupportState.isStopping());
-      factory.addTransition(WalkingStateEnum.LEFT_SUPPORT, WalkingStateEnum.STANDING, timeInCurrentState -> leftSupportState.isStopping(timeInCurrentState));
-      factory.addTransition(WalkingStateEnum.RIGHT_SUPPORT, WalkingStateEnum.STANDING, timeInCurrentState -> rightSupportState.isStopping(timeInCurrentState));
+      factory.addTransition(WalkingStateEnum.LEFT_SUPPORT, WalkingStateEnum.STANDING, timeInCurrentState -> leftSupportState.isStopping());
+      factory.addTransition(WalkingStateEnum.RIGHT_SUPPORT, WalkingStateEnum.STANDING, timeInCurrentState -> rightSupportState.isStopping());
 
       // Add done transitions
       factory.addDoneTransition(WalkingStateEnum.STANDING, WalkingStateEnum.TRANSFER_TO_LEFT);
@@ -431,8 +429,6 @@ public class RobotWalkerFiveController implements Controller
       gainsCoMandPelvis.setPositionDerivativeGains(d_gains);
       gainsCoMandPelvis.setOrientationProportionalGains(p_gains);
       gainsCoMandPelvis.setOrientationDerivativeGains(d_gains);
-
-      walkerWillFreakOut.set(false);
       desiredPelvisOrientation.setToZero();
 
    }
@@ -448,13 +444,7 @@ public class RobotWalkerFiveController implements Controller
       robotWalkerFive.updateInverseDynamicsRobotState();
       soleZUpFrames.forEach(frame -> frame.update());
       midFeetFrame.update();
-      walkerWillFreakOut.set(false);
 
-      if (!bipedSupportPolygons.getSupportPolygonInWorld().isPointInside(new FramePoint2D(WORLD_FRAME, desiredCMP.getX(), desiredCMP.getY())))
-      {
-         // CMP should not be outside support polygon
-         walkerWillFreakOut.set(true);
-      }
       /*
        * Here we request the state machine to call the doAction() method of the active state and to check
        * if the transition to the next state should be engaged. See further below for the implementation
@@ -511,7 +501,7 @@ public class RobotWalkerFiveController implements Controller
     * @param measuredCoMPosition      refers to the current center of motion
     * @param desCentroidalMomentPivot refers to the desired CMP
     */
-   public FrameVector3D calculateDesiredCoMAcceleration(FramePoint3D measuredCoMPosition, FramePoint3D desCentroidalMomentPivot)
+   public FrameVector3D calculateDesiredCoMAcceleration(FramePoint3DReadOnly measuredCoMPosition, FramePoint3DReadOnly desCentroidalMomentPivot)
    {
       FrameVector3D desiredCoMAcceleration = new FrameVector3D(WORLD_FRAME);
       desiredCoMAcceleration.sub(measuredCoMPosition, desCentroidalMomentPivot);
@@ -521,14 +511,13 @@ public class RobotWalkerFiveController implements Controller
    }
 
    /**
-    * The {@code calculateDesiredCentroidalMomentPivot} calculated the deisred CMP based on a desired
-    * capture point poisition and the current capture point position
+    * The {@code calculateMeasuredCapturePointPosition} calculated the current capture point position
+    * based on the center of mass position and velocity
     * 
-    * @param desiredCapturePointPosition  refers to the desired capture point position
-    * @param desiredCapturePointVelocity  refers to the desired capture point velocity
-    * @param measuredCapturePointPosition refers to the current capture point position
+    * @param measuredCoMPosition refers to the current center of mass position
+    * @param measuredCoMVelocity refers to the current center of mass velocity
     */
-   public FramePoint3D calculateMeasuredCapturePointPosition(FrameVector3D measuredCoMVelocity, FramePoint3D measuredCoMPosition)
+   public FramePoint3D calculateMeasuredCapturePointPosition(FramePoint3DReadOnly measuredCoMPosition, FrameVector3DReadOnly measuredCoMVelocity)
    {
       FramePoint3D measuredCPPosition = new FramePoint3D(WORLD_FRAME);
       measuredCPPosition.scaleAdd(1.0 / omega0, measuredCoMVelocity, measuredCoMPosition);
@@ -537,27 +526,29 @@ public class RobotWalkerFiveController implements Controller
    }
 
    /**
-    * The {@code calculateDesiredCentroidalMomentPivot} calculated the deisred CMP based on a desired
-    * capture point poisition and the current capture point position
+    * The {@code calculateDesiredCentroidalMomentPivot} calculated the desired CMP based on a desired
+    * capture point position and the current capture point position
     * 
     * @param desiredCapturePointPosition  refers to the desired capture point position
     * @param desiredCapturePointVelocity  refers to the desired capture point velocity
     * @param measuredCapturePointPosition refers to the current capture point position
     */
-   public FramePoint3D calculateDesiredCentroidalMomentPivot(FramePoint3D desiredCapturePointPosition,
-                                                             FrameVector3D desiredCapturePointVelocity,
-                                                             FramePoint3D measuredCapturePointPosition)
+   public FramePoint3D calculateDesiredCentroidalMomentPivot(FramePoint3DReadOnly desiredCapturePointPosition,
+                                                             FrameVector3DReadOnly desiredCapturePointVelocity,
+                                                             FramePoint3DReadOnly measuredCapturePointPosition)
    {
       double gain_p = 2.0;
       FramePoint3D errorCapturePointPosition = new FramePoint3D(WORLD_FRAME);
       errorCapturePointPosition.sub(measuredCapturePointPosition, desiredCapturePointPosition);
-      errorCapturePoint.set(errorCapturePointPosition.norm());
 
-      FramePoint3D desCentroidalMomentPivot = new FramePoint3D(WORLD_FRAME);
-      desCentroidalMomentPivot.scaleAdd(gain_p, errorCapturePointPosition, measuredCapturePointPosition);
-      desCentroidalMomentPivot.scaleAdd(-1.0 / omega0, desiredCapturePointVelocity, desCentroidalMomentPivot);
+      FramePoint3D desCentroidalMomentPivotToPack = new FramePoint3D(WORLD_FRAME);
+      desCentroidalMomentPivotToPack.scaleAdd(gain_p, errorCapturePointPosition, measuredCapturePointPosition);
+      desCentroidalMomentPivotToPack.scaleAdd(-1.0 / omega0, desiredCapturePointVelocity, desCentroidalMomentPivotToPack);
 
-      return desCentroidalMomentPivot;
+      // correct CMP to stay within support polygon
+      limitCentroidalMomentPositionToSupportPolygon(measuredCapturePointPosition, desCentroidalMomentPivotToPack);
+
+      return desCentroidalMomentPivotToPack;
    }
 
    /**
@@ -584,14 +575,19 @@ public class RobotWalkerFiveController implements Controller
     * A {@code sendCapturePointCommand} is created {@code desiredCapturePointPosition} and adds the
     * command to the controller core.
     * 
-    * @param desiredCapturePointPosition refers to the desired capture poitn position
+    * @param desiredCapturePointPosition refers to the desired capture point position
+    * @param desiredCapturePointVelocity refers to the desired capture point velocity
     */
-   public void sendCapturePointCommand(FramePoint3D desiredCapturePointPosition, FrameVector3D desiredCapturePointVelocity)
+   public void sendCapturePointCommand(FramePoint3DReadOnly desiredCapturePointPosition, FrameVector3DReadOnly desiredCapturePointVelocity)
    {
 
-      measuredCoMPosition = new FramePoint3D(WORLD_FRAME, toolbox.getCenterOfMassFrame().getTransformToWorldFrame().getTranslation());
-      measuredCoMVelocity = new FrameVector3D(WORLD_FRAME, toolbox.getCentroidalMomentumRateCalculator().getCenterOfMassVelocity());
-      measuredCPPosition = calculateMeasuredCapturePointPosition(measuredCoMVelocity, measuredCoMPosition);
+      FramePoint3D measuredCoMPosition = new FramePoint3D(WORLD_FRAME, toolbox.getCenterOfMassFrame().getTransformToWorldFrame().getTranslation());
+      FrameVector3D measuredCoMVelocity = new FrameVector3D(WORLD_FRAME, toolbox.getCentroidalMomentumRateCalculator().getCenterOfMassVelocity());
+
+      FramePoint3D measuredCPPosition = new FramePoint3D(WORLD_FRAME);
+      measuredCPPosition = calculateMeasuredCapturePointPosition(measuredCoMPosition, measuredCoMVelocity);
+
+      FramePoint3D desCentroidalMomentPivot = new FramePoint3D(WORLD_FRAME);
       desCentroidalMomentPivot = calculateDesiredCentroidalMomentPivot(desiredCapturePointPosition, desiredCapturePointVelocity, measuredCPPosition);
 
       FrameVector3D desiredCoMAcceleration = calculateDesiredCoMAcceleration(measuredCoMPosition, desCentroidalMomentPivot);
@@ -606,40 +602,6 @@ public class RobotWalkerFiveController implements Controller
       momentumRateCommand.setWeight(1.0);
       momentumRateCommand.setLinearMomentumRate(desiredLinMomentumRate);
       momentumRateCommand.setSelectionMatrixForLinearControl();
-
-      // update visualization variables
-      desiredCapturePoint.set(desiredCapturePointPosition);
-      desiredCMP.set(desCentroidalMomentPivot);
-      originalCMP.set(desCentroidalMomentPivot);
-
-      correctedCMP.set(new Point2D(0.0, 0.0));
-
-      // correct desired centroidal moment pivot to stay within support polygon
-      if (!bipedSupportPolygons.getSupportPolygonInWorld()
-                               .isPointInside(new FramePoint2D(WORLD_FRAME, desCentroidalMomentPivot.getX(), desCentroidalMomentPivot.getY()))
-            && !desCentroidalMomentPivot.equals(measuredCPPosition))
-      {
-         // CMP should not be outside support polygon
-         FramePoint2D corrCMP2D = new FramePoint2D(WORLD_FRAME);
-         FramePoint2D firstPointOnLine = new FramePoint2D(WORLD_FRAME);
-         FramePoint2D secondPointOnLine = new FramePoint2D(WORLD_FRAME);
-
-         firstPointOnLine.set(desCentroidalMomentPivot.getX(), desCentroidalMomentPivot.getY());
-         secondPointOnLine.set(measuredCPPosition.getX(), measuredCPPosition.getY());
-         FrameLine2DReadOnly ray = new FrameLine2D(WORLD_FRAME, firstPointOnLine, secondPointOnLine);
-         bipedSupportPolygons.getSupportPolygonInWorld().getClosestPointWithRay(ray, corrCMP2D);
-
-         correctedCMP.set(corrCMP2D);
-         desCentroidalMomentPivot.setX(corrCMP2D.getX());
-         desCentroidalMomentPivot.setY(corrCMP2D.getY());
-      }
-
-      desiredCMP.set(desCentroidalMomentPivot);
-
-      measuredCenterOfMass.set(measuredCoMPosition);
-      FramePoint3D measuredCPPosition = new FramePoint3D(WORLD_FRAME);
-      measuredCPPosition = calculateMeasuredCapturePointPosition(measuredCoMVelocity, measuredCoMPosition);
-      measuredCapturePointPosition.set(measuredCPPosition);
 
       // send command to controller
       controllerCoreCommand.addInverseDynamicsCommand(momentumRateCommand);
@@ -658,6 +620,40 @@ public class RobotWalkerFiveController implements Controller
          yoGraphicPositions.get(index).setZ(0.0);
          ;
          index++;
+      }
+
+      // update visualizations 
+      desiredCMP.set(desCentroidalMomentPivot);
+      originalCMP.set(desCentroidalMomentPivot);
+      measuredCapturePointPosition.set(measuredCPPosition);
+      measuredCenterOfMass.set(measuredCoMPosition);
+      desiredCapturePoint.set(desiredCapturePointPosition);
+
+   }
+
+   public void limitCentroidalMomentPositionToSupportPolygon(FramePoint3DReadOnly measuredCapturePointPosition,
+                                                             FramePoint3DBasics desCentroidalMomentPivotToPack)
+   {
+      correctedCMP.set(new Point2D(0.0, 0.0));
+
+      // check if correction is needed
+      if (!bipedSupportPolygons.getSupportPolygonInWorld()
+                               .isPointInside(new FramePoint2D(WORLD_FRAME, desCentroidalMomentPivotToPack.getX(), desCentroidalMomentPivotToPack.getY()))
+            && !desCentroidalMomentPivotToPack.equals(measuredCapturePointPosition))
+      {
+         FramePoint2D correctedCMP2D = new FramePoint2D(WORLD_FRAME);
+         FramePoint2D firstPointOnLine = new FramePoint2D(WORLD_FRAME);
+         FramePoint2D secondPointOnLine = new FramePoint2D(WORLD_FRAME);
+
+         firstPointOnLine.set(desCentroidalMomentPivotToPack.getX(), desCentroidalMomentPivotToPack.getY());
+         secondPointOnLine.set(measuredCapturePointPosition.getX(), measuredCapturePointPosition.getY());
+         FrameLine2DReadOnly ray = new FrameLine2D(WORLD_FRAME, firstPointOnLine, secondPointOnLine);
+         bipedSupportPolygons.getSupportPolygonInWorld().getClosestPointWithRay(ray, correctedCMP2D);
+
+         correctedCMP.set(new Point2D(correctedCMP2D.getX(), correctedCMP2D.getY()));
+
+         desCentroidalMomentPivotToPack.setX(correctedCMP2D.getX());
+         desCentroidalMomentPivotToPack.setY(correctedCMP2D.getY());
       }
    }
 
@@ -736,7 +732,6 @@ public class RobotWalkerFiveController implements Controller
       {
          isFirstStep.set(true);
          isStopping.set(false);
-         //         stopWalking.set(false);
          footdown.set(false);
       }
 
@@ -1014,7 +1009,6 @@ public class RobotWalkerFiveController implements Controller
       @Override
       public void doAction(double timeInState)
       {
-
          // During this state, the center of mass is kept right above the support foot.
          if (useCapturePointTrajectory.getBooleanValue())
          {
@@ -1142,7 +1136,7 @@ public class RobotWalkerFiveController implements Controller
          return timeInState >= swingDuration.getValue();
       }
 
-      public boolean isStopping(double timeInCurrentState)
+      public boolean isStopping()
       {
          // As soon as the time reaches the given swingDuration, the state machine will
          // enter the next transfer state.

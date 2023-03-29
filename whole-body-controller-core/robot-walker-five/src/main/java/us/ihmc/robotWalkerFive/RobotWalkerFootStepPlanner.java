@@ -17,22 +17,17 @@ public class RobotWalkerFootStepPlanner
    protected SideDependentList<RigidBodyBasics> feet;
    protected SideDependentList<ReferenceFrame> soleFrames;
    protected SideDependentList<FramePose3D> currentSolePose;
-//   final YoRegistry registry = new YoRegistry(getClass().getSimpleName());
-
    private double walkingStepWidth;
    private double walkingStrideLength;
    private double sideWayStepLength;
    private double yawPerStep;
-   
-//   boolean isFirstStep = true;
-   
+   private RobotSide currentFootstepSide;
+   private int nStepsToPlan;
+
    private FramePose3D currentPelvisPose = new FramePose3D(WORLD_FRAME);
    private FramePose3D currentPoseOnTrajectory = new FramePose3D(WORLD_FRAME);
    private FramePose3D desiredNextPoseOnTrajectory = new FramePose3D(WORLD_FRAME);
    private FrameVector3D desiredWalkingPositionOffset = new FrameVector3D(WORLD_FRAME);
-
-   private RobotSide currentFootstepSide;
-   private int nStepsToPlan;
 
    public RobotWalkerFootStepPlanner(SideDependentList<RigidBodyBasics> feet, SideDependentList<ReferenceFrame> soleFrames, int nSteps)
    {
@@ -126,7 +121,6 @@ public class RobotWalkerFootStepPlanner
       return this.desiredNextPoseOnTrajectory;
    }
 
-
    public ArrayList<Footstep> generateDesiredFootstepList()
    {
       ArrayList<Footstep> footStepList = new ArrayList<Footstep>();
@@ -139,7 +133,6 @@ public class RobotWalkerFootStepPlanner
    {
       currentFootstepSide = startFootSide;
    }
-
    private void addFootStep(ArrayList<Footstep> footStepList)
    {
       FramePose3D nextFootPose = new FramePose3D(WORLD_FRAME, this.desiredNextPoseOnTrajectory);
@@ -170,5 +163,4 @@ public class RobotWalkerFootStepPlanner
       }
       return offset;
    }
-
 }
