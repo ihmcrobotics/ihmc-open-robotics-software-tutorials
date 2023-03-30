@@ -252,15 +252,14 @@ public class RobotWalkerFiveController implements Controller
       this.robotWalkerFive = new RobotWalkerFive(controllerInput, controllerOutput, robotDefinition);
 
       wholeBodyControllerCore = createControllerCore(controlDT, gravityZ, yoGraphicsListRegistry);
+      stateMachine = createStateMachine();
+
       feet = new SideDependentList<>(side -> robotWalkerFive.getFoot(side));
       soleFrames = new SideDependentList<>(side -> robotWalkerFive.getFootContactableBody(side).getSoleFrame());
       soleZUpFrames = new SideDependentList<>(side -> new ZUpFrame(soleFrames.get(side), soleFrames.get(side).getName() + "ZUp"));
       midFeetFrame = new MidFrameZUpFrame("midFeetZUpFrame", WORLD_FRAME, soleZUpFrames.get(RobotSide.LEFT), soleZUpFrames.get(RobotSide.RIGHT));
-
       contactableFeet = new SideDependentList<>(side -> robotWalkerFive.getFootContactableBody(side));
-
       bipedSupportPolygons = new BipedSupportPolygons(midFeetFrame, soleZUpFrames, soleFrames, registry, yoGraphicsListRegistry);
-      stateMachine = createStateMachine();
 
       useCapturePointTrajectory.set(true);
       isFirstStep.set(true);
@@ -291,7 +290,7 @@ public class RobotWalkerFiveController implements Controller
       visualizerPlannedFootSteps = new NFootstepListVisualizer(contactableFeet, yoGraphicsListRegistry, registry);
       capturePointTrajectory = new CapturePointTrajectory(omega0, registry);
 
-      //  create "bag-of-balls" to visualize the capture point trajectory
+      // Create "bag-of-balls" to visualize the capture point trajectory
       index = 0;
       numberOfControlTicksPerVizUpdate.set(100);
 
@@ -511,7 +510,7 @@ public class RobotWalkerFiveController implements Controller
    }
 
    /**
-    * The {@code calculateMeasuredCapturePointPosition} calculated the current capture point position
+    * The {@code calculateMeasuredCapturePointPosition} calculates the current capture point position
     * based on the center of mass position and velocity
     * 
     * @param measuredCoMPosition refers to the current center of mass position
@@ -835,7 +834,7 @@ public class RobotWalkerFiveController implements Controller
             FramePoint3D capturePointPosition = new FramePoint3D(WORLD_FRAME);
 
             // Get desired position and velocity for capture point based on double support trajectory          
-            capturePointTrajectory.computeDesiredCapturePointDoubleSupport(1, timeInState, capturePointPosition, capturePointVelocity);
+            capturePointTrajectory.calculateDesiredCapturePointDoubleSupport(1, timeInState, capturePointPosition, capturePointVelocity);
 
             // And now we pack the command for the controller core.
             sendCapturePointCommand(capturePointPosition, capturePointVelocity);
@@ -1014,7 +1013,7 @@ public class RobotWalkerFiveController implements Controller
          {
             FramePoint3D capturePointPosition = new FramePoint3D();
             FrameVector3D capturePointVelocity = new FrameVector3D();
-            capturePointTrajectory.computeDesiredCapturePointSingleSupport(timeInState, capturePointPosition, capturePointVelocity);
+            capturePointTrajectory.calculateDesiredCapturePointSingleSupport(0, timeInState, capturePointPosition, capturePointVelocity);
 
             // And now we pack the command for the controller core.
             sendCapturePointCommand(capturePointPosition, new FrameVector3D(WORLD_FRAME, capturePointVelocity));

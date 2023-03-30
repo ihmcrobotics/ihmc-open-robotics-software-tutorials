@@ -27,14 +27,19 @@ public class CapturePointTrajectory
 
    /** The number of steps to be considered when planning the capture point trajectory. */
    private int nStepsToPlan;
-   /** TODO. */
+
+   /** Parameter for inverted pendulum model: Math.sqrt(9.81 / CENTER_OF_MASS_HEIGHT) */
    private double omega0;
-   /** TODO. */
+
+   /** Parameter for double support duration according to Englsberger et al. */
    private final double alphaDSini = 0.5;
+
    /** Duration of leg swing. */
    private double swingDuration;
+
    /** Duration of double support. */
    private double doubleSupportDuration;
+
    /** List of planned footsteps (= virtual repellent points). */
    private ArrayList<Footstep> virtualRepellentPoints;
 
@@ -60,35 +65,56 @@ public class CapturePointTrajectory
       this.nStepsToPlan = plannedFootSteps.size() - 1;
    }
 
-   void computeDesiredCapturePointSingleSupport(double time,
-                                                FramePoint3DBasics desiredCapturePointPositionToPack,
-                                                FrameVector3DBasics desiredCaptureVelocityToPack)
+   /**
+    * The {@code computeDesiredCapturePointSingleSupport} calculates the desired capture point position
+    * and velocity for a time point in single support. Calculations are based on the paper of
+    * Englsberger et al. (www.doi.org/10.1109/TRO.2015.2405592)
+    * 
+    * @param stepNumber                        number of current step in the step plan
+    * @param timeIn                            refers to the current time in single support
+    * @param desiredCapturePointPositionToPack holds the calculated capture point position for the time
+    *                                          (modified)
+    * @param desiredCaptureVelocityToPack      holds the calculated capture point velocity for the time
+    *                                          (modified)
+    */
+   void calculateDesiredCapturePointSingleSupport(int stepNumber,
+                                                  double timeIn,
+                                                  FramePoint3DBasics desiredCapturePointPositionToPack,
+                                                  FrameVector3DBasics desiredCaptureVelocityToPack)
    {
-      FramePoint3D capturePointIniDS = new FramePoint3D();
       FramePoint3D capturePointEoDSTprevious = new FramePoint3D();
+      FramePoint3D capturePointIniDS = new FramePoint3D();
 
-      // end of DS  this step - start
-      calculateEndOfStepCPDoubleSupportPosition(0, capturePointEoDSTprevious);
-      // start of DS for next step - end
-      calculateInitialCPDoubleSupportPosition(1, capturePointIniDS);
+      // end of double support for this step 
+      calculateEndOfStepCPDoubleSupportPosition(stepNumber, capturePointEoDSTprevious);
+      // start of double support for next step 
+      calculateInitialCPDoubleSupportPosition(stepNumber + 1, capturePointIniDS);
 
       // calculate time dependent position and velocity of CP
-      calculateDesiredCPPositionSS(time, capturePointEoDSTprevious, capturePointIniDS, desiredCapturePointPositionToPack);
-      calculateDesiredCPVelocitySS(time, capturePointEoDSTprevious, capturePointIniDS, desiredCaptureVelocityToPack);
+      calculateDesiredCPPositionSingleSupport(timeIn, capturePointEoDSTprevious, capturePointIniDS, desiredCapturePointPositionToPack);
+      calculateDesiredCPVelocitySingleSupport(timeIn, capturePointEoDSTprevious, capturePointIniDS, desiredCaptureVelocityToPack);
 
       // visualization
       this.capturePointEoDST.set(capturePointEoDSTprevious);
       this.capturePointIniDS.set(capturePointIniDS);
-      this.startOfStepDesiredCPPosition.set(startOfStepDesiredCPPosition);
-      this.previousVRPPosition.set(previousVRPPosition);
-      this.currentVRPPosition.set(currentVRPPosition);
-
    }
 
-   void computeDesiredCapturePointDoubleSupport(int stepNumber,
-                                                double timeIn,
-                                                FramePoint3DBasics desiredCPPositionTopack,
-                                                FrameVector3DBasics desiredCPVelocityToPack)
+   /**
+    * The {@code computeDesiredCapturePointDoubleSupport} calculates the desired capture point position
+    * and velocity for a time point in double support. Calculations are based on the paper of
+    * Englsberger et al. (www.doi.org/10.1109/TRO.2015.2405592)
+    * 
+    * @param stepNumber                        number of current step in the step plan
+    * @param timeIn                            refers to the current time in double support
+    * @param desiredCapturePointPositionToPack holds the calculated capture point position for the time
+    *                                          (modified)
+    * @param desiredCaptureVelocityToPack      holds the calculated capture point velocity for the time
+    *                                          (modified)
+    */
+   void calculateDesiredCapturePointDoubleSupport(int stepNumber,
+                                                  double timeIn,
+                                                  FramePoint3DBasics desiredCapturePointPositionToPack,
+                                                  FrameVector3DBasics desiredCaptureVelocityToPack)
    {
       FrameVector3D a0 = new FrameVector3D();
       FrameVector3D a1 = new FrameVector3D();
@@ -108,31 +134,66 @@ public class CapturePointTrajectory
       desiredCPVelocity.scaleAdd(2.0 * timeIn, a1, desiredCPVelocity);
       desiredCPVelocity.add(a2);
 
-      desiredCPPositionTopack.set(desiredCPPosition);
-      desiredCPVelocityToPack.set(desiredCPVelocity);
+      desiredCapturePointPositionToPack.set(desiredCPPosition);
+      desiredCaptureVelocityToPack.set(desiredCPVelocity);
    }
 
-   void calculateDesiredCPPositionSS(double time,
-                                     FramePoint3DReadOnly capturePointStart,
-                                     FramePoint3DReadOnly capturePointEnd,
-                                     FramePoint3DBasics desiredCPPositiontoPack)
+   /**
+    * The {@code calculateDesiredCPPositionSingleSupport} calculates the desired capture point position
+    * in single support. Calculations are based on the paper of Englsberger et al.
+    * (www.doi.org/10.1109/TRO.2015.2405592)
+    * 
+    * @param timeIn                  refers to the current time in the single support phase
+    * @param capturePointStart       refers to the desired capture point position at the start of the
+    *                                single support phase
+    * @param capturePointEnd         refers to the desired capture point position at the end of the
+    *                                single support phase
+    * @param desiredCPPositiontoPack holds the calculated capture point position for the time in the
+    *                                single support phase (modified)
+    */
+   void calculateDesiredCPPositionSingleSupport(double timeIn,
+                                                FramePoint3DReadOnly capturePointPositionStartSS,
+                                                FramePoint3DReadOnly capturePointPositionEndSS,
+                                                FramePoint3DBasics desiredCPPositiontoPack)
    {
       FrameVector3D offset = new FrameVector3D();
-      offset.sub(capturePointEnd, capturePointStart);
-      desiredCPPositiontoPack.scaleAdd(Math.exp((time - swingDuration) * omega0), offset, capturePointStart);
+      offset.sub(capturePointPositionEndSS, capturePointPositionStartSS);
+      desiredCPPositiontoPack.scaleAdd(Math.exp((timeIn - swingDuration) * omega0), offset, capturePointPositionStartSS);
    }
 
-   void calculateDesiredCPVelocitySS(double time,
-                                     FramePoint3DReadOnly capturePointStart,
-                                     FramePoint3DReadOnly capturePointEnd,
-                                     FrameVector3DBasics desiredCPVelocitytoPack)
+   /**
+    * The {@code calculateDesiredCPVelocitySingleSupport} calculates the desired capture point velocity
+    * in single support. Calculations are based on the paper of Englsberger et al.
+    * (www.doi.org/10.1109/TRO.2015.2405592)
+    * 
+    * @param timeIn                  refers to the current time in the single support phase
+    * @param capturePointStart       refers to the desired capture point position at the start of the
+    *                                single support phase
+    * @param capturePointEnd         refers to the desired capture point position at the end of the
+    *                                single support phase
+    * @param desiredCPVelocitytoPack holds the calculated capture point velocity for the time in the
+    *                                single support phase (modified)
+    */
+   void calculateDesiredCPVelocitySingleSupport(double time,
+                                                FramePoint3DReadOnly capturePointPositionStartSS,
+                                                FramePoint3DReadOnly capturePointPositionEndSS,
+                                                FrameVector3DBasics desiredCPVelocitytoPack)
    {
       FrameVector3D offset = new FrameVector3D();
-      offset.sub(capturePointEnd, capturePointStart);
+      offset.sub(capturePointPositionEndSS, capturePointPositionStartSS);
       desiredCPVelocitytoPack.set(offset);
       desiredCPVelocitytoPack.scale(omega0 * Math.exp((time - swingDuration) * omega0));
    }
 
+   /**
+    * The {@code calculateCornerPoint} calculates the corner points for the capture point trajectory
+    * based on the planned footsteps (= virtual repellent points). Calculations are based on the paper
+    * of Englsberger et al. (www.doi.org/10.1109/TRO.2015.2405592)
+    * 
+    * @param stepNumber              number of current step in the step plan
+    * @param desiredCPPositiontoPack holds the calculated capture point corner position (modified)
+    * @param desiredCPVelocitytoPack holds the calculated capture point corner velocity (modified)
+    */
    void calculateCornerPoint(int stepNumber, FramePoint3DBasics desiredCPPositiontoPack, FrameVector3DBasics desiredCPVelocitytoPack)
    {
       FramePoint3D endOfStepDesiredCPPosition = new FramePoint3D();
@@ -158,6 +219,17 @@ public class CapturePointTrajectory
       desiredCPVelocitytoPack.scale(omega0 * Math.exp(deltaT * omega0));
    }
 
+   /**
+    * The {@code getPolynomParameters} calculates the polynomial parameters for the polynomial
+    * interpolation of the capture point trajectory (for not instantaneous transition). Calculations
+    * are based on the paper of Englsberger et al. (www.doi.org/10.1109/TRO.2015.2405592)
+    * 
+    * @param stepNumber number of current step in the step plan
+    * @param a0         holds the calculated polynomial parameter a0
+    * @param a1         holds the calculated polynomial parameter a1
+    * @param a2         holds the calculated polynomial parameter a2
+    * @param a3         holds the calculated polynomial parameter a3
+    */
    void getPolynomParameters(int stepNumber, FrameVector3DBasics a0, FrameVector3DBasics a1, FrameVector3DBasics a2, FrameVector3DBasics a3)
    {
       double invertedTs = 1.0 / doubleSupportDuration;
@@ -200,6 +272,15 @@ public class CapturePointTrajectory
       a3.set(capturePointIniDS);
    }
 
+   /**
+    * The {@code calculateEndOfStepCPDoubleSupportPosition} calculates the desired capture point
+    * position at the end of the double support phase. Calculations are based on the paper of
+    * Englsberger et al. (www.doi.org/10.1109/TRO.2015.2405592)
+    * 
+    * @param stepNumber              number of current step in the step plan
+    * @param capturePointEoSDSToPack holds the calculated capture point position at the end of the
+    *                                double support phase (modified)
+    */
    void calculateEndOfStepCPDoubleSupportPosition(int stepNumber, FramePoint3DBasics capturePointEoSDSToPack)
    {
       FramePoint3D currentVRPPosition = new FramePoint3D();
@@ -218,6 +299,15 @@ public class CapturePointTrajectory
       this.capturePointEoDST.set(capturePointEoSDSToPack);
    }
 
+   /**
+    * The {@code calculateEndOfStepCPDoubleSupportVelocity} calculates the desired capture point
+    * velocity at the end of the double support phase. Calculations are based on the paper of
+    * Englsberger et al. (www.doi.org/10.1109/TRO.2015.2405592)
+    * 
+    * @param stepNumber                      number of current step in the step plan
+    * @param capturePointEoSDSVelocityToPack holds the calculated capture point velocity at the end of
+    *                                        the double support phase (modified)
+    */
    void calculateEndOfStepCPDoubleSupportVelocity(int stepNumber, FrameVector3DBasics capturePointEoSDSVelocityToPack)
    {
       FramePoint3D startOfTrajectoryPoint = new FramePoint3D();
@@ -226,9 +316,18 @@ public class CapturePointTrajectory
       calculateEndOfStepCPDoubleSupportPosition(stepNumber + 1, endOfTrajectoryPoint);
       calculateInitialCPDoubleSupportPosition(stepNumber + 1, startOfTrajectoryPoint);
 
-      calculateDesiredCPVelocitySS(0.0, startOfTrajectoryPoint, endOfTrajectoryPoint, capturePointEoSDSVelocityToPack);
+      calculateDesiredCPVelocitySingleSupport(0.0, startOfTrajectoryPoint, endOfTrajectoryPoint, capturePointEoSDSVelocityToPack);
    }
 
+   /**
+    * The {@code calculateInitialCPDoubleSupportPosition} calculates the capture point position at the
+    * start of the double support phase. Calculations are based on the paper of Englsberger et al.
+    * (www.doi.org/10.1109/TRO.2015.2405592)
+    * 
+    * @param stepNumber              number of current step in the step plan
+    * @param capturePointIniDSToPack holds the calculated capture point position at the start of the
+    *                                double support phase (modified)
+    */
    void calculateInitialCPDoubleSupportPosition(int stepNumber, FramePoint3DBasics capturePointIniDSToPack)
    {
       FramePoint3D previousVRPPosition = new FramePoint3D();
@@ -247,6 +346,15 @@ public class CapturePointTrajectory
       this.capturePointIniDS.set(capturePointIniDS);
    }
 
+   /**
+    * The {@code calculateInitialCPDoubleSupportPosition} calculates the capture point velocity at the
+    * start of the double support phase. Calculations are based on the paper of Englsberger et al.
+    * (www.doi.org/10.1109/TRO.2015.2405592)
+    * 
+    * @param stepNumber              number of current step in the step plan
+    * @param capturePointIniDSToPack holds the calculated capture point velocity at the start of the
+    *                                double support phase (modified)
+    */
    void calculateInitialCPDoubleSupportVelocity(int stepNumber, FrameVector3DBasics capturePointIniDSVelocityToPack)
    {
       FramePoint3D startOfTrajectoryPoint = new FramePoint3D();
@@ -255,12 +363,15 @@ public class CapturePointTrajectory
       calculateEndOfStepCPDoubleSupportPosition(stepNumber, endOfTrajectoryPoint);
       calculateInitialCPDoubleSupportPosition(stepNumber, startOfTrajectoryPoint);
 
-      calculateDesiredCPVelocitySS(swingDuration, startOfTrajectoryPoint, endOfTrajectoryPoint, capturePointIniDSVelocityToPack);
+      calculateDesiredCPVelocitySingleSupport(swingDuration, startOfTrajectoryPoint, endOfTrajectoryPoint, capturePointIniDSVelocityToPack);
    }
 
+   /**
+    * The {@code createVisualization} creates visualizations for the planned capture point trajectory.
+    */
    public YoGraphicDefinition createVisualization()
    {
-      YoGraphicGroupDefinition graphicsGroup = new YoGraphicGroupDefinition("CPTPlanner");
+      YoGraphicGroupDefinition graphicsGroup = new YoGraphicGroupDefinition("CapturePointTrajectoryPlanner");
 
       graphicsGroup.addChild(YoGraphicDefinitionFactory.newYoGraphicPoint3D("capturePointIniDS", capturePointIniDS, 0.008, ColorDefinitions.Green()));
       graphicsGroup.addChild(YoGraphicDefinitionFactory.newYoGraphicPoint3D("capturePointEoDST", capturePointEoDST, 0.008, ColorDefinitions.Yellow()));

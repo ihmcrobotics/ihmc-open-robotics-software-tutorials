@@ -9,11 +9,11 @@ import us.ihmc.humanoidRobotics.footstep.Footstep;
 import us.ihmc.mecano.multiBodySystem.interfaces.RigidBodyBasics;
 import us.ihmc.robotics.robotSide.RobotSide;
 import us.ihmc.robotics.robotSide.SideDependentList;
-import us.ihmc.yoVariables.registry.YoRegistry;
 
 public class RobotWalkerFootStepPlanner
 {
    protected static final ReferenceFrame WORLD_FRAME = ReferenceFrame.getWorldFrame();
+
    protected SideDependentList<RigidBodyBasics> feet;
    protected SideDependentList<ReferenceFrame> soleFrames;
    protected SideDependentList<FramePose3D> currentSolePose;
@@ -55,10 +55,11 @@ public class RobotWalkerFootStepPlanner
       {
          updateCurrentPoseOnTrajectory();
          updateDesiredNextPoseOnTrajectory();
-         addFootStep(footStepList);
+         
+         addFootStepToList(desiredNextPoseOnTrajectory, footStepList);
 
          // pretend to take this step and plan the next step
-         updateTheoreticalFootStep(footStepList.get(i).getFootstepPose());
+         takeAStep(footStepList.get(i).getFootstepPose());
       }
    }
 
@@ -77,9 +78,7 @@ public class RobotWalkerFootStepPlanner
 
    protected void updateStepTranslation()
    {
-      double stepLength = walkingStrideLength;
-      double stepWidth = sideWayStepLength;
-      this.desiredWalkingPositionOffset = new FrameVector3D(WORLD_FRAME, stepLength, stepWidth, 0.0);
+      this.desiredWalkingPositionOffset = new FrameVector3D(WORLD_FRAME, walkingStrideLength, sideWayStepLength, 0.0);
    }
 
    protected void updateDesiredNextPoseOnTrajectory()
@@ -87,7 +86,8 @@ public class RobotWalkerFootStepPlanner
       FramePose3D desiredNextWalkingPose = new FramePose3D(WORLD_FRAME);
       desiredNextWalkingPose.set(currentPoseOnTrajectory);
       desiredNextWalkingPose.appendYawRotation(yawPerStep);
-      desiredNextWalkingPose.appendTranslation(this.desiredWalkingPositionOffset);
+      desiredNextWalkingPose.appendTranslation(desiredWalkingPositionOffset);
+      
       this.desiredNextPoseOnTrajectory.set(desiredNextWalkingPose);
    }
 
@@ -133,9 +133,10 @@ public class RobotWalkerFootStepPlanner
    {
       currentFootstepSide = startFootSide;
    }
-   private void addFootStep(ArrayList<Footstep> footStepList)
+
+   private void addFootStepToList(FramePose3D desiredNextPoseOnTrajectory, ArrayList<Footstep> footStepList )
    {
-      FramePose3D nextFootPose = new FramePose3D(WORLD_FRAME, this.desiredNextPoseOnTrajectory);
+      FramePose3D nextFootPose = new FramePose3D(WORLD_FRAME, desiredNextPoseOnTrajectory);
       FrameVector3D offset = getFootOffsetFromPath(currentFootstepSide);
       nextFootPose.appendTranslation(offset);
 
@@ -143,7 +144,7 @@ public class RobotWalkerFootStepPlanner
       footStepList.add(footstep);
    }
 
-   private void updateTheoreticalFootStep(FramePose3D nextFootPose)
+   private void takeAStep(FramePose3D nextFootPose)
    {
       currentSolePose.set(currentFootstepSide, nextFootPose);
       currentFootstepSide = currentFootstepSide.getOppositeSide();
