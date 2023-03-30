@@ -255,8 +255,8 @@ public class CapturePointTrajectory
       calculateInitialDoubleSupportCapturePointPosition(stepNumber, capturePointIniDS);
       calculateEndOfStepDoubleSupportCapturePointPosition(stepNumber, capturePointEoSDS);
 
-      calculateInitialDoubleSupportCapturePointVelocity(stepNumber, capturePointIniDSVelocity);
-      calculateEndOfStepDoubleSupportCapturePointVelocity(stepNumber, capturePointEoDSVelocity);
+      calculateInitialDoubleSupportCapturePointVelocity(stepNumber+1, capturePointEoDSVelocity);
+      calculateEndOfStepDoubleSupportCapturePointVelocity(stepNumber, capturePointIniDSVelocity);
 
       a0.set(capturePointIniDS);
       a0.scale(p11);
@@ -375,7 +375,7 @@ public class CapturePointTrajectory
    public YoGraphicDefinition createVisualization()
    {
       YoGraphicGroupDefinition graphicsGroup = new YoGraphicGroupDefinition("CapturePointTrajectoryPlanner");
-
+       
       graphicsGroup.addChild(YoGraphicDefinitionFactory.newYoGraphicPoint3D("capturePointIniDS", capturePointIniDS, 0.009, ColorDefinitions.Green()));
       graphicsGroup.addChild(YoGraphicDefinitionFactory.newYoGraphicPoint3D("capturePointEoDST", capturePointEoDST, 0.009, ColorDefinitions.Yellow()));
       graphicsGroup.addChild(YoGraphicDefinitionFactory.newYoGraphicPoint3D("startOfStepDesiredCPPosition",
