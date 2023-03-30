@@ -72,9 +72,8 @@ public class RobotWalkerFiveSimulation
       walkerController.initialize();
 
       // Add some variables - add it once, save scs2 simulation when closing it, and then comment out
+//      scs.addYoEntry("walkingControlMode");
 //      scs.addYoEntry("walk");
-//      scs.addYoEntry("useCapturePointTrajectory");
-//      scs.addYoEntry("useCapturePoint");
 //      scs.addYoEntry("rotationPerStep");
 //      scs.addYoEntry("transferDuration");
 //      scs.addYoEntry("swingDuration");
@@ -83,11 +82,9 @@ public class RobotWalkerFiveSimulation
 //      scs.addYoEntry("stepWidth");
 //      scs.addYoEntry("addTakeOffVelocity");
 //      scs.addYoEntry("addTouchDownVelocity");
-//      scs.addYoEntry("walkerWillFreakOut");
 //      scs.addYoEntry("desiredCapturePointX");
 //      scs.addYoEntry("desiredCapturePointY");
 //      scs.addYoEntry("desiredCapturePointZ");
-
 
       scs.addYoGraphic(walkerController.getYoGraphicDefinition());
 
@@ -106,7 +103,6 @@ public class RobotWalkerFiveSimulation
       scs.requestPlotter2DCoordinateTracking("measuredCapturePointX", "measuredCapturePointY", "worldFrame");
       scs.showOverheadPlotter2D(true);
 
-      
       // Launch the simulator.
       scs.start(false, false, false);
    }
