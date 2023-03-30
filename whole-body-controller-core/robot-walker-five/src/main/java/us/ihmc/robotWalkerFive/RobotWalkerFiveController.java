@@ -102,8 +102,6 @@ public class RobotWalkerFiveController implements Controller
    private WholeBodyControlCoreToolbox toolbox;
 
    private final YoBoolean walkerIsFalling = new YoBoolean("walkerIsFalling", registry);
-   //   private final YoBoolean useCapturePoint = new YoBoolean("useCapturePoint", registry);
-   //   private final YoBoolean useCapturePointTrajectory = new YoBoolean("useCapturePointTrajectory", registry);
    private final YoBoolean addTakeOffVelocity = new YoBoolean("addTakeOffVelocity", registry);
    private final YoBoolean addTouchDownVelocity = new YoBoolean("addTouchDownVelocity", registry);
    private final YoFramePoint3D feedForwardLinearVelocity = new YoFramePoint3D("feedForwardLinearVelocity", WORLD_FRAME, registry);
@@ -220,7 +218,6 @@ public class RobotWalkerFiveController implements Controller
 
    /** Reference to the active state. */
    private final YoEnum<WalkingControlMode> walkingControlMode;
-   
 
    /**
     * The finite state machine to which we register a set of specialized controllers and a set of
@@ -266,11 +263,11 @@ public class RobotWalkerFiveController implements Controller
 
       wholeBodyControllerCore = createControllerCore(controlDT, gravityZ, yoGraphicsListRegistry);
       stateMachine = createStateMachine();
-      
+
       walkingControlMode = new YoEnum<WalkingControlMode>("walkingControlMode", registry, WalkingControlMode.class);
       // select default control mode here
       walkingControlMode.set(WalkingControlMode.CAPTUREPOINT_TRAJECTORY);
-      
+
       feet = new SideDependentList<>(side -> robotWalkerFive.getFoot(side));
       soleFrames = new SideDependentList<>(side -> robotWalkerFive.getFootContactableBody(side).getSoleFrame());
       soleZUpFrames = new SideDependentList<>(side -> new ZUpFrame(soleFrames.get(side), soleFrames.get(side).getName() + "ZUp"));
@@ -290,7 +287,6 @@ public class RobotWalkerFiveController implements Controller
             swingDuration.set(0.9);
             stepLength.set(0.15);
             break;
-
          case CAPTUREPOINT:
             transferDuration.set(0.8);
             swingDuration.set(1.2);
@@ -349,6 +345,9 @@ public class RobotWalkerFiveController implements Controller
          graphicsGroup.addChild(YoGraphicDefinitionFactory.newYoGraphicPoint3D(name + i, yoFramePoint, ballSize, ColorDefinitions.Yellow()));
       }
       registry.addChild(ballregistry);
+
+      // add graphics definition from capture point trajectory class
+      graphicsGroup.addChild(capturePointTrajectory.getYoGraphicDefinition());
 
       return graphicsGroup;
    }

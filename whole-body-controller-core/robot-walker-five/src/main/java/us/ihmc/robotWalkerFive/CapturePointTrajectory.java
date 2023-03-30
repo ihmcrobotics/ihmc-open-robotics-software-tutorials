@@ -44,6 +44,7 @@ public class CapturePointTrajectory
    private ArrayList<Footstep> virtualRepellentPoints;
 
    private final YoRegistry registry = new YoRegistry(getClass().getSimpleName());
+   private final YoGraphicDefinition graphicsGroup;
 
    private YoFramePoint3D capturePointIniDS = new YoFramePoint3D("capturePointIniDS", WORLD_FRAME, registry);
    private YoFramePoint3D capturePointEoDST = new YoFramePoint3D("capturePointEoDST", WORLD_FRAME, registry);
@@ -53,6 +54,8 @@ public class CapturePointTrajectory
 
    public CapturePointTrajectory(double omega0, YoRegistry parentRegistry)
    {
+
+      this.graphicsGroup = createVisualization();
       this.omega0 = omega0;
       parentRegistry.addChild(registry);
    }
@@ -373,14 +376,14 @@ public class CapturePointTrajectory
    {
       YoGraphicGroupDefinition graphicsGroup = new YoGraphicGroupDefinition("CapturePointTrajectoryPlanner");
 
-      graphicsGroup.addChild(YoGraphicDefinitionFactory.newYoGraphicPoint3D("capturePointIniDS", capturePointIniDS, 0.01, ColorDefinitions.Green()));
-      graphicsGroup.addChild(YoGraphicDefinitionFactory.newYoGraphicPoint3D("capturePointEoDST", capturePointEoDST, 0.01, ColorDefinitions.Yellow()));
+      graphicsGroup.addChild(YoGraphicDefinitionFactory.newYoGraphicPoint3D("capturePointIniDS", capturePointIniDS, 0.009, ColorDefinitions.Green()));
+      graphicsGroup.addChild(YoGraphicDefinitionFactory.newYoGraphicPoint3D("capturePointEoDST", capturePointEoDST, 0.009, ColorDefinitions.Yellow()));
       graphicsGroup.addChild(YoGraphicDefinitionFactory.newYoGraphicPoint3D("startOfStepDesiredCPPosition",
                                                                             startOfStepDesiredCPPosition,
-                                                                            0.01,
+                                                                            0.009,
                                                                             ColorDefinitions.Crimson()));
-      graphicsGroup.addChild(YoGraphicDefinitionFactory.newYoGraphicPoint3D("previousVRPPosition", previousVRPPosition, 0.01, ColorDefinitions.LightPink()));
-      graphicsGroup.addChild(YoGraphicDefinitionFactory.newYoGraphicPoint3D("currentVRPPosition", currentVRPPosition, 0.01, ColorDefinitions.HotPink()));
+      graphicsGroup.addChild(YoGraphicDefinitionFactory.newYoGraphicPoint3D("previousVRPPosition", previousVRPPosition, 0.009, ColorDefinitions.LightPink()));
+      graphicsGroup.addChild(YoGraphicDefinitionFactory.newYoGraphicPoint3D("currentVRPPosition", currentVRPPosition, 0.009, ColorDefinitions.HotPink()));
 
       return graphicsGroup;
    }
@@ -388,5 +391,10 @@ public class CapturePointTrajectory
    public YoRegistry getYoRegistry()
    {
       return registry;
+   }
+
+   public YoGraphicDefinition getYoGraphicDefinition()
+   {
+      return graphicsGroup;
    }
 }
