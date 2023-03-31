@@ -14,7 +14,9 @@ import us.ihmc.scs2.definition.yoGraphic.YoGraphicDefinition;
 import us.ihmc.scs2.definition.yoGraphic.YoGraphicDefinitionFactory;
 import us.ihmc.scs2.definition.yoGraphic.YoGraphicGroupDefinition;
 import us.ihmc.yoVariables.euclid.referenceFrame.YoFramePoint3D;
+import us.ihmc.yoVariables.euclid.referenceFrame.YoFrameVector3D;
 import us.ihmc.yoVariables.registry.YoRegistry;
+import us.ihmc.yoVariables.variable.YoInteger;
 
 /**
  * This class allows to calculate a capture point trajectory based on planned footsteps. The method
@@ -26,7 +28,7 @@ public class CapturePointTrajectory
    private static final ReferenceFrame WORLD_FRAME = ReferenceFrame.getWorldFrame();
 
    /** The number of steps to be considered when planning the capture point trajectory. */
-   private int nStepsToPlan;
+   private final int nStepsToPlan;
 
    /** Parameter for inverted pendulum model: Math.sqrt(9.81 / CENTER_OF_MASS_HEIGHT) */
    private double omega0;
@@ -51,12 +53,19 @@ public class CapturePointTrajectory
    private YoFramePoint3D startOfStepDesiredCPPosition = new YoFramePoint3D("startOfStepDesiredCPPosition", WORLD_FRAME, registry);
    private YoFramePoint3D previousVRPPosition = new YoFramePoint3D("previousVRPPosition", WORLD_FRAME, registry);
    private YoFramePoint3D currentVRPPosition = new YoFramePoint3D("currentVRPPosition", WORLD_FRAME, registry);
+   private YoFrameVector3D capturePointEoDSVelocity = new YoFrameVector3D("capturePointEoDSVelocity", WORLD_FRAME, registry);
+   private YoFrameVector3D capturePointIniDSVelocity = new YoFrameVector3D("capturePointInitDSVelocity", WORLD_FRAME, registry);
 
-   public CapturePointTrajectory(double omega0, YoRegistry parentRegistry)
+   private int index;
+   private final ArrayList<YoFramePoint3D> yoGraphicPositions = new ArrayList<>();
+   private final YoInteger numberOfControlTicksPerVizUpdate = new YoInteger("numberOfControlTicksPerVizUpdate", registry);
+
+   public CapturePointTrajectory(double omega0, YoRegistry parentRegistry, int nStepsToPlan)
    {
-
+      this.nStepsToPlan = nStepsToPlan;
       this.graphicsGroup = createVisualization();
       this.omega0 = omega0;
+
       parentRegistry.addChild(registry);
    }
 
@@ -65,7 +74,10 @@ public class CapturePointTrajectory
       this.swingDuration = swingDuration;
       this.doubleSupportDuration = transferDuration;
       this.virtualRepellentPoints = plannedFootSteps;
-      this.nStepsToPlan = plannedFootSteps.size() - 1;
+
+      // Create "bag-of-balls" to visualize the capture point trajectory
+      index = 0;
+      numberOfControlTicksPerVizUpdate.set(300);
    }
 
    /**
@@ -85,21 +97,21 @@ public class CapturePointTrajectory
                                                   FramePoint3DBasics desiredCapturePointPositionToPack,
                                                   FrameVector3DBasics desiredCaptureVelocityToPack)
    {
-      FramePoint3D capturePointEoDSTprevious = new FramePoint3D();
-      FramePoint3D capturePointIniDS = new FramePoint3D();
+      FramePoint3D capturePointEoDSTpreviousStep = new FramePoint3D();
+      FramePoint3D capturePointIniDSnextStep = new FramePoint3D();
 
       // end of double support for this step 
-      calculateEndOfStepDoubleSupportCapturePointPosition(stepNumber, capturePointEoDSTprevious);
+      calculateEndOfStepDoubleSupportCapturePointPosition(stepNumber, capturePointEoDSTpreviousStep);
       // start of double support for next step 
-      calculateInitialDoubleSupportCapturePointPosition(stepNumber + 1, capturePointIniDS);
+      calculateInitialDoubleSupportCapturePointPosition(stepNumber + 1, capturePointIniDSnextStep);
 
       // calculate time dependent position and velocity of CP
-      calculateDesiredCapturePointPositionSingleSupport(timeIn, capturePointEoDSTprevious, capturePointIniDS, desiredCapturePointPositionToPack);
-      calculateDesiredCapturePointVelocitySingleSupport(timeIn, capturePointEoDSTprevious, capturePointIniDS, desiredCaptureVelocityToPack);
+      calculateDesiredCapturePointPositionSingleSupport(timeIn, capturePointEoDSTpreviousStep, capturePointIniDSnextStep, desiredCapturePointPositionToPack);
+      calculateDesiredCapturePointVelocitySingleSupport(timeIn, capturePointEoDSTpreviousStep, capturePointIniDSnextStep, desiredCaptureVelocityToPack);
 
       // visualization
-      this.capturePointEoDST.set(capturePointEoDSTprevious);
-      this.capturePointIniDS.set(capturePointIniDS);
+      this.capturePointEoDST.set(capturePointEoDSTpreviousStep);
+      this.capturePointIniDS.set(capturePointIniDSnextStep);
    }
 
    /**
@@ -119,6 +131,7 @@ public class CapturePointTrajectory
                                                   FramePoint3DBasics desiredCapturePointPositionToPack,
                                                   FrameVector3DBasics desiredCaptureVelocityToPack)
    {
+      // TODO check this
       FrameVector3D a0 = new FrameVector3D();
       FrameVector3D a1 = new FrameVector3D();
       FrameVector3D a2 = new FrameVector3D();
@@ -178,12 +191,12 @@ public class CapturePointTrajectory
     *                                single support phase (modified)
     */
    void calculateDesiredCapturePointVelocitySingleSupport(double time,
-                                                          FramePoint3DReadOnly capturePointPositionStartSS,
-                                                          FramePoint3DReadOnly capturePointPositionEndSS,
+                                                          FramePoint3DReadOnly capturePointPositionStartSingleSupport,
+                                                          FramePoint3DReadOnly capturePointPositionEndSingleSupport,
                                                           FrameVector3DBasics desiredCPVelocitytoPack)
    {
       FrameVector3D offset = new FrameVector3D();
-      offset.sub(capturePointPositionEndSS, capturePointPositionStartSS);
+      offset.sub(capturePointPositionEndSingleSupport, capturePointPositionStartSingleSupport);
       desiredCPVelocitytoPack.set(offset);
       desiredCPVelocitytoPack.scale(omega0 * Math.exp((time - swingDuration) * omega0));
    }
@@ -199,27 +212,37 @@ public class CapturePointTrajectory
     */
    void calculateCornerPoint(int stepNumber, FramePoint3DBasics desiredCPPositiontoPack, FrameVector3DBasics desiredCPVelocitytoPack)
    {
-      FramePoint3D endOfStepDesiredCPPosition = new FramePoint3D();
+      FramePoint3D endOfStepDesiredCapturePointPosition = new FramePoint3D();
       FramePoint3D virtualRepellentPointPosition = new FramePoint3D();
       virtualRepellentPoints.get(stepNumber).getPosition(virtualRepellentPointPosition);
 
       if (stepNumber == nStepsToPlan)
       {
-         endOfStepDesiredCPPosition.set(virtualRepellentPointPosition);
+         endOfStepDesiredCapturePointPosition.set(virtualRepellentPointPosition);
       }
       else
       {
          FrameVector3D endOfStepCPVelocity = new FrameVector3D();
-         calculateCornerPoint(stepNumber + 1, endOfStepDesiredCPPosition, endOfStepCPVelocity);
+         calculateCornerPoint(stepNumber + 1, endOfStepDesiredCapturePointPosition, endOfStepCPVelocity);
       }
 
       FrameVector3D offset = new FrameVector3D();
       double deltaT = 0.0 - swingDuration;
-      offset.sub(endOfStepDesiredCPPosition, virtualRepellentPointPosition);
+      offset.sub(endOfStepDesiredCapturePointPosition, virtualRepellentPointPosition);
       desiredCPPositiontoPack.scaleAdd(Math.exp(deltaT * omega0), offset, virtualRepellentPointPosition);
 
       desiredCPVelocitytoPack.set(offset);
       desiredCPVelocitytoPack.scale(omega0 * Math.exp(deltaT * omega0));
+
+      // visualize the capture point corner points 
+      if (index >= yoGraphicPositions.size())
+      {
+         index = 0;
+      }
+      yoGraphicPositions.get(index).set(desiredCPPositiontoPack);
+      yoGraphicPositions.get(index).setZ(0.0);
+      ;
+      index++;
    }
 
    /**
@@ -248,15 +271,24 @@ public class CapturePointTrajectory
       double p24 = (-1.0 * invertedTs);
 
       FramePoint3D capturePointIniDS = new FramePoint3D();
+      FramePoint3D capturePointIniDSnext = new FramePoint3D();
       FramePoint3D capturePointEoSDS = new FramePoint3D();
+      FramePoint3D capturePointEoSDSprevious = new FramePoint3D();
       FrameVector3D capturePointIniDSVelocity = new FrameVector3D();
       FrameVector3D capturePointEoDSVelocity = new FrameVector3D();
 
+      calculateInitialDoubleSupportCapturePointPosition(stepNumber + 1, capturePointIniDSnext);
+      calculateEndOfStepDoubleSupportCapturePointPosition(stepNumber - 1, capturePointEoSDSprevious);
+
+      // positions
       calculateInitialDoubleSupportCapturePointPosition(stepNumber, capturePointIniDS);
       calculateEndOfStepDoubleSupportCapturePointPosition(stepNumber, capturePointEoSDS);
 
-      calculateInitialDoubleSupportCapturePointVelocity(stepNumber+1, capturePointEoDSVelocity);
-      calculateEndOfStepDoubleSupportCapturePointVelocity(stepNumber, capturePointIniDSVelocity);
+      // velocity for start of double support = velocity of end of previous single support
+      calculateDesiredCapturePointVelocitySingleSupport(swingDuration, capturePointEoSDSprevious, capturePointIniDS, capturePointIniDSVelocity);
+
+      // velocity for end of double support = velocity of start of next single support phase
+      calculateDesiredCapturePointVelocitySingleSupport(0.0, capturePointEoSDS, capturePointIniDSnext, capturePointEoDSVelocity);
 
       a0.set(capturePointIniDS);
       a0.scale(p11);
@@ -273,6 +305,19 @@ public class CapturePointTrajectory
       a2.set(capturePointIniDSVelocity);
 
       a3.set(capturePointIniDS);
+
+      // TODO check why end of double support velocity seems not to be considered for polynomial
+      this.startOfStepDesiredCPPosition.set(capturePointIniDS);
+      this.capturePointEoDST.set(capturePointEoSDS);
+
+      this.capturePointEoDSVelocity.set(capturePointEoDSVelocity);
+      this.capturePointEoDSVelocity.normalize();
+      this.capturePointEoDSVelocity.scale(0.1);
+
+      this.capturePointIniDSVelocity.set(capturePointIniDSVelocity);
+      this.capturePointIniDSVelocity.normalize();
+      this.capturePointIniDSVelocity.scale(0.1);
+
    }
 
    /**
@@ -303,26 +348,6 @@ public class CapturePointTrajectory
    }
 
    /**
-    * The {@code calculateEndOfStepDoubleSupportCapturePointVelocity} calculates the desired capture
-    * point velocity at the end of the double support phase. Calculations are based on the paper of
-    * Englsberger et al. (www.doi.org/10.1109/TRO.2015.2405592)
-    * 
-    * @param stepNumber                      number of current step in the step plan
-    * @param capturePointEoSDSVelocityToPack holds the calculated capture point velocity at the end of
-    *                                        the double support phase (modified)
-    */
-   void calculateEndOfStepDoubleSupportCapturePointVelocity(int stepNumber, FrameVector3DBasics capturePointEoSDSVelocityToPack)
-   {
-      FramePoint3D startOfTrajectoryPoint = new FramePoint3D();
-      FramePoint3D endOfTrajectoryPoint = new FramePoint3D();
-
-      calculateEndOfStepDoubleSupportCapturePointPosition(stepNumber + 1, endOfTrajectoryPoint);
-      calculateInitialDoubleSupportCapturePointPosition(stepNumber + 1, startOfTrajectoryPoint);
-
-      calculateDesiredCapturePointVelocitySingleSupport(0.0, startOfTrajectoryPoint, endOfTrajectoryPoint, capturePointEoSDSVelocityToPack);
-   }
-
-   /**
     * The {@code calculateInitialDoubleSupportCapturePointPosition} calculates the capture point
     * position at the start of the double support phase. Calculations are based on the paper of
     * Englsberger et al. (www.doi.org/10.1109/TRO.2015.2405592)
@@ -346,27 +371,7 @@ public class CapturePointTrajectory
       capturePointIniDSToPack.scaleAdd(Math.exp(-1.0 * deltaTDini * doubleSupportDuration * omega0), offset, previousVRPPosition);
 
       this.startOfStepDesiredCPPosition.set(startOfStepDesiredCPPosition);
-      this.capturePointIniDS.set(capturePointIniDS);
-   }
-
-   /**
-    * The {@code calculateInitialCPDoubleSupportPosition} calculates the capture point velocity at the
-    * start of the double support phase. Calculations are based on the paper of Englsberger et al.
-    * (www.doi.org/10.1109/TRO.2015.2405592)
-    * 
-    * @param stepNumber                      number of current step in the step plan
-    * @param capturePointIniDSVelocityToPack holds the calculated capture point velocity at the start
-    *                                        of the double support phase (modified)
-    */
-   void calculateInitialDoubleSupportCapturePointVelocity(int stepNumber, FrameVector3DBasics capturePointIniDSVelocityToPack)
-   {
-      FramePoint3D startOfTrajectoryPoint = new FramePoint3D();
-      FramePoint3D endOfTrajectoryPoint = new FramePoint3D();
-
-      calculateEndOfStepDoubleSupportCapturePointPosition(stepNumber, endOfTrajectoryPoint);
-      calculateInitialDoubleSupportCapturePointPosition(stepNumber, startOfTrajectoryPoint);
-
-      calculateDesiredCapturePointVelocitySingleSupport(swingDuration, startOfTrajectoryPoint, endOfTrajectoryPoint, capturePointIniDSVelocityToPack);
+      this.capturePointIniDS.set(capturePointIniDSToPack);
    }
 
    /**
@@ -375,7 +380,7 @@ public class CapturePointTrajectory
    public YoGraphicDefinition createVisualization()
    {
       YoGraphicGroupDefinition graphicsGroup = new YoGraphicGroupDefinition("CapturePointTrajectoryPlanner");
-       
+
       graphicsGroup.addChild(YoGraphicDefinitionFactory.newYoGraphicPoint3D("capturePointIniDS", capturePointIniDS, 0.009, ColorDefinitions.Green()));
       graphicsGroup.addChild(YoGraphicDefinitionFactory.newYoGraphicPoint3D("capturePointEoDST", capturePointEoDST, 0.009, ColorDefinitions.Yellow()));
       graphicsGroup.addChild(YoGraphicDefinitionFactory.newYoGraphicPoint3D("startOfStepDesiredCPPosition",
@@ -384,6 +389,33 @@ public class CapturePointTrajectory
                                                                             ColorDefinitions.Crimson()));
       graphicsGroup.addChild(YoGraphicDefinitionFactory.newYoGraphicPoint3D("previousVRPPosition", previousVRPPosition, 0.009, ColorDefinitions.LightPink()));
       graphicsGroup.addChild(YoGraphicDefinitionFactory.newYoGraphicPoint3D("currentVRPPosition", currentVRPPosition, 0.009, ColorDefinitions.HotPink()));
+      graphicsGroup.addChild(YoGraphicDefinitionFactory.newYoGraphicArrow3D("endofDSVelocity",
+                                                                            capturePointEoDST,
+                                                                            capturePointEoDSVelocity,
+                                                                            0.5,
+                                                                            ColorDefinitions.Yellow()));
+      //TODO 
+      //      graphicsGroup.addChild(YoGraphicDefinitionFactory.newYoGraphicArrow3D("startofDSVelocity",
+      //                                                                            capturePointIniDS,
+      //                                                                            capturePointIniDSVelocity,
+      //                                                                            0.5,
+      //                                                                            ColorDefinitions.Green()));
+
+      // visualize the capture point corner point on the path
+      String name = "capturePointCornerPoints";
+      YoRegistry cpCornerPoints = new YoRegistry("capturePointCornerPoints");
+
+      int numberOfBalls = nStepsToPlan;
+      double ballSize = 0.008;
+      for (int i = 0; i <= numberOfBalls; i++)
+      {
+         YoFramePoint3D yoFramePoint = new YoFramePoint3D(name + i, "", WORLD_FRAME, cpCornerPoints);
+         yoFramePoint.setToNaN();
+         yoGraphicPositions.add(yoFramePoint);
+
+         graphicsGroup.addChild(YoGraphicDefinitionFactory.newYoGraphicPoint3D(name + i, yoFramePoint, ballSize, ColorDefinitions.DarkViolet()));
+      }
+      registry.addChild(cpCornerPoints);
 
       return graphicsGroup;
    }

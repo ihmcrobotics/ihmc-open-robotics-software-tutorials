@@ -111,7 +111,6 @@ public class RobotWalkerFiveController implements Controller
    private RobotWalkerFootStepPlanner footStepPlanner;
    private NFootstepListVisualizer visualizerPlannedFootSteps;
    private CapturePointTrajectory capturePointTrajectory;
-   private final int numberOfStepsToPlan = 3;
    private final YoDouble rotationPerStep = new YoDouble("rotationPerStep", registry);
    private final YoBoolean isFirstStep = new YoBoolean("isFirstStep", registry);
 
@@ -128,6 +127,11 @@ public class RobotWalkerFiveController implements Controller
    private final YoFramePoint3D correctedCMP = new YoFramePoint3D("correctedCentroidalMomentPivotPosition", WORLD_FRAME, registry);
    private final YoFramePoint3D originalCMP = new YoFramePoint3D("originalCentroidalMomentPivotPosition", WORLD_FRAME, registry);
    private final YoFramePoint3D desiredCapturePoint = new YoFramePoint3D("desiredCapturePoint", WORLD_FRAME, registry);
+
+   /**
+    * This variable defines the number of steps that are planned.
+    */
+   private final int numberOfStepsToPlan = 3;
 
    /**
     * This variable triggers the controller to initiate walking.
@@ -293,6 +297,10 @@ public class RobotWalkerFiveController implements Controller
             stepLength.set(0.2);
             break;
          case CAPTUREPOINT_TRAJECTORY:
+            //            transferDuration.set(1.2);
+            //            swingDuration.set(0.9);
+            //            stepLength.set(0.15);
+
             transferDuration.set(0.3);
             swingDuration.set(0.6);
             stepLength.set(0.25);
@@ -304,7 +312,7 @@ public class RobotWalkerFiveController implements Controller
       // Setup planner for footsteps and capture point trajectory 
       footStepPlanner = new RobotWalkerFootStepPlanner(feet, soleFrames, numberOfStepsToPlan);
       visualizerPlannedFootSteps = new NFootstepListVisualizer(contactableFeet, yoGraphicsListRegistry, registry);
-      capturePointTrajectory = new CapturePointTrajectory(omega0, registry);
+      capturePointTrajectory = new CapturePointTrajectory(omega0, registry, numberOfStepsToPlan);
 
       // Create "bag-of-balls" to visualize the capture point trajectory
       index = 0;
@@ -598,7 +606,6 @@ public class RobotWalkerFiveController implements Controller
     */
    public void sendCapturePointCommand(FramePoint3DReadOnly desiredCapturePointPosition, FrameVector3DReadOnly desiredCapturePointVelocity)
    {
-
       FramePoint3D measuredCoMPosition = new FramePoint3D(WORLD_FRAME, toolbox.getCenterOfMassFrame().getTransformToWorldFrame().getTranslation());
       FrameVector3D measuredCoMVelocity = new FrameVector3D(WORLD_FRAME, toolbox.getCentroidalMomentumRateCalculator().getCenterOfMassVelocity());
 
@@ -824,7 +831,7 @@ public class RobotWalkerFiveController implements Controller
             currentFootStep.setPose(footPose);
             currentPlannedFootStepList.add(0, currentFootStep);
 
-            Footstep initialFootStep = new Footstep(transferToSide);
+            Footstep initialFootStep = new Footstep(transferToSide.getOppositeSide());
             FramePose3D midFootPose = new FramePose3D(midFeetFrame);
             midFootPose.changeFrame(WORLD_FRAME);
             initialFootStep.setPose(midFootPose);
@@ -857,6 +864,7 @@ public class RobotWalkerFiveController implements Controller
 
             // And now we pack the command for the controller core.
             sendCapturePointCommand(capturePointPosition, capturePointVelocity);
+            isFirstStep.set(false);
          }
          else if (walkingControlMode.getEnumValue() == WalkingControlMode.CAPTUREPOINT)
          {
