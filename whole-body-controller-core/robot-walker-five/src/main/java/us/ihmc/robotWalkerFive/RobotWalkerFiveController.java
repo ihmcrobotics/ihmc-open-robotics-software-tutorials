@@ -822,7 +822,6 @@ public class RobotWalkerFiveController implements Controller
 
             ArrayList<Footstep> currentPlannedFootStepList = new ArrayList<Footstep>();
             currentPlannedFootStepList = footStepPlanner.generateDesiredFootstepList();
-            footStepPlanner.generateFootsteps(currentPlannedFootStepList);
 
             // Setup trajectory for capture point
             Footstep currentFootStep = new Footstep(transferToSide);
@@ -972,7 +971,6 @@ public class RobotWalkerFiveController implements Controller
 
          ArrayList<Footstep> currentPlannedFootStepList = new ArrayList<Footstep>();
          currentPlannedFootStepList = footStepPlanner.generateDesiredFootstepList();
-         footStepPlanner.generateFootsteps(currentPlannedFootStepList);
 
          if (!walk.getBooleanValue())
          {
