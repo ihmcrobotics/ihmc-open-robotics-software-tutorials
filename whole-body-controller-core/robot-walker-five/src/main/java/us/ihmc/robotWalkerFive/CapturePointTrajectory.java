@@ -71,6 +71,7 @@ public class CapturePointTrajectory
 
    void initialize(ArrayList<Footstep> plannedFootSteps, double swingDuration, double transferDuration)
    {
+      // TODO make sure these are updated when user changes them in SCS2
       this.swingDuration = swingDuration;
       this.doubleSupportDuration = transferDuration;
       this.virtualRepellentPoints = plannedFootSteps;
@@ -128,27 +129,27 @@ public class CapturePointTrajectory
     */
    void calculateDesiredCapturePointDoubleSupport(int stepNumber,
                                                   double timeIn,
+                                                  double doubleSupportDuration,
                                                   FramePoint3DBasics desiredCapturePointPositionToPack,
                                                   FrameVector3DBasics desiredCaptureVelocityToPack)
    {
-      // TODO check this
+      // TODO organize these calculations nicer 
       FrameVector3D a0 = new FrameVector3D();
       FrameVector3D a1 = new FrameVector3D();
       FrameVector3D a2 = new FrameVector3D();
       FrameVector3D a3 = new FrameVector3D();
 
-      getPolynomParameters(stepNumber, a0, a1, a2, a3);
+      getPolynomParameters(stepNumber, doubleSupportDuration, a0, a1, a2, a3);
 
       FramePoint3D desiredCPPosition = new FramePoint3D();
-      desiredCPPosition.scaleAdd(timeIn * timeIn * timeIn, a0, desiredCPPosition);
-      desiredCPPosition.scaleAdd(timeIn * timeIn, a1, desiredCPPosition);
-      desiredCPPosition.scaleAdd(timeIn, a2, desiredCPPosition);
-      desiredCPPosition.add(a3);
+      desiredCPPosition.setX(timeIn * timeIn * timeIn * a0.getX() + timeIn * timeIn * a1.getX() + timeIn * a2.getX() + a3.getX());
+      desiredCPPosition.setY(timeIn * timeIn * timeIn * a0.getY() + timeIn * timeIn * a1.getY() + timeIn * a2.getY() + a3.getY());
+      desiredCPPosition.setZ(timeIn * timeIn * timeIn * a0.getZ() + timeIn * timeIn * a1.getZ() + timeIn * a2.getZ() + a3.getZ());
 
       FrameVector3D desiredCPVelocity = new FrameVector3D();
-      desiredCPVelocity.scaleAdd(3.0 * timeIn * timeIn, a0, desiredCPVelocity);
-      desiredCPVelocity.scaleAdd(2.0 * timeIn, a1, desiredCPVelocity);
-      desiredCPVelocity.add(a2);
+      desiredCPVelocity.setX(3.0 * timeIn * timeIn * a0.getX() + 2.0 * timeIn * a1.getX() + a2.getX());
+      desiredCPVelocity.setY(3.0 * timeIn * timeIn * a0.getY() + 2.0 * timeIn * a1.getY() + a2.getY());
+      desiredCPVelocity.setZ(3.0 * timeIn * timeIn * a0.getZ() + 2.0 * timeIn * a1.getZ() + a2.getZ());
 
       desiredCapturePointPositionToPack.set(desiredCPPosition);
       desiredCaptureVelocityToPack.set(desiredCPVelocity);
@@ -256,19 +257,34 @@ public class CapturePointTrajectory
     * @param a2         holds the calculated polynomial parameter a2
     * @param a3         holds the calculated polynomial parameter a3
     */
-   void getPolynomParameters(int stepNumber, FrameVector3DBasics a0, FrameVector3DBasics a1, FrameVector3DBasics a2, FrameVector3DBasics a3)
+   void getPolynomParameters(int stepNumber,
+                             double doubleSupportDuration,
+                             FrameVector3DBasics a0,
+                             FrameVector3DBasics a1,
+                             FrameVector3DBasics a2,
+                             FrameVector3DBasics a3)
    {
       double invertedTs = 1.0 / doubleSupportDuration;
 
-      double p11 = (2.0 * invertedTs * invertedTs * invertedTs);
-      double p12 = (invertedTs * invertedTs);
-      double p13 = (-2.0 * invertedTs * invertedTs * invertedTs);
-      double p14 = (invertedTs * invertedTs);
+      double b11 = (2.0 * invertedTs * invertedTs * invertedTs);
+      double b12 = (invertedTs * invertedTs);
+      double b13 = (-2.0 * invertedTs * invertedTs * invertedTs);
+      double b14 = (invertedTs * invertedTs);
 
-      double p21 = (-3.0 * invertedTs * invertedTs);
-      double p22 = (-2.0 * invertedTs);
-      double p23 = (3.0 * invertedTs * invertedTs);
-      double p24 = (-1.0 * invertedTs);
+      double b21 = (-3.0 * invertedTs * invertedTs);
+      double b22 = (-2.0 * invertedTs);
+      double b23 = (3.0 * invertedTs * invertedTs);
+      double b24 = (-1.0 * invertedTs);
+
+      double b31 = 0.0;
+      double b32 = 1.0;
+      double b33 = 0.0;
+      double b34 = 0.0;
+
+      double b41 = 1.0;
+      double b42 = 0.0;
+      double b43 = 0.0;
+      double b44 = 0.0;
 
       FramePoint3D capturePointIniDS = new FramePoint3D();
       FramePoint3D capturePointIniDSnext = new FramePoint3D();
@@ -290,21 +306,38 @@ public class CapturePointTrajectory
       // velocity for end of double support = velocity of start of next single support phase
       calculateDesiredCapturePointVelocitySingleSupport(0.0, capturePointEoSDS, capturePointIniDSnext, capturePointEoDSVelocity);
 
-      a0.set(capturePointIniDS);
-      a0.scale(p11);
-      a0.scaleAdd(p12, capturePointIniDSVelocity, a0);
-      a0.scaleAdd(p13, capturePointEoSDS, a0);
-      a0.scaleAdd(p14, capturePointEoDSVelocity, a0);
+      double p11 = b11 * capturePointIniDS.getX() + b12 * capturePointIniDSVelocity.getX() + b13 * capturePointEoSDS.getX()
+                   + b14 * capturePointEoDSVelocity.getX();
+      double p12 = b11 * capturePointIniDS.getY() + b12 * capturePointIniDSVelocity.getY() + b13 * capturePointEoSDS.getY()
+                   + b14 * capturePointEoDSVelocity.getY();
+      double p13 = b11 * capturePointIniDS.getZ() + b12 * capturePointIniDSVelocity.getZ() + b13 * capturePointEoSDS.getZ()
+                   + b14 * capturePointEoDSVelocity.getZ();
 
-      a1.set(capturePointIniDS);
-      a1.scale(p21);
-      a1.scaleAdd(p22, capturePointIniDSVelocity, a1);
-      a1.scaleAdd(p23, capturePointEoSDS, a1);
-      a1.scaleAdd(p24, capturePointEoDSVelocity, a1);
+      double p21 = b21 * capturePointIniDS.getX() + b22 * capturePointIniDSVelocity.getX() + b23 * capturePointEoSDS.getX()
+                   + b24 * capturePointEoDSVelocity.getX();
+      double p22 = b21 * capturePointIniDS.getY() + b22 * capturePointIniDSVelocity.getY() + b23 * capturePointEoSDS.getY()
+                   + b24 * capturePointEoDSVelocity.getY();
+      double p23 = b21 * capturePointIniDS.getZ() + b22 * capturePointIniDSVelocity.getZ() + b23 * capturePointEoSDS.getZ()
+                   + b24 * capturePointEoDSVelocity.getZ();
 
-      a2.set(capturePointIniDSVelocity);
+      double p31 = b31 * capturePointIniDS.getX() + b32 * capturePointIniDSVelocity.getX() + b33 * capturePointEoSDS.getX()
+                   + b34 * capturePointEoDSVelocity.getX();
+      double p32 = b31 * capturePointIniDS.getY() + b32 * capturePointIniDSVelocity.getY() + b33 * capturePointEoSDS.getY()
+                   + b34 * capturePointEoDSVelocity.getY();
+      double p33 = b31 * capturePointIniDS.getZ() + b32 * capturePointIniDSVelocity.getZ() + b33 * capturePointEoSDS.getZ()
+                   + b34 * capturePointEoDSVelocity.getZ();
 
-      a3.set(capturePointIniDS);
+      double p41 = b41 * capturePointIniDS.getX() + b42 * capturePointIniDSVelocity.getX() + b43 * capturePointEoSDS.getX()
+                   + b44 * capturePointEoDSVelocity.getX();
+      double p42 = b41 * capturePointIniDS.getY() + b42 * capturePointIniDSVelocity.getY() + b43 * capturePointEoSDS.getY()
+                   + b44 * capturePointEoDSVelocity.getY();
+      double p43 = b41 * capturePointIniDS.getZ() + b42 * capturePointIniDSVelocity.getZ() + b43 * capturePointEoSDS.getZ()
+                   + b44 * capturePointEoDSVelocity.getZ();
+
+      a0.set(p11, p12, p13);
+      a1.set(p21, p22, p23);
+      a2.set(p31, p32, p33);
+      a3.set(p41, p42, p43);
 
       // TODO check why end of double support velocity seems not to be considered for polynomial
       this.startOfStepDesiredCPPosition.set(capturePointIniDS);
@@ -382,24 +415,26 @@ public class CapturePointTrajectory
       YoGraphicGroupDefinition graphicsGroup = new YoGraphicGroupDefinition("CapturePointTrajectoryPlanner");
 
       graphicsGroup.addChild(YoGraphicDefinitionFactory.newYoGraphicPoint3D("capturePointIniDS", capturePointIniDS, 0.009, ColorDefinitions.Green()));
+      //TODO visualize only when correct 
+      graphicsGroup.addChild(YoGraphicDefinitionFactory.newYoGraphicArrow3D("iniDSVelocity",
+                                                                            capturePointIniDS,
+                                                                            capturePointIniDSVelocity,
+                                                                            0.5,
+                                                                            ColorDefinitions.Green()));
+
       graphicsGroup.addChild(YoGraphicDefinitionFactory.newYoGraphicPoint3D("capturePointEoDST", capturePointEoDST, 0.009, ColorDefinitions.Yellow()));
+      graphicsGroup.addChild(YoGraphicDefinitionFactory.newYoGraphicArrow3D("endofDSVelocity",
+                                                                            capturePointEoDST,
+                                                                            capturePointEoDSVelocity,
+                                                                            0.5,
+                                                                            ColorDefinitions.Yellow()));
+
       graphicsGroup.addChild(YoGraphicDefinitionFactory.newYoGraphicPoint3D("startOfStepDesiredCPPosition",
                                                                             startOfStepDesiredCPPosition,
                                                                             0.009,
                                                                             ColorDefinitions.Crimson()));
       graphicsGroup.addChild(YoGraphicDefinitionFactory.newYoGraphicPoint3D("previousVRPPosition", previousVRPPosition, 0.009, ColorDefinitions.LightPink()));
       graphicsGroup.addChild(YoGraphicDefinitionFactory.newYoGraphicPoint3D("currentVRPPosition", currentVRPPosition, 0.009, ColorDefinitions.HotPink()));
-      graphicsGroup.addChild(YoGraphicDefinitionFactory.newYoGraphicArrow3D("endofDSVelocity",
-                                                                            capturePointEoDST,
-                                                                            capturePointEoDSVelocity,
-                                                                            0.5,
-                                                                            ColorDefinitions.Yellow()));
-      //TODO 
-      //      graphicsGroup.addChild(YoGraphicDefinitionFactory.newYoGraphicArrow3D("startofDSVelocity",
-      //                                                                            capturePointIniDS,
-      //                                                                            capturePointIniDSVelocity,
-      //                                                                            0.5,
-      //                                                                            ColorDefinitions.Green()));
 
       // visualize the capture point corner point on the path
       String name = "capturePointCornerPoints";

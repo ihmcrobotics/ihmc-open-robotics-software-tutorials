@@ -80,7 +80,7 @@ public class RobotWalkerFootStepPlanner
       initializeFeetPose();
       updateStepTranslation(walkingStrideLength, sideWayStepLength);
 
-      for (int i = 0; i <= nStepsToPlan; i++)
+      for (int i = 0; i < nStepsToPlan; i++)
       {
          updateCurrentPoseOnPath(currentPoseOnPath);
          updateDesiredNextPoseOnPath(yawPerStep, currentPoseOnPath, desiredWalkingPositionOffset, desiredNextPoseOnPath);
@@ -89,6 +89,7 @@ public class RobotWalkerFootStepPlanner
          // pretend to take this step and plan the next step
          takeAStep(footStepListToPack.get(i).getFootstepPose());
       }
+      footStepListToPack.trimToSize();
    }
 
    /**

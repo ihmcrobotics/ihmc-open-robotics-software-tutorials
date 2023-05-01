@@ -663,7 +663,7 @@ public class RobotWalkerFiveController implements Controller
       // check if correction is needed
       if (!bipedSupportPolygons.getSupportPolygonInWorld()
                                .isPointInside(new FramePoint2D(WORLD_FRAME, desCentroidalMomentPivotToPack.getX(), desCentroidalMomentPivotToPack.getY()))
-            && !desCentroidalMomentPivotToPack.equals(measuredCapturePointPosition))
+          && !desCentroidalMomentPivotToPack.equals(measuredCapturePointPosition))
       {
          FramePoint2D correctedCMP2D = new FramePoint2D(WORLD_FRAME);
          FramePoint2D firstPointOnLine = new FramePoint2D(WORLD_FRAME);
@@ -859,7 +859,7 @@ public class RobotWalkerFiveController implements Controller
             FramePoint3D capturePointPosition = new FramePoint3D(WORLD_FRAME);
 
             // Get desired position and velocity for capture point based on double support trajectory          
-            capturePointTrajectory.calculateDesiredCapturePointDoubleSupport(1, timeInState, capturePointPosition, capturePointVelocity);
+            capturePointTrajectory.calculateDesiredCapturePointDoubleSupport(1, timeInState, transferDuration.getDoubleValue(), capturePointPosition, capturePointVelocity);
 
             // And now we pack the command for the controller core.
             sendCapturePointCommand(capturePointPosition, capturePointVelocity);
@@ -975,6 +975,11 @@ public class RobotWalkerFiveController implements Controller
          if (!walk.getBooleanValue())
          {
             currentPlannedFootStepList.clear();
+            Footstep stopSecondFootStep = new Footstep(supportSide);
+            FramePose3D secondFootPose = new FramePose3D(soleFrames.get(supportSide));
+            secondFootPose.changeFrame(WORLD_FRAME);
+            stopSecondFootStep.setPose(secondFootPose);
+
             Footstep stopFootStep = new Footstep(swingSide);
             FramePose3D footPose = new FramePose3D(soleFrames.get(supportSide));
             if (supportSide.equals(RobotSide.RIGHT))
@@ -987,8 +992,12 @@ public class RobotWalkerFiveController implements Controller
             }
             footPose.changeFrame(WORLD_FRAME);
             stopFootStep.setPose(footPose);
+            
+            //TODO make it work with only one footstep planned
             currentPlannedFootStepList.add(0, stopFootStep);
-
+            currentPlannedFootStepList.add(0, stopSecondFootStep);
+            currentPlannedFootStepList.add(0, stopFootStep);
+                        
             isStopping.set(true);
          }
 
