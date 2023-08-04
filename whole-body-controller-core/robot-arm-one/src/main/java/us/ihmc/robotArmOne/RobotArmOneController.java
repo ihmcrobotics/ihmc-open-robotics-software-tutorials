@@ -4,13 +4,25 @@ import java.util.EnumMap;
 
 import org.apache.commons.lang3.StringUtils;
 
+import us.ihmc.mecano.multiBodySystem.interfaces.OneDoFJointReadOnly;
 import us.ihmc.robotArmOne.SevenDoFArmParameters.SevenDoFArmJointEnum;
-import us.ihmc.simulationconstructionset.util.RobotController;
+import us.ihmc.scs2.definition.controller.ControllerInput;
+import us.ihmc.scs2.definition.controller.ControllerOutput;
+import us.ihmc.scs2.definition.controller.interfaces.Controller;
+import us.ihmc.scs2.definition.state.interfaces.OneDoFJointStateBasics;
 import us.ihmc.yoVariables.registry.YoRegistry;
 import us.ihmc.yoVariables.variable.YoDouble;
 
-public class RobotArmOneController implements RobotController
+public class RobotArmOneController implements Controller
 {
+   // A name for this controller
+   private final String name = "robotArmController";
+
+   private final EnumMap<SevenDoFArmJointEnum, OneDoFJointReadOnly> robotJoints = new EnumMap<>(SevenDoFArmJointEnum.class);
+   private final EnumMap<SevenDoFArmJointEnum, OneDoFJointStateBasics> robotJointsOutputs = new EnumMap<>(SevenDoFArmJointEnum.class);
+
+   private final ControllerInput controllerInput;
+
    private static final double TWO_PI = 2.0 * Math.PI;
 
    /**
@@ -49,21 +61,16 @@ public class RobotArmOneController implements RobotController
     */
    private final EnumMap<SevenDoFArmJointEnum, YoDouble> velocityErrors = new EnumMap<>(SevenDoFArmJointEnum.class);
 
-   private final RobotArmOne robot;
-   /**
-    * This variable stores the current simulation time and is updated by the simulation.
-    */
-   private final YoDouble time;
-
-   public RobotArmOneController(RobotArmOne robot)
+   public RobotArmOneController(ControllerInput controllerInput, ControllerOutput controllerOutput)
    {
-      this.robot = robot;
-      time = robot.getYoTime();
+
+      this.controllerInput = controllerInput;
 
       /*
        * YoDoubles need to be created first with a given name that is to represent the variable in the
        * Simulation Construction Set, and the registry so the simulation can find them.
        */
+
       for (SevenDoFArmJointEnum jointEnum : SevenDoFArmJointEnum.values())
       {
          String jointName = StringUtils.capitalize(jointEnum.getJointName());
@@ -74,6 +81,9 @@ public class RobotArmOneController implements RobotController
 
          positionErrors.put(jointEnum, new YoDouble("positionError" + jointName, registry));
          velocityErrors.put(jointEnum, new YoDouble("velocityError" + jointName, registry));
+
+         robotJoints.put(jointEnum, (OneDoFJointReadOnly) controllerInput.getInput().findJoint(jointEnum.getJointName()));
+         robotJointsOutputs.put(jointEnum, (OneDoFJointStateBasics) controllerOutput.getOneDoFJointOutput(jointEnum.getJointName()));
       }
    }
 
@@ -110,13 +120,15 @@ public class RobotArmOneController implements RobotController
    @Override
    public void doControl()
    {
+      double time = controllerInput.getTime();
+
       { // Making the shoulder yaw joint follow a sine wave trajectory:
          double frequency = 0.2;
          double phase = Math.PI;
          double amplitude = 0.5;
          double omega = TWO_PI * frequency;
-         double q = amplitude * Math.sin(omega * time.getValue() + phase);
-         double qDot = omega * amplitude * Math.cos(omega * time.getValue() + phase);
+         double q = amplitude * Math.sin(omega * time + phase);
+         double qDot = omega * amplitude * Math.cos(omega * time + phase);
 
          desiredPositions.get(SevenDoFArmJointEnum.shoulderYaw).set(q);
          desiredVelocities.get(SevenDoFArmJointEnum.shoulderYaw).set(qDot);
@@ -128,8 +140,8 @@ public class RobotArmOneController implements RobotController
          double phase = -0.5 * Math.PI;
          double amplitude = 0.5;
          double omega = TWO_PI * frequency;
-         double q = offset + amplitude * Math.sin(omega * time.getValue() + phase);
-         double qDot = omega * amplitude * Math.cos(omega * time.getValue() + phase);
+         double q = offset + amplitude * Math.sin(omega * time + phase);
+         double qDot = omega * amplitude * Math.cos(omega * time + phase);
 
          desiredPositions.get(SevenDoFArmJointEnum.elbowPitch).set(q);
          desiredVelocities.get(SevenDoFArmJointEnum.elbowPitch).set(qDot);
@@ -139,21 +151,26 @@ public class RobotArmOneController implements RobotController
       // controllers.
       for (SevenDoFArmJointEnum jointEnum : SevenDoFArmJointEnum.values())
       {
-         double qError = desiredPositions.get(jointEnum).getValue() - robot.getCurrentJointPosition(jointEnum);
-         double qErrorDot = desiredVelocities.get(jointEnum).getValue() - robot.getCurrentJointVelocity(jointEnum);
+         OneDoFJointReadOnly joint = robotJoints.get(jointEnum);
+         OneDoFJointStateBasics jointOutput = robotJointsOutputs.get(jointEnum);
+
+         // calculate desired effort based on current joint state
+         double qError = desiredPositions.get(jointEnum).getValue() - joint.getQ();
+         double qErrorDot = desiredVelocities.get(jointEnum).getValue() - joint.getQd();
          double desiredEffort = kps.get(jointEnum).getValue() * qError + kds.get(jointEnum).getValue() * qErrorDot;
 
          positionErrors.get(jointEnum).set(qError);
          velocityErrors.get(jointEnum).set(qErrorDot);
 
-         robot.setDesiredJointEffort(jointEnum, desiredEffort);
+         // Write desired effort as controller output
+         jointOutput.setEffort(desiredEffort);
       }
    }
 
    @Override
    public String getName()
    {
-      return "RobotArmOneController";
+      return name;
    }
 
    @Override
@@ -162,9 +179,4 @@ public class RobotArmOneController implements RobotController
       return registry;
    }
 
-   @Override
-   public String getDescription()
-   {
-      return "Simple controller using PD controllers on each joint.";
-   }
 }

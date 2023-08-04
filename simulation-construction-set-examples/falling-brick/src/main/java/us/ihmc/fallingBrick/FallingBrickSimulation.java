@@ -1,60 +1,105 @@
 package us.ihmc.fallingBrick;
 
-import us.ihmc.simulationconstructionset.SimulationConstructionSet;
-import us.ihmc.simulationconstructionset.SimulationConstructionSetParameters;
+import us.ihmc.euclid.geometry.Pose3D;
+import us.ihmc.euclid.tuple3D.Vector3D;
+import us.ihmc.scs2.SimulationConstructionSet2;
+import us.ihmc.scs2.definition.state.SixDoFJointState;
+import us.ihmc.scs2.simulation.parameters.ContactParameters;
+import us.ihmc.scs2.simulation.parameters.ContactPointBasedContactParameters;
+import us.ihmc.scs2.simulation.physicsEngine.PhysicsEngineFactory;
 
 public class FallingBrickSimulation
 {
-   SimulationConstructionSet sim;
+   /**
+    * <ul>
+    * <li>When {@code true}, the simulation is created using the impulse base physics which handles
+    * shape-to-shape collisions. Main inconvenient of physics engine is that it is less stable. Main
+    * advantage is that it resolves contact as hard constraints without requiring much parameter
+    * tuning.
+    * <li>When {@code false}, the simulation is created using the contact point based physics which
+    * only handles point-to-shape contact. Main inconvenients of this physics engine are the required
+    * tuning step of the contact gains and the softness of the contacts. Main advantage is its
+    * stability.
+    * </ul>
+    */
+   private final static boolean USE_IMPULSE_PHYSICS = false;
 
    public FallingBrickSimulation()
    {
-      FallingBrickRobot FallingBrick = new FallingBrickRobot();
-      /* Creates simulation parameters */
-      SimulationConstructionSetParameters parameters = new SimulationConstructionSetParameters();
-      // Sets data buffer to allow for this number of values for each variable to be saved.
-      parameters.setDataBufferSize(16342);
-      // Creates a new simulation
-      sim = new SimulationConstructionSet(FallingBrick, parameters);
+      // Create an instance of the falling brick
+      FallingBrickDefinition fallingBrick = new FallingBrickDefinition();
 
-      /*
-       * Sets the simulation to collect data every 20 simulation steps This is used to prune data so a
-       * smaller buffer is sufficient.
-       */
-      sim.setDT(0.001, 20);
+      // Set the initial positions, velocities, and accelerations of the brick
+      SixDoFJointState initialJointState = new SixDoFJointState();
+      initialJointState.setConfiguration(new Pose3D(0.0, 0.0, 2.0, 0.0, 0.0, 0.0));
+      initialJointState.setAngularVelocity(new Vector3D(-0.1, -1.0, 10.0));
+      initialJointState.setLinearVelocity(new Vector3D(0.0, -0.1, 0.5));
+      fallingBrick.getFloatingRootJointDefinition().setInitialJointState(initialJointState);
 
-      // Sets location and orientation of the camera
-      sim.setCameraPosition(-0.5, 8.25, 3.5);
-      sim.setCameraFix(0.0, 0.0, 0.4);
+      // Initialize the physics engine factory which allows to specify which one to use as well as to specify its parameters
+      PhysicsEngineFactory physicsEngineFactory;
 
-      /*
-       * Modifies the camera tracking state for the selected viewport. A camera set to track will not
-       * move. Instead, it will rotate to keep the target in view.
-       */
-      sim.setCameraTracking(false, true, true, false);
-      /*
-       * Modifies the camera dolly state for the selected viewport. A camera with dolly enabled will move
-       * to keep its target in view from the same orientation.
-       */
-      sim.setCameraDolly(false, true, true, false);
+      if (USE_IMPULSE_PHYSICS)
+      {
+         // Setting up the impulse based physics engine
+         // It relies on forward dynamics to compute the robot joint accelerations and includes robot <-> environment
+         // interactions that uses the robot physical properties to compute contact impulses such that the contacts
+         // behave as hard constraints.
+         // Note that this physics engine only uses the collision shapes attached to the robot together with ones defined for the environment.
+         ContactParameters contactParameters = new ContactParameters();
+         contactParameters.setMinimumPenetration(5.0e-5);
+         contactParameters.setCoefficientOfFriction(0.7);
+         contactParameters.setCoefficientOfRestitution(0.0);
+         contactParameters.setRestitutionThreshold(0.0);
+         contactParameters.setErrorReductionParameter(0.0);
+         contactParameters.setComputeFrictionMoment(true);
+         contactParameters.setCoulombMomentFrictionRatio(0.3);
+         physicsEngineFactory = SimulationConstructionSet2.impulseBasedPhysicsEngineFactory(contactParameters);
+      }
+      else
+      {
+         // Setting up the contact-point based physics engine.
+         // It relies on forward dynamics to compute robot joint acceleration and includes robot <-> environment
+         // interactions using a non-linear spring damping contact force calculator. As such, the contacts
+         // behave as soft constraints, the maximum penetration will be function of the stiffness set below.
+         // Note that the stiffness and damping are dependent to the robot mass and inertia properties.
+         // Note that this physics engine only uses the ground contact points attached to the robot together with
+         // the collision shapes defined for the environment.
+         // Define ground contact parameters stiffness (k) and damping (b). These parameters are used for the spring-damper model of all surfaces in the simulation
+         ContactPointBasedContactParameters contact = ContactPointBasedContactParameters.defaultParameters();
+         contact.setKxy(40000.0); // Stiffness for computing the tangential force.
+         contact.setBxy(100.0); // Damping for computing the tangential force.
+         contact.setKz(500.0); // Stiffness for computing the normal force.
+         contact.setBz(250.0); // Damping for computing the normal force.
+         physicsEngineFactory = SimulationConstructionSet2.contactPointBasedPhysicsEngineFactory(contact);
+      }
 
-      // Set up a graph of the Z position.
-      sim.setupGraph("q_z");
+      // Create the simulation
+      SimulationConstructionSet2 scs = new SimulationConstructionSet2(physicsEngineFactory);
 
-      // Adds an entry box for the specified variable.  
-      sim.setupEntryBox("qd_x");
-      sim.setupEntryBox("qd_y");
-      sim.setupEntryBox("qd_z");
+      // Add the brick robot to the simulation
+      scs.addRobot(fallingBrick);
 
-      sim.setupEntryBox("qd_wx");
-      sim.setupEntryBox("qd_wy");
-      sim.setupEntryBox("qd_wz");
+      // Set the location and orientation for the camera
+      scs.setCameraPosition(0.0, 5.0, 3.5);
+      scs.setCameraFocusPosition(0.0, 0.0, 0.8);
 
-      // Simulating in real-time
-      sim.setSimulateNoFasterThanRealTime(true);
+      // Track the brick with the camera
+      scs.requestCameraRigidBodyTracking(fallingBrick.getName(), FallingBrickDefinition.BRICK_BODY);
 
-      // Launch the simulator.
-      sim.startOnAThread();
+      // Add an entry box for these existing YoVariables.
+      scs.addYoEntry("time[sec]");
+      scs.addYoEntry("qd_rootJoint_world_x");
+      scs.addYoEntry("qd_rootJoint_world_z");
+
+      // Add a terrain
+      scs.addTerrainObject(new ClutteredGroundDefinition());
+
+      // Simulate no faster than real-time
+      scs.setRealTimeRateSimulation(true);
+
+      // Launch the simulator
+      scs.start(true, false, false);
    }
 
    public static void main(String[] args)

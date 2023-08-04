@@ -1,10 +1,10 @@
 package us.ihmc.robotArmThree;
 
 import us.ihmc.commonWalkingControlModules.controllerCore.WholeBodyControllerCoreMode;
-import us.ihmc.graphicsDescription.yoGraphics.YoGraphicsListRegistry;
-import us.ihmc.robotArmTwo.RobotArmTwo;
-import us.ihmc.simulationconstructionset.Robot;
-import us.ihmc.simulationconstructionset.SimulationConstructionSet;
+import us.ihmc.robotArmOne.FlatGroundDefinition;
+import us.ihmc.robotArmOne.RobotArmOneDefinition;
+import us.ihmc.scs2.SimulationConstructionSet2;
+import us.ihmc.scs2.simulation.robot.Robot;
 
 /**
  * As in the {@code RobotArmOneSimulation} and {@code RobotArmTwoSimulation} examples, we will use
@@ -16,7 +16,6 @@ import us.ihmc.simulationconstructionset.SimulationConstructionSet;
  * it with 3 different modes: inverse dynamics, inverse kinematics, and virtual model control.
  * </p>
  * <p>
- * Even though this example applies the controller core on a simple system, the procedure for
  * controlling a much more complicated robot system remains extremely similar.
  * </p>
  * <p>
@@ -36,51 +35,68 @@ public class RobotArmThreeSimulation
     * velocities to output both desired joint velocities and positions.
     * </ul>
     */
+
    private final WholeBodyControllerCoreMode controlMode = WholeBodyControllerCoreMode.INVERSE_DYNAMICS;
+   //      private final WholeBodyControllerCoreMode controlMode = WholeBodyControllerCoreMode.INVERSE_KINEMATICS;
+   //      private final WholeBodyControllerCoreMode controlMode = WholeBodyControllerCoreMode.VIRTUAL_MODEL;
 
    public RobotArmThreeSimulation()
    {
-      // The gravity has to be explicitly defined for the controller core (maybe a
-      // robot on the Moon someday...?)
-      double gravityMagnitude = 9.81;
-      // The control frequency, which is equal to simulation frequency in this
-      // example, has to be provided to the controller core.
-      double simulateDT = 1.0e-4;
-      // This is an additional registry that allows to display 3D graphics in the
-      // simulation. This feature is not demonstrated in this example.
-      YoGraphicsListRegistry yoGraphicsListRegistry = new YoGraphicsListRegistry();
-      // Create an instance of the robot arm.
-      RobotArmTwo robotArm = new RobotArmTwo();
-      // Use the simulated definition of the robot to define the simulation
-      // environment.
-      Robot simulatedRobot = robotArm.getSimulatedRobot();
-      // Make sure the simulation and the controller are using the same value for the
-      // gravity.
-      simulatedRobot.setGravity(-gravityMagnitude);
-      // Create an instance of the controller.
-      RobotArmThreeController robotArmController = new RobotArmThreeController(robotArm, simulateDT, gravityMagnitude, controlMode, yoGraphicsListRegistry);
-      // When using the inverse kinematics mode, the simulation dynamics is disabled
-      // to simply provide a direct visualization of the controller core ouptut.
+      // Create an instance of the robot arm
+      RobotArmOneDefinition robotArmDef = new RobotArmOneDefinition();
+
+      // Instantiate a SCS object - create the simulation
+      SimulationConstructionSet2 scs = new SimulationConstructionSet2(SimulationConstructionSet2.impulseBasedPhysicsEngineFactory());
+
+      // Ignore joints in controller for inverse kinematics
       if (controlMode == WholeBodyControllerCoreMode.INVERSE_KINEMATICS)
-         simulatedRobot.setDynamic(false);
+      {
+         robotArmDef.ignoreAllJoints();
+      }
+
+      // Generate a robot for the simulation
+      Robot robotArm = scs.addRobot(robotArmDef);
+
+      // The control frequency, which is equal to simulation frequency in this example, has to be provided to the controller core.
+      double simulateDT = 1.0e-4;
+      // Make sure the simulation uses the same DT
+      scs.setDT(simulateDT);
+
+      // The gravity has to be explicitly defined for the controller core (maybe a robot on the Moon someday...?)
+      double gravityMagnitude = 9.81;
+      // Make sure the simulation and the controller are using the same value for the gravity.
+      scs.getGravity().set(0.0, 0.0, -gravityMagnitude);
+
+      // Create an instance of the controller.
+      RobotArmThreeController robotArmController = new RobotArmThreeController(robotArm.getControllerInput(),
+                                                                               robotArm.getControllerOutput(),
+                                                                               simulateDT,
+                                                                               gravityMagnitude,
+                                                                               controlMode);
+      // Add the YoGraphics to the simulation
+      scs.addYoGraphic(robotArmController.getYoGraphicDefinition());
+
+      // Camera settings
+      scs.setCameraFocusPosition(0.0, 0.0, 0.5);
+      scs.setCameraPosition(0.0, 5.0, 1.0);
+
       // Make sure to initialize the controller.
       robotArmController.initialize();
-      // Attach the controller to the robot.
-      simulatedRobot.setController(robotArmController);
 
-      // Creating the simulation.
-      SimulationConstructionSet scs = new SimulationConstructionSet(simulatedRobot);
-      scs.addYoGraphicsListRegistry(yoGraphicsListRegistry, true);
-      // As this example simulation is rather simple, let's prevent SCS from
-      // simulating faster than real-time.
-      scs.setSimulateNoFasterThanRealTime(true);
-      // Defining the simulation DT and the frequency at which data is logged.
-      scs.setDT(simulateDT, 10);
-      // Defining the buffer size to ensure a minimum simulation duration before
-      // filling the graphs in the simulator.
+      // Attach the controller to the robot
+      robotArm.addController(robotArmController);
+
+      // Add a terrain
+      scs.addTerrainObject(new FlatGroundDefinition());
+
+      // As this example simulation is rather simple, let's prevent SCS from simulating faster than real-time.
+      scs.setRealTimeRateSimulation(true);
+
+      // Defining the buffer size to ensure a minimum simulation duration before filling the graphs in the simulator.
       scs.changeBufferSize(65536);
-      // Launch the simulator.
-      scs.startOnAThread();
+
+      // Launch the simulator
+      scs.start(true, false, false);
    }
 
    public static void main(String[] args)

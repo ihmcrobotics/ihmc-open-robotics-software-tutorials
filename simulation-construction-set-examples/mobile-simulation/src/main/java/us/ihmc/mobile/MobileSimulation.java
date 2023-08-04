@@ -1,6 +1,6 @@
 package us.ihmc.mobile;
 
-import us.ihmc.simulationconstructionset.SimulationConstructionSet;
+import us.ihmc.scs2.SimulationConstructionSet2;
 
 /**
  * A simulation of a child's mobile toy that uses a tree structure of 21 gimbal joints (63 degrees
@@ -8,46 +8,34 @@ import us.ihmc.simulationconstructionset.SimulationConstructionSet;
  */
 public class MobileSimulation
 {
-   private SimulationConstructionSet simulationConstructionSet;
-
    public MobileSimulation()
    {
-      // Create an instance of MobileRobot
-      MobileRobot mobile = new MobileRobot();
+      // Create an instance of the Mobile-Robot
+      MobileDefinition mobile = new MobileDefinition();
 
-      // Instantiate a SCS object using the MobileRobot object reference
-      simulationConstructionSet = new SimulationConstructionSet(mobile);
-      // By default a ground plane is added in SCS, we have no need for it in this
-      // example.
-      simulationConstructionSet.setGroundVisible(false);
+      // Instantiate a SCS object and add the MobileRobot
+      SimulationConstructionSet2 scs = new SimulationConstructionSet2(SimulationConstructionSet2.impulseBasedPhysicsEngineFactory());
 
-      simulationConstructionSet.setCameraTracking(false, false, false, false);
-      simulationConstructionSet.setCameraDolly(false, false, false, false);
+      // Add robot to simulation
+      scs.addRobot(mobile);
 
-      // set camera to a convenient viewing angle
-      simulationConstructionSet.setCameraPosition(3.0, 2.0, 1.5);
-      simulationConstructionSet.setCameraFix(0.0, 0.0, 0.8);
+      // Set simulation deltaTime
+      scs.setDT(0.001);
 
-      simulationConstructionSet.setCameraTrackingVars("ef_track00_x", "ef_track00_y", "ef_track00_z");
+      // Set frequency for data recording 
+      scs.setBufferRecordTickPeriod(1);
 
-      // As this example simulation is rather simple, let's prevent SCS from
-      // simulating faster than real-time.
-      simulationConstructionSet.setSimulateNoFasterThanRealTime(true);
-      // Defining the simulation tick duration and the rate at which the buffer should
-      // record data.
-      simulationConstructionSet.setDT(0.02, 1);
-      // Setting a default simulation duration after what SCS stops simulating.
-      // Simulation can be still be resumed in the GUI.
-      simulationConstructionSet.setSimulateDuration(30.0);
-      // Setting the buffer such that when SCS reaches the simulation duration, the
-      // buffer is entirely filled and the graphs are
-      simulationConstructionSet.changeBufferSize(1501);
-      // Launch the simulator.
-      simulationConstructionSet.startOnAThread();
+      // Camera settings
+      scs.setCameraFocusPosition(0.0, 0.0, 0.5);
+      scs.setCameraPosition(0.0, 4.0, 0.2);
+
+      // Launch the simulator
+      scs.start(true, false, false);
    }
 
    public static void main(String[] args)
    {
       new MobileSimulation();
    }
+
 }

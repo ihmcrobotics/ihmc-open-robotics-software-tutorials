@@ -1,50 +1,49 @@
 package us.ihmc.simplePendulum;
 
-import us.ihmc.simulationconstructionset.SimulationConstructionSet;
-import us.ihmc.simulationconstructionset.SimulationConstructionSetParameters;
+import us.ihmc.scs2.SimulationConstructionSet2;
+import us.ihmc.scs2.simulation.robot.Robot;
 
 public class SimplePendulumSimulation
 {
-
-   // simulation step duration
    public static final double DT = 0.001;
-
-   private SimulationConstructionSet sim;
 
    public SimplePendulumSimulation()
    {
+      // Setup the definition of our pendulum
+      SimplePendulumDefinition pendulumDefinition = new SimplePendulumDefinition();
 
-      SimplePendulumRobot robot = new SimplePendulumRobot();
-      // robot.setController(new SimplePendulumController(robot));
+      // Instantiate a SCS object
+      SimulationConstructionSet2 scs = new SimulationConstructionSet2(SimulationConstructionSet2.contactPointBasedPhysicsEngineFactory());
 
-      /* Creates simulation parameters */
-      SimulationConstructionSetParameters parameters = new SimulationConstructionSetParameters();
-      // Sets data buffer to allow for this number of values for each variable to be saved.
-      parameters.setDataBufferSize(32000);
-      // Creates a new simulation
-      sim = new SimulationConstructionSet(robot, parameters);
+      // Generate a pendulum robot object according to our definition
+      Robot pendulumRobot = new Robot(pendulumDefinition, scs.getInertialFrame());
 
-      /*
-       * Sets the simulation to collect data every 20 simulation steps This is used to prune data so a
-       * smaller buffer is sufficient.
-       */
-      sim.setDT(DT, 20);
+      // Add the pendulum robot to the simulation
+      pendulumRobot = scs.addRobot(pendulumDefinition);
 
-      // Sets the ground to be visible in the 3D view
-      sim.setGroundVisible(true);
+      // Add a controller to the pendulum robot
+      SimplePendulumController penulumController = new SimplePendulumController(pendulumRobot.getControllerInput(), pendulumRobot.getControllerOutput());
+       pendulumRobot.addController(penulumController);
+
+      // The simulation time step.
+      scs.setDT(DT);
+
+      // Set the frequency at which data is logged.
+      scs.setBufferRecordTickPeriod(20);
 
       // Sets location and orientation of the camera
-      sim.setCameraPosition(0, -9.0, 0.6);
-      sim.setCameraFix(0.0, 0.0, 0.70);
+      scs.setCameraPosition(0, -9.0, 0.6);
+      scs.setCameraFocusPosition(0.0, 0.0, 0.70);
 
-      /*
-       * Specifies that the simulation will only run for a duration of 60 seconds. For this tutorial, this
-       * allows the simulation to run to a point where it doesn't overflow the data buffer
-       */
-      sim.setSimulateDuration(60.0);
+      // Sets data buffer to allow for this number of values for each variable to be saved.
+      scs.changeBufferSize(32000);
 
-      // Launch the simulator.
-      sim.startOnAThread();
+      // Sets if the simulation should not run faster than real-time
+      scs.setRealTimeRateSimulation(true);
+
+      // Launch the simulator
+      scs.start(true, false, false);
+
    }
 
    public static void main(String[] args)

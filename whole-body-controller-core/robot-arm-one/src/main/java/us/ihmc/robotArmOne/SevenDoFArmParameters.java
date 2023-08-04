@@ -1,15 +1,22 @@
 package us.ihmc.robotArmOne;
 
+import java.util.ArrayList;
 import java.util.EnumMap;
+import java.util.List;
 
 import us.ihmc.euclid.Axis3D;
 import us.ihmc.euclid.matrix.Matrix3D;
 import us.ihmc.euclid.tuple3D.Vector3D;
 import us.ihmc.euclid.tuple3D.interfaces.Vector3DReadOnly;
-import us.ihmc.graphicsDescription.Graphics3DObject;
-import us.ihmc.graphicsDescription.appearance.AppearanceDefinition;
-import us.ihmc.graphicsDescription.appearance.YoAppearance;
 import us.ihmc.robotics.geometry.RotationalInertiaCalculator;
+import us.ihmc.scs2.definition.geometry.Cylinder3DDefinition;
+import us.ihmc.scs2.definition.geometry.Ellipsoid3DDefinition;
+import us.ihmc.scs2.definition.geometry.GeometryDefinition;
+import us.ihmc.scs2.definition.geometry.Sphere3DDefinition;
+import us.ihmc.scs2.definition.visual.ColorDefinition;
+import us.ihmc.scs2.definition.visual.ColorDefinitions;
+import us.ihmc.scs2.definition.visual.MaterialDefinition;
+import us.ihmc.scs2.definition.visual.VisualDefinition;
 
 /**
  * Use this class to obtain default parameters for building a 7-DoF robot arm.
@@ -118,11 +125,11 @@ public class SevenDoFArmParameters
       /**
        * @return graphics to use for representing the child link.
        */
-      public Graphics3DObject getChildLinkGraphics()
+      public List<VisualDefinition> getChildVisulalizationDefinitionList()
       {
-         if (!jointChildLinkGraphics.containsKey(this))
-            throw new RuntimeException("No graphics has been registered for the child link of the joint: " + getJointName());
-         return jointChildLinkGraphics.get(this);
+         if (!jointChildVisualDefinition.containsKey(this))
+            throw new RuntimeException("No visualization definition list has been registered for the child link of the joint: " + getJointName());
+         return jointChildVisualDefinition.get(this);
       }
    };
 
@@ -148,7 +155,7 @@ public class SevenDoFArmParameters
    public static final EnumMap<SevenDoFArmJointEnum, Double> jointChildLinkMasses = new EnumMap<>(SevenDoFArmJointEnum.class);
    public static final EnumMap<SevenDoFArmJointEnum, Vector3D> jointChildLinkCoMs = new EnumMap<>(SevenDoFArmJointEnum.class);
    public static final EnumMap<SevenDoFArmJointEnum, Matrix3D> jointChildLinkInertias = new EnumMap<>(SevenDoFArmJointEnum.class);
-   public static final EnumMap<SevenDoFArmJointEnum, Graphics3DObject> jointChildLinkGraphics = new EnumMap<>(SevenDoFArmJointEnum.class);
+   public static final EnumMap<SevenDoFArmJointEnum, List<VisualDefinition>> jointChildVisualDefinition = new EnumMap<>(SevenDoFArmJointEnum.class);
 
    static
    {
@@ -216,13 +223,21 @@ public class SevenDoFArmParameters
       jointChildLinkInertias.put(SevenDoFArmJointEnum.wristRoll, smallInertia);
       jointChildLinkInertias.put(SevenDoFArmJointEnum.wristYaw, handInertia);
 
-      jointChildLinkGraphics.put(SevenDoFArmJointEnum.shoulderYaw, emptyGraphics());
-      jointChildLinkGraphics.put(SevenDoFArmJointEnum.shoulderRoll, emptyGraphics());
-      jointChildLinkGraphics.put(SevenDoFArmJointEnum.shoulderPitch, createArmLinkGraphics(armLinkLength, armLinkRadius, YoAppearance.CadetBlue()));
-      jointChildLinkGraphics.put(SevenDoFArmJointEnum.elbowPitch, createArmLinkGraphics(armLinkLength, armLinkRadius, YoAppearance.DarkRed()));
-      jointChildLinkGraphics.put(SevenDoFArmJointEnum.wristPitch, emptyGraphics());
-      jointChildLinkGraphics.put(SevenDoFArmJointEnum.wristRoll, emptyGraphics());
-      jointChildLinkGraphics.put(SevenDoFArmJointEnum.wristYaw, createHandGraphics(YoAppearance.Thistle()));
+      jointChildVisualDefinition.put(SevenDoFArmJointEnum.shoulderYaw, emptyVisualDefinitionList());
+      jointChildVisualDefinition.put(SevenDoFArmJointEnum.shoulderRoll, emptyVisualDefinitionList());
+      jointChildVisualDefinition.put(SevenDoFArmJointEnum.shoulderPitch,
+                                     createArmLinkGraphics(SevenDoFArmJointEnum.shoulderPitch.getJointName(),
+                                                           armLinkLength,
+                                                           armLinkRadius,
+                                                           ColorDefinitions.DarkSalmon()));
+      jointChildVisualDefinition.put(SevenDoFArmJointEnum.elbowPitch,
+                                     createArmLinkGraphics(SevenDoFArmJointEnum.elbowPitch.getJointName(),
+                                                           armLinkLength,
+                                                           armLinkRadius,
+                                                           ColorDefinitions.DarkSlateBlue()));
+      jointChildVisualDefinition.put(SevenDoFArmJointEnum.wristPitch, emptyVisualDefinitionList());
+      jointChildVisualDefinition.put(SevenDoFArmJointEnum.wristRoll, emptyVisualDefinitionList());
+      jointChildVisualDefinition.put(SevenDoFArmJointEnum.wristYaw, createHandGraphics(SevenDoFArmJointEnum.wristYaw.getJointName()));
    }
 
    private static Matrix3D diagional(double ixx, double iyy, double izz)
@@ -234,25 +249,42 @@ public class SevenDoFArmParameters
       return matrix;
    }
 
-   public static Graphics3DObject emptyGraphics()
+   public static List<VisualDefinition> emptyVisualDefinitionList()
    {
-      return new Graphics3DObject();
+      List<VisualDefinition> visualDefinitions = new ArrayList<VisualDefinition>();
+
+      return visualDefinitions;
    }
 
-   public static Graphics3DObject createArmLinkGraphics(double length, double radius, AppearanceDefinition appearance)
+   public static List<VisualDefinition> createArmLinkGraphics(String name, double length, double radius, ColorDefinition color)
    {
-      Graphics3DObject armLinkGraphics = new Graphics3DObject();
-      armLinkGraphics.addSphere(radius, YoAppearance.Grey());
-      armLinkGraphics.addCylinder(length, radius, appearance);
-      return armLinkGraphics;
+      List<VisualDefinition> visualDefinitions = new ArrayList<VisualDefinition>();
+
+      GeometryDefinition sphereGeometryDefinition = new Sphere3DDefinition(0.03);
+      MaterialDefinition sphereMaterialDefinition = new MaterialDefinition(ColorDefinitions.Grey());
+
+      GeometryDefinition cylinderGeometryDefinition = new Cylinder3DDefinition(length, radius);
+      MaterialDefinition cylinderMaterialDefinition = new MaterialDefinition(color);
+
+      visualDefinitions.add(new VisualDefinition(sphereGeometryDefinition, sphereMaterialDefinition));
+      visualDefinitions.add(new VisualDefinition(new Vector3D(0.0, 0.0, 0.5 * length), cylinderGeometryDefinition, cylinderMaterialDefinition));
+
+      return visualDefinitions;
    }
 
-   public static Graphics3DObject createHandGraphics(AppearanceDefinition appearance)
+   public static List<VisualDefinition> createHandGraphics(String name)
    {
-      Graphics3DObject handGraphics = new Graphics3DObject();
-      handGraphics.addSphere(0.025, appearance);
-      handGraphics.translate(handCoM);
-      handGraphics.addEllipsoid(0.04, 0.01, 0.1);
-      return handGraphics;
+      List<VisualDefinition> visualDefinitions = new ArrayList<VisualDefinition>();
+
+      GeometryDefinition sphereGeometryDefinition = new Sphere3DDefinition(0.025);
+      MaterialDefinition sphereMaterialDefinition = new MaterialDefinition(ColorDefinitions.Black());
+
+      GeometryDefinition ellipsoidGeometryDefinition = new Ellipsoid3DDefinition(0.04, 0.01, 0.1);
+      MaterialDefinition ellipsoidMaterialDefinition = new MaterialDefinition(ColorDefinitions.DarkCyan());
+
+      visualDefinitions.add(new VisualDefinition(new Vector3D(0.0, 0.0, 0.0), sphereGeometryDefinition, sphereMaterialDefinition));
+      visualDefinitions.add(new VisualDefinition(handCoM, ellipsoidGeometryDefinition, ellipsoidMaterialDefinition));
+
+      return visualDefinitions;
    }
 }
